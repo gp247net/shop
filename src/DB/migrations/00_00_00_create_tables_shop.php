@@ -18,19 +18,6 @@ return new class extends Migration
         $schema = Schema::connection(GP247_DB_CONNECTION);
 
         $schema->create(
-            GP247_DB_PREFIX.'shop_email_template',
-            function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->string('name', 255);
-                $table->string('group', 50);
-                $table->mediumText('text');
-                $table->uuid('store_id')->default(1)->index();
-                $table->tinyInteger('status')->default(0);
-                $table->timestamps();
-            }
-        );
-
-        $schema->create(
             GP247_DB_PREFIX.'shop_brand',
             function (Blueprint $table) {
                 $table->uuid('id')->primary();
@@ -493,7 +480,6 @@ return new class extends Migration
     {
         $schema = Schema::connection(GP247_DB_CONNECTION);
         
-        $schema->dropIfExists(GP247_DB_PREFIX.'shop_email_template');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_brand');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_category');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_category_description');

@@ -3,7 +3,6 @@
 namespace GP247\Shop\Controllers\Auth;
 
 use GP247\Front\Controllers\RootFrontController;
-use GP247\Shop\Models\ShopEmailTemplate;
 use GP247\Shop\Models\ShopCustomer;
 use GP247\Core\Models\AdminCustomField;
 use GP247\Core\Models\AdminCountry;
