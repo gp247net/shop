@@ -8,6 +8,7 @@ $layout_page = shop_wishlist
 @extends($GP247TemplatePath.'.layout')
 
 @section('block_main_content_center')
+<div class="col-lg-9 col-xl-9">
     <h6 class="aside-title">{{ $title }}</h6>
     <div class="container">
         <div class="row">
@@ -68,7 +69,7 @@ $layout_page = shop_wishlist
             </div>
         </div>
     </div>
-
+</div>
 @endsection
 
 

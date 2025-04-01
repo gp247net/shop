@@ -12,6 +12,7 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
 
 {{-- block_main_content_center --}}
 @section('block_main_content_center')
+<div class="col-lg-9 col-xl-9">
   {{-- Sort filter --}}
   <div class="product-top-panel group-md">
 
@@ -52,7 +53,7 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
   <!-- Render include view -->
   @include($GP247TemplatePath.'.common.include_view')
   <!--// Render include view -->
-
+</div>
 @endsection
 {{-- //block_main_content_center --}}
 

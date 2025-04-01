@@ -5,14 +5,10 @@ use GP247\Core\Models\AdminCountry;
  * Function process after order success
  */
 if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_order_process_after_success', config('gp247_functions_except', []))) {
-    function gp247_order_process_after_success(string $orderID = ""):array
+    function gp247_order_process_after_success(string $orderID = "")
     {
-        $templatePath = 'templates.' . gp247_store_info('template');
         if ((gp247_config('order_success_to_admin') || gp247_config('order_success_to_customer')) && gp247_config('email_action_mode')) {
             $data = \GP247\Shop\Models\ShopOrder::with('details')->find($orderID)->toArray();
-            $checkContent = (new \GP247\Shop\Models\ShopEmailTemplate)->where('group', 'order_success_to_admin')->where('status', 1)->first();
-            $checkContentCustomer = (new \GP247\Shop\Models\ShopEmailTemplate)->where('group', 'order_success_to_customer')->where('status', 1)->first();
-            if ($checkContent || $checkContentCustomer) {
                 $orderDetail = '';
                 $orderDetail .= '<tr>
                                     <td>' . gp247_language_render('email.order.sort') . '</td>
@@ -39,67 +35,47 @@ if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_or
                                     <td align="right">' . gp247_currency_render($detail['total_price'], '', '', '', false) . '</td>
                                 </tr>';
                 }
-                $dataFind = [
-                    '/\{\{\$title\}\}/',
-                    '/\{\{\$orderID\}\}/',
-                    '/\{\{\$firstName\}\}/',
-                    '/\{\{\$lastName\}\}/',
-                    '/\{\{\$toname\}\}/',
-                    '/\{\{\$address\}\}/',
-                    '/\{\{\$address1\}\}/',
-                    '/\{\{\$address2\}\}/',
-                    '/\{\{\$address3\}\}/',
-                    '/\{\{\$email\}\}/',
-                    '/\{\{\$phone\}\}/',
-                    '/\{\{\$comment\}\}/',
-                    '/\{\{\$orderDetail\}\}/',
-                    '/\{\{\$subtotal\}\}/',
-                    '/\{\{\$shipping\}\}/',
-                    '/\{\{\$discount\}\}/',
-                    '/\{\{\$otherFee\}\}/',
-                    '/\{\{\$total\}\}/',
-                ];
-                $dataReplace = [
-                    gp247_language_render('email.order.email_subject_customer') . '#' . $orderID,
-                    $orderID,
-                    $data['first_name'],
-                    $data['last_name'],
-                    $data['first_name'].' '.$data['last_name'],
-                    $data['address1'] . ' ' . $data['address2'].' '.$data['address3'],
-                    $data['address1'],
-                    $data['address2'],
-                    $data['address3'],
-                    $data['email'],
-                    $data['phone'],
-                    $data['comment'],
-                    $orderDetail,
-                    gp247_currency_render($data['subtotal'], '', '', '', false),
-                    gp247_currency_render($data['shipping'], '', '', '', false),
-                    gp247_currency_render($data['discount'], '', '', '', false),
-                    gp247_currency_render($data['other_fee'], '', '', '', false),
-                    gp247_currency_render($data['total'], '', '', '', false),
-                ];
+              
 
                 // Send mail order success to admin
-                if (gp247_config('order_success_to_admin') && $checkContent) {
-                    $content = $checkContent->text;
-                    $content = preg_replace($dataFind, $dataReplace, $content);
+                if (gp247_config('order_success_to_admin')) {
                     $dataView = [
-                        'content' => $content,
+                        'orderID' => $orderID,
+                        'toname' => $data['first_name'].' '.$data['last_name'],
+                        'address' => $data['address1'] . ' ' . $data['address2'].' '.$data['address3'],
+                        'phone' => $data['phone'],
+                        'comment' => $data['comment'],
+                        'currency' => $data['currency'],
+                        'orderDetail' => $orderDetail,
+                        'subtotal' => gp247_currency_render($data['subtotal'], '', '', '', false),
+                        'shipping' => gp247_currency_render($data['shipping'], '', '', '', false), 
+                        'discount' => gp247_currency_render($data['discount'], '', '', '', false),
+                        'otherFee' => gp247_currency_render($data['other_fee'], '', '', '', false),
+                        'total' => gp247_currency_render($data['total'], '', '', '', false),
                     ];
                     $config = [
                         'to' => gp247_store_info('email'),
                         'subject' => gp247_language_render('email.order.email_subject_to_admin', ['order_id' => $orderID]),
                     ];
-                    gp247_mail_send($templatePath . '.mail.order_success_to_admin', $dataView, $config, []);
+                    
+                    gp247_mail_send('gp247-shop-front::email.order_success_to_admin', $dataView, $config, []);
                 }
 
                 // Send mail order success to customer
-                if (gp247_config('order_success_to_customer') && $checkContentCustomer && $data['email']) {
-                    $contentCustomer = $checkContentCustomer->text;
-                    $contentCustomer = preg_replace($dataFind, $dataReplace, $contentCustomer);
+                if (gp247_config('order_success_to_customer') && $data['email']) {
                     $dataView = [
-                        'content' => $contentCustomer,
+                        'orderID' => $orderID,
+                        'toname' => $data['first_name'].' '.$data['last_name'],
+                        'address' => $data['address1'] . ' ' . $data['address2'].' '.$data['address3'],
+                        'phone' => $data['phone'],
+                        'comment' => $data['comment'],
+                        'currency' => $data['currency'],
+                        'orderDetail' => $orderDetail,
+                        'subtotal' => gp247_currency_render($data['subtotal'], '', '', '', false),
+                        'shipping' => gp247_currency_render($data['shipping'], '', '', '', false), 
+                        'discount' => gp247_currency_render($data['discount'], '', '', '', false),
+                        'otherFee' => gp247_currency_render($data['other_fee'], '', '', '', false),
+                        'total' => gp247_currency_render($data['total'], '', '', '', false),
                     ];
                     $config = [
                         'to' => $data['email'],
@@ -107,27 +83,9 @@ if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_or
                         'subject' => gp247_language_render('email.order.email_subject_customer', ['order_id' => $orderID]),
                     ];
 
-                    $attach = [];
-                    if (gp247_config('order_success_to_customer_pdf')) {
-                        // Invoice pdf
-                        \PDF::loadView($templatePath . '.mail.order_success_to_customer_pdf', $dataView)
-                            ->save(\Storage::disk('invoice')->path('order-'.$orderID.'.pdf'));
-                        $attach['attachFromStorage'] = [
-                            [
-                                'file_storage' => 'invoice',
-                                'file_path' => 'order-'.$orderID.'.pdf',
-                            ]
-                        ];
-                    }
-
-                    gp247_mail_send($templatePath . '.mail.order_success_to_customer', $dataView, $config, $attach);
+                    gp247_mail_send('gp247-shop-front::email.order_success_to_customer', $dataView, $config, []);
                 }
-            }
         }
-        $dataResponse = [
-            'orderID'        => $orderID,
-        ];
-        return $dataResponse;
     }
 }
 

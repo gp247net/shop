@@ -19,7 +19,7 @@ class DashboardController extends RootAdminController
     public function index(Request $request)
     {
         //Check user allow view dasdboard
-        if (!\Admin::user()->checkUrlAllowAccess(gp247_route_admin('admin.home'))) {
+        if (!admin()->user()->checkUrlAllowAccess(gp247_route_admin('admin.home'))) {
             $data['title'] = gp247_language_render('admin.dashboard');
             return view('gp247-core::default', $data);
         }

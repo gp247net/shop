@@ -116,7 +116,7 @@
 
 @push('scripts')
     {{-- //Pjax --}}
-   <script src="{{ gp247_file('admin/plugin/jquery.pjax.js')}}"></script>
+   <script src="{{ gp247_file('GP247/Core/plugin/jquery.pjax.js')}}"></script>
 
   <script type="text/javascript">
 

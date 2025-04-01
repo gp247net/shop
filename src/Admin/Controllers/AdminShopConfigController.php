@@ -33,6 +33,14 @@ class AdminShopConfigController extends RootAdminController
             'subTitle' => '',
         ];
 
+        // Sendmail config
+        $dataSendmailConfigDefault = [
+            'code' => 'sendmail_config',
+            'storeId' => $id,
+            'keyBy' => 'key',
+        ];
+        $sendmailConfigsDefault = AdminConfig::getListConfigByCode($dataSendmailConfigDefault);
+
         // Customer config
         $dataCustomerConfigDefault = [
             'code' => 'customer_config',
@@ -116,15 +124,6 @@ class AdminShopConfigController extends RootAdminController
         ];
         $configLayout = AdminConfig::getListConfigByCode($configLayoutQuery);
 
-        $emailConfigQuery = [
-            'code' => ['smtp_config', 'email_action'],
-            'storeId' => $id,
-            'groupBy' => 'code',
-            'sort'    => 'asc',
-        ];
-        $emailConfig = AdminConfig::getListConfigByCode($emailConfigQuery);
-
-        $data['emailConfig'] = $emailConfig;
         $data['smtp_method'] = ['' => 'None Secirity', 'TLS' => 'TLS', 'SSL' => 'SSL'];
         $data['captcha_page'] = [
             'register' => gp247_language_render('admin.captcha.captcha_page_register'),
@@ -134,6 +133,8 @@ class AdminShopConfigController extends RootAdminController
             'review'   => gp247_language_render('admin.captcha.captcha_page_review'),
         ];
         //End email
+        
+        $data['sendmailConfigsDefault']           = $sendmailConfigsDefault;
         $data['customerConfigsDefault']           = $customerConfigsDefault;
         $data['customerConfigsAttribute']         = $customerConfigsAttribute;
         $data['customerConfigsAttributeRequired'] = $customerConfigsAttributeRequired;

@@ -15,7 +15,7 @@
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
-                <form action="{{ gp247_route_admin('admin_order.create') }}" method="post" accept-charset="UTF-8" class="form-horizontal" id="form-main">
+                <form action="{{ gp247_route_admin('admin_order.post_create') }}" method="post" accept-charset="UTF-8" class="form-horizontal" id="form-main">
 
                     <div class="card-body">
 

@@ -61,8 +61,8 @@ Route::group(
     function ($router) use ($suffix) {
         $router->get('/forgot'.$suffix, 'ForgotPasswordController@showLinkRequestFormProcessFront')
             ->name('customer.forgot');
-            $router->post('/password/email', 'ForgotPasswordController@sendResetLinkEmail')
-            ->name('customer.password.email');
+        $router->post('/password/email', 'ForgotPasswordController@sendResetLinkEmail')
+            ->name('customer.password_email');
     }
 );
 
@@ -73,9 +73,9 @@ Route::group(
     ],
     function ($router) {
         $router->get('/password/reset/{token}', 'ResetPasswordController@showResetFormProcessFront')
-            ->name('customer.password.reset');
+            ->name('customer.password_reset');
         $router->post('/password/reset', 'ResetPasswordController@reset')
-            ->name('customer.password.request');
+            ->name('customer.password_request');
     }
 );
 //End Auth

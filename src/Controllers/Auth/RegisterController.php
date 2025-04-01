@@ -175,7 +175,7 @@ class RegisterController extends RootFrontController
 
         if ($user) {
             
-            gp247_customer_created_by_client($user, $data);
+            gp247_customer_created_by_client($user);
 
             //Login
             $this->guard()->login($user);

@@ -9,6 +9,7 @@ $layout_page = shop_compare
 @extends($GP247TemplatePath.'.layout')
 
 @section('block_main_content_center')
+<div class="col-lg-9 col-xl-9">
     <div class="container">
         <div class="row">
             <div class="col-12">
@@ -64,7 +65,7 @@ $layout_page = shop_compare
             
         </div>
     </div>
-
+</div>
 @endsection
 
 

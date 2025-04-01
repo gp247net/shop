@@ -178,7 +178,7 @@ class AdminCustomerController extends RootAdminController
         $customer = AdminCustomer::createCustomer($dataMapping['dataInsert']);
 
         if ($customer) {
-            gp247_customer_created_by_admin($customer, $dataMapping['dataInsert']);
+            gp247_customer_created_by_admin($customer);
         }
 
         return redirect()->route('admin_customer.index')->with('success', gp247_language_render('action.create_success'));

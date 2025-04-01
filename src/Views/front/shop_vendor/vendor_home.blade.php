@@ -11,6 +11,7 @@ $productsNew = $modelProduct->start()->getProductLatest()->setlimit(gp247_config
 @endphp
 
 @section('block_main_content_center')
+<div class="col-lg-9 col-xl-9">
       <!-- New Products-->
         <div class="container">
           <h4 class="wow fadeScale">{{ gp247_language_render('front.products_new') }}</h4>
@@ -55,6 +56,7 @@ $productsNew = $modelProduct->start()->getProductLatest()->setlimit(gp247_config
         <!-- Render include view -->
         @include($GP247TemplatePath.'.common.include_view')
         <!--// Render include view -->
+</div>
 @endsection
 
 @section('blockStoreLeft')

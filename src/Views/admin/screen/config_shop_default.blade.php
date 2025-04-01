@@ -17,6 +17,10 @@
             </li>
 
             <li class="nav-item">
+              <a class="nav-link" id="tab-admin-sendmail-tab" data-toggle="pill" href="#tab-admin-sendmail" role="tab" aria-controls="tab-admin-sendmail" aria-selected="false">{{ gp247_language_render('admin.shop.config_sendmail') }}</a>
+            </li>
+
+            <li class="nav-item">
               <a class="nav-link" id="tab-admin-limit-data-tab" data-toggle="pill" href="#tab-admin-limit-data" role="tab" aria-controls="tab-admin-limit-data" aria-selected="false">{{ gp247_language_render('admin.shop.config_limit_per_page') }}</a>
             </li>
             <li class="nav-item">
@@ -51,6 +55,12 @@
                 @include('gp247-shop-admin::screen.config_shop.config_order')
               </div>
               {{-- // admin order --}}
+
+              {{-- Tab admin sendmail --}}
+              <div class="tab-pane fade" id="tab-admin-sendmail" role="tabpanel" aria-labelledby="tab-admin-sendmail-tab">
+                @include('gp247-shop-admin::screen.config_shop.config_sendmail')
+              </div>
+              {{-- // admin sendmail --}}
 
 
             {{-- Tab admin display --}}

@@ -353,7 +353,8 @@ $layout_page = shop_checkout
                                                         <span class="radio-inline" for="paymentMethod">
                                                             <img title="{{ $payment['title'] }}"
                                                                 alt="{{ $payment['title'] }}"
-                                                                src="{{ gp247_file($payment['image']) }}">
+                                                                src="{{ gp247_file('GP247/'.$payment['image']) }}"
+                                                                style="width: 120px;">
                                                         </span>
                                                 </label>
                                             </div>

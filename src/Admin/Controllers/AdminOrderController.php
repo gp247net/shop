@@ -1,7 +1,6 @@
 <?php
 namespace GP247\Shop\Admin\Controllers;
 
-use GP247\Shop\Admin\Admin;
 use GP247\Core\Controllers\RootAdminController;
 use GP247\Shop\Models\ShopAttributeGroup;
 use GP247\Core\Models\AdminCountry;
@@ -146,9 +145,13 @@ class AdminOrderController extends RootAdminController
                 }
             }
             $dataMap['created_at'] = $row['created_at'];
-            $dataMap['action'] = '<a href="' . gp247_route_admin('admin_order.detail', ['id' => $row['id'] ? $row['id'] : 'not-found-id']) . '"><span title="' . gp247_language_render('action.edit') . '" type="button" class="btn btn-flat btn-sm btn-primary"><i class="fa fa-edit"></i></span></a>&nbsp;
-            <span onclick="deleteItem(\'' . $row['id'] . '\');"  title="' . gp247_language_render('action.delete') . '" class="btn btn-flat btn-sm btn-danger"><i class="fas fa-trash-alt"></i></span>
-            ';
+
+            $arrAction = [
+                '<a href="' . gp247_route_admin('admin_order.detail', ['id' => $row['id'] ? $row['id'] : 'not-found-id']) . '"  class="dropdown-item"><i class="fa fa-edit"></i> '.gp247_language_render('action.edit').'</a>',
+                ];
+            $arrAction[] = '<a href="#" onclick="deleteItem(\'' . $row['id'] . '\');"  title="' . gp247_language_render('action.delete') . '" class="dropdown-item"><i class="fas fa-trash-alt"></i> '.gp247_language_render('action.remove').'</a>';
+            $action = $this->procesListAction($arrAction);
+            $dataMap['action'] = $action;
             $dataTr[$row['id']] = $dataMap;
         }
 
@@ -379,7 +382,7 @@ class AdminOrderController extends RootAdminController
             ['id' => gp247_uuid(),'code' => 'tax', 'value' => 0, 'title' => gp247_language_render('order.totals.tax'), 'sort' => ShopOrderTotal::POSITION_TAX, 'order_id' => $order->id],
             ['id' => gp247_uuid(),'code' => 'shipping', 'value' => 0, 'title' => gp247_language_render('order.totals.shipping'), 'sort' => ShopOrderTotal::POSITION_SHIPPING_METHOD, 'order_id' => $order->id],
             ['id' => gp247_uuid(),'code' => 'discount', 'value' => 0, 'title' => gp247_language_render('order.totals.discount'), 'sort' => ShopOrderTotal::POSITION_TOTAL_METHOD, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'other_fee', 'value' => 0, 'title' => config('cart.process.other_fee.title'), 'sort' => ShopOrderTotal::POSITION_OTHER_FEE, 'order_id' => $order->id],
+            ['id' => gp247_uuid(),'code' => 'other_fee', 'value' => 0, 'title' => gp247_language_render('order.totals.other_fee'), 'sort' => ShopOrderTotal::POSITION_OTHER_FEE, 'order_id' => $order->id],
             ['id' => gp247_uuid(),'code' => 'total', 'value' => 0, 'title' => gp247_language_render('order.totals.total'), 'sort' => ShopOrderTotal::POSITION_TOTAL, 'order_id' => $order->id],
             ['id' => gp247_uuid(),'code' => 'received', 'value' => 0, 'title' => gp247_language_render('order.totals.received'), 'sort' => ShopOrderTotal::POSITION_RECEIVED, 'order_id' => $order->id],
         ]);
@@ -513,7 +516,7 @@ class AdminOrderController extends RootAdminController
         $dataHistory = [
             'order_id' => $orderId,
             'content' => 'Change <b>' . $code . '</b> from <span style="color:blue">\'' . $oldValue . '\'</span> to <span style="color:red">\'' . $value . '\'</span>',
-            'admin_id' => Admin::user()->id,
+            'admin_id' => admin()->user()->id,
             'order_status_id' => $order->status,
         ];
         (new AdminOrder)->addOrderHistory($dataHistory);
@@ -591,7 +594,7 @@ class AdminOrderController extends RootAdminController
                 $dataHistory = [
                     'order_id' => $orderId,
                     'content' => "Add product: <br>" . implode("<br>", array_column($items, 'name')),
-                    'admin_id' => Admin::user()->id,
+                    'admin_id' => admin()->user()->id,
                     'order_status_id' => $order->status,
                 ];
                 (new AdminOrder)->addOrderHistory($dataHistory);
@@ -635,7 +638,7 @@ class AdminOrderController extends RootAdminController
             $dataHistory = [
                 'order_id' => $orderId,
                 'content' => gp247_language_render('product.edit_product') . ' #' . $id . ': ' . $field . ' from ' . $fieldOrg . ' -> ' . $value,
-                'admin_id' => Admin::user()->id,
+                'admin_id' => admin()->user()->id,
                 'order_status_id' => $order->status,
             ];
             (new AdminOrder)->addOrderHistory($dataHistory);
@@ -712,7 +715,7 @@ class AdminOrderController extends RootAdminController
             $dataHistory = [
                 'order_id' => $orderId,
                 'content' => 'Remove item pID#' . $pId,
-                'admin_id' => Admin::user()->id,
+                'admin_id' => admin()->user()->id,
                 'order_status_id' => $order->status,
             ];
             (new AdminOrder)->addOrderHistory($dataHistory);
@@ -754,7 +757,6 @@ class AdminOrderController extends RootAdminController
     public function invoice()
     {
         $orderId = request('order_id') ?? null;
-        $action = request('action') ?? '';
         $order = AdminOrder::getOrderAdmin($orderId);
         if ($order) {
             $data                    = array();
@@ -806,11 +808,6 @@ class AdminOrderController extends RootAdminController
                 }
             }
 
-            if ($action =='invoice_excel') {
-                $options = ['filename' => 'Order ' . $orderId];
-                return \Export::export($action, $data, $options);
-            }
-            
             return view('gp247-core::format.invoice')
             ->with($data);
         } else {

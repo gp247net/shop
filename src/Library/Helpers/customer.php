@@ -20,38 +20,21 @@ if (!function_exists('customer') && !in_array('customer', config('gp247_function
 if (!function_exists('gp247_customer_sendmail_reset_notification') && !in_array('gp247_customer_sendmail_reset_notification', config('gp247_functions_except', []))) {
     function gp247_customer_sendmail_reset_notification(string $token, string $emailReset)
     {
-        $checkContent = (new \GP247\Shop\Models\ShopEmailTemplate)->where('group', 'forgot_password')->where('status', 1)->first();
-        if ($checkContent) {
-            $content = $checkContent->text;
-            $dataFind = [
-                '/\{\{\$title\}\}/',
-                '/\{\{\$reason_sendmail\}\}/',
-                '/\{\{\$note_sendmail\}\}/',
-                '/\{\{\$note_access_link\}\}/',
-                '/\{\{\$reset_link\}\}/',
-                '/\{\{\$reset_button\}\}/',
-            ];
-            $url = gp247_route_front('password.reset', ['token' => $token]);
-            $dataReplace = [
-                gp247_language_render('email.forgot_password.title'),
-                gp247_language_render('email.forgot_password.reason_sendmail'),
-                gp247_language_render('email.forgot_password.note_sendmail', ['count' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire')]),
-                gp247_language_render('email.forgot_password.note_access_link', ['reset_button' => gp247_language_render('email.forgot_password.reset_button'), 'url' => $url]),
-                $url,
-                gp247_language_render('email.forgot_password.reset_button'),
-            ];
-            $content = preg_replace($dataFind, $dataReplace, $content);
+            $url = gp247_route_front('customer.password_reset', ['token' => $token]);
             $dataView = [
-                'content' => $content,
+                'title' => gp247_language_render('email.forgot_password.title'),
+                'reason_sendmail' => gp247_language_render('email.forgot_password.reason_sendmail'),
+                'note_sendmail' => gp247_language_render('email.forgot_password.note_sendmail', ['count' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire')]),
+                'note_access_link' => gp247_language_render('email.forgot_password.note_access_link', ['reset_button' => gp247_language_render('email.forgot_password.reset_button'), 'url' => $url]),
+                'reset_link' => $url,
+                'reset_button' => gp247_language_render('email.forgot_password.reset_button'),
             ];
-
+    
             $config = [
                 'to' => $emailReset,
                 'subject' => gp247_language_render('email.forgot_password.reset_button'),
             ];
-
-            gp247_mail_send('templates.' . gp247_store_info('template') . '.mail.forgot_password', $dataView, $config, $dataAtt = []);
-        }
+            gp247_mail_send('gp247-shop-front::email.forgot_password', $dataView, $config, $dataAtt = []);
     }
 }
 
@@ -62,6 +45,7 @@ if (!function_exists('gp247_customer_sendmail_reset_notification') && !in_array(
 if (!function_exists('gp247_customer_sendmail_verify') && !in_array('gp247_customer_sendmail_verify', config('gp247_functions_except', []))) {
     function gp247_customer_sendmail_verify(string $emailVerify, string $userId)
     {
+
         $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
             'customer.verify_process',
             \Carbon\Carbon::now()->addMinutes(config('auth.verification', 60)),
@@ -71,38 +55,21 @@ if (!function_exists('gp247_customer_sendmail_verify') && !in_array('gp247_custo
             ]
         );
 
-        $checkContent = (new \GP247\Shop\Models\ShopEmailTemplate)->where('group', 'customer_verify')->where('status', 1)->first();
-        if ($checkContent) {
-            $content = $checkContent->text;
-            $dataFind = [
-                '/\{\{\$title\}\}/',
-                '/\{\{\$reason_sendmail\}\}/',
-                '/\{\{\$note_sendmail\}\}/',
-                '/\{\{\$note_access_link\}\}/',
-                '/\{\{\$url_verify\}\}/',
-                '/\{\{\$button\}\}/',
-            ];
-            $dataReplace = [
-                gp247_language_render('email.verification_content.title'),
-                gp247_language_render('email.verification_content.reason_sendmail'),
-                gp247_language_render('email.verification_content.note_sendmail', ['count' => config('auth.verification')]),
-                gp247_language_render('email.verification_content.note_access_link', ['reset_button' => gp247_language_render('customer.verify_email.button_verify'), 'url' => $url]),
-                $url,
-                gp247_language_render('customer.verify_email.button_verify'),
-            ];
-            $content = preg_replace($dataFind, $dataReplace, $content);
-            $dataView = [
-                'content' => $content,
-            ];
+        $dataView = [
+            'title' => gp247_language_render('email.verification_content.title'),
+            'reason_sendmail' => gp247_language_render('email.verification_content.reason_sendmail'),
+            'note_sendmail' => gp247_language_render('email.verification_content.note_sendmail', ['count' => config('auth.verification')]),
+            'note_access_link' => gp247_language_render('email.verification_content.note_access_link', ['reset_button' => gp247_language_render('customer.verify_email.button_verify'), 'url' => $url]),
+            'url_verify' => $url,
+            'button' => gp247_language_render('customer.verify_email.button_verify'),
+        ];
 
-            $config = [
-                'to' => $emailVerify,
-                'subject' => gp247_language_render('customer.verify_email.button_verify'),
-            ];
-
-            gp247_mail_send('templates.' . gp247_store_info('template') . '.mail.customer_verify', $dataView, $config, $dataAtt = []);
-            return true;
-        }
+        $config = [
+            'to' => $emailVerify,
+            'subject' => gp247_language_render('customer.verify_email.button_verify'),
+        ];
+        gp247_mail_send('gp247-shop-front::email.customer_verify', $dataView, $config, $dataAtt = []);
+        return true;
     }
 }
 
@@ -110,48 +77,20 @@ if (!function_exists('gp247_customer_sendmail_verify') && !in_array('gp247_custo
  * Send email welcome
  */
 if (!function_exists('gp247_customer_sendmail_welcome') && !in_array('gp247_customer_sendmail_welcome', config('gp247_functions_except', []))) {
-    function gp247_customer_sendmail_welcome(array $data)
+    function gp247_customer_sendmail_welcome(ShopCustomer $customer)
     {
         if (gp247_config('welcome_customer')) {
-            $checkContent = (new \GP247\Shop\Models\ShopEmailTemplate)->where('group', 'welcome_customer')->where('status', 1)->first();
-            if ($checkContent) {
-                $content = $checkContent->text;
-                $dataFind = [
-                    '/\{\{\$title\}\}/',
-                    '/\{\{\$first_name\}\}/',
-                    '/\{\{\$last_name\}\}/',
-                    '/\{\{\$email\}\}/',
-                    '/\{\{\$phone\}\}/',
-                    '/\{\{\$password\}\}/',
-                    '/\{\{\$address1\}\}/',
-                    '/\{\{\$address2\}\}/',
-                    '/\{\{\$address3\}\}/',
-                    '/\{\{\$country\}\}/',
-                ];
-                $dataReplace = [
-                    gp247_language_render('email.welcome_customer.title'),
-                    $data['first_name'] ?? '',
-                    $data['last_name'] ?? '',
-                    $data['email'] ?? '',
-                    $data['phone'] ?? '',
-                    $data['password'] ?? '',
-                    $data['address1'] ?? '',
-                    $data['address2'] ?? '',
-                    $data['address3'] ?? '',
-                    $data['country'] ?? '',
-                ];
-                $content = preg_replace($dataFind, $dataReplace, $content);
                 $dataView = [
-                    'content' => $content,
+                    'title' => gp247_language_render('email.welcome_customer.title'),
+                    'first_name' => $customer['first_name'],
+                    'last_name' => $customer['last_name'],
                 ];
-
                 $config = [
-                    'to' => $data['email'],
+                    'to' => $customer['email'],
                     'subject' => gp247_language_render('email.welcome_customer.title'),
                 ];
 
-                gp247_mail_send('templates.' . gp247_store_info('template') . '.mail.welcome_customer', $dataView, $config, []);
-            }
+                gp247_mail_send('gp247-shop-front::email.welcome_customer', $dataView, $config, $dataAtt = []);      
         }
     }
 }
@@ -673,10 +612,10 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
  * Process after customer created by client
  */
 if (!function_exists('gp247_customer_created_by_client') && !in_array('gp247_customer_created_by_client', config('gp247_functions_except', []))) {
-    function gp247_customer_created_by_client(ShopCustomer $user, array $dataMap)
+    function gp247_customer_created_by_client(ShopCustomer $user)
     {
         //Send email welcome
-        gp247_customer_sendmail_welcome($dataMap);
+        gp247_customer_sendmail_welcome($user);
 
         //Send email verify
         $user->sendEmailVerify();
@@ -687,7 +626,7 @@ if (!function_exists('gp247_customer_created_by_client') && !in_array('gp247_cus
  * Process after customer created by admin
  */
 if (!function_exists('gp247_customer_created_by_admin') && !in_array('gp247_customer_created_by_admin', config('gp247_functions_except', []))) {
-    function gp247_customer_created_by_admin(ShopCustomer $user, array $dataMap)
+    function gp247_customer_created_by_admin(ShopCustomer $user)
     {
         //
     }

@@ -379,6 +379,8 @@ class ShopOrder extends Model
                         $query = $query->sort($rowSort[0], $rowSort[1]);
                     }
                 }
+            } else {
+                $query = $query->orderBy('created_at', 'desc');
             }
         }
 

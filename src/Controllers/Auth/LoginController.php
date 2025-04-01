@@ -125,6 +125,10 @@ class LoginController extends RootFrontController
     {
         if (customer()->user()) {
             session(['customer' => customer()->user()->toJson()]);
+            // Merge cart after login
+            gp247_cart()->syncCartAfterLogin(customer()->user()->id);
+            gp247_cart('compare')->syncCartAfterLogin(customer()->user()->id);
+            gp247_cart('wishlist')->syncCartAfterLogin(customer()->user()->id);
         } else {
             session(['customer' => []]);
         }

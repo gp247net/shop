@@ -5,6 +5,7 @@ namespace GP247\Shop\Controllers\Auth;
 use GP247\Front\Controllers\RootFrontController;
 use Auth;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
+use Illuminate\Support\Facades\Password;
 
 class ForgotPasswordController extends RootFrontController
 {
@@ -121,5 +122,20 @@ class ForgotPasswordController extends RootFrontController
                 ],
             )
         );
+    }
+
+    /**
+     * Get the guard to be used during authentication.
+     *
+     * @return \Illuminate\Contracts\Auth\StatefulGuard
+     */
+    protected function guard()
+    {
+        return Auth::guard('customer');
+    }
+
+    protected function broker()
+    {
+        return Password::broker('customer_password');
     }
 }

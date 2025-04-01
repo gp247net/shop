@@ -87,7 +87,7 @@ class AdminCustomerController extends RootFrontController
         $dataMap = $this->mappingValidator($data);
         $user = ShopCustomer::createCustomer($dataMap['dataInsert']);
         if ($user) {
-            gp247_customer_created_by_admin($user, $dataMap['dataInsert']);
+            gp247_customer_created_by_admin($user);
         }
         return $user;
     }

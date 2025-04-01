@@ -11,6 +11,7 @@ $layout_page = shop_product_detail
 
 {{-- block_main --}}
 @section('block_main_content_center')
+<div class="col-lg-9 col-xl-9">
 @php
     $countItem = 0
 @endphp
@@ -260,7 +261,7 @@ $layout_page = shop_product_detail
         </div>
       </section>
       @endif
-
+</div>
 <!--/product-details-->
 @endsection
 {{-- block_main --}}

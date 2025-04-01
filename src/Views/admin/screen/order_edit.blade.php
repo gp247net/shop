@@ -21,18 +21,18 @@
             <div class="col-sm-6">
                  <table class="table table-hover box-body text-wrap table-bordered">
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.first_name') }}:</td><td><a href="#" class="updateInfoRequired" data-name="first_name" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.first_name') }}" >{!! $order->first_name !!}</a></td>
+                      <td class="td-title">{{ gp247_language_render('order.first_name') }}:</td><td><a href="#" class="updateInfoRequired" data-name="first_name" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.first_name') }}" >{!! $order->first_name !!}</a></td>
                     </tr>
 
                     @if (gp247_config_admin('customer_lastname'))
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.last_name') }}:</td><td><a href="#" class="updateInfoRequired" data-name="last_name" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.last_name') }}" >{!! $order->last_name !!}</a></td>
+                      <td class="td-title">{{ gp247_language_render('order.last_name') }}:</td><td><a href="#" class="updateInfoRequired" data-name="last_name" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.last_name') }}" >{!! $order->last_name !!}</a></td>
                     </tr>
                     @endif
 
                     @if (gp247_config_admin('customer_phone'))
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.phone') }}:</td><td><a href="#" class="updateInfoRequired" data-name="phone" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.phone') }}" >{!! $order->phone !!}</a></td>
+                      <td class="td-title">{{ gp247_language_render('order.phone') }}:</td><td><a href="#" class="updateInfoRequired" data-name="phone" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.phone') }}" >{!! $order->phone !!}</a></td>
                     </tr>
                     @endif
 
@@ -42,35 +42,35 @@
 
                     @if (gp247_config_admin('customer_company'))
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.company') }}:</td><td><a href="#" class="updateInfoRequired" data-name="company" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.company') }}" >{!! $order->company !!}</a></td>
+                      <td class="td-title">{{ gp247_language_render('order.company') }}:</td><td><a href="#" class="updateInfoRequired" data-name="company" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.company') }}" >{!! $order->company !!}</a></td>
                     </tr>
                     @endif
 
                     @if (gp247_config_admin('customer_postcode'))
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.postcode') }}:</td><td><a href="#" class="updateInfoRequired" data-name="postcode" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.postcode') }}" >{!! $order->postcode !!}</a></td>
+                      <td class="td-title">{{ gp247_language_render('order.postcode') }}:</td><td><a href="#" class="updateInfoRequired" data-name="postcode" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.postcode') }}" >{!! $order->postcode !!}</a></td>
                     </tr>
                     @endif
 
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.address1') }}:</td><td><a href="#" class="updateInfoRequired" data-name="address1" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.address1') }}" >{!! $order->address1 !!}</a></td>
+                      <td class="td-title">{{ gp247_language_render('order.address1') }}:</td><td><a href="#" class="updateInfoRequired" data-name="address1" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.address1') }}" >{!! $order->address1 !!}</a></td>
                     </tr>
 
                     @if (gp247_config_admin('customer_address2'))
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.address2') }}:</td><td><a href="#" class="updateInfoRequired" data-name="address2" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.address2') }}" >{!! $order->address2 !!}</a></td>
+                      <td class="td-title">{{ gp247_language_render('order.address2') }}:</td><td><a href="#" class="updateInfoRequired" data-name="address2" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.address2') }}" >{!! $order->address2 !!}</a></td>
                     </tr>
                     @endif
 
                     @if (gp247_config_admin('customer_address3'))
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.address3') }}:</td><td><a href="#" class="updateInfoRequired" data-name="address3" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.address3') }}" >{!! $order->address3 !!}</a></td>
+                      <td class="td-title">{{ gp247_language_render('order.address3') }}:</td><td><a href="#" class="updateInfoRequired" data-name="address3" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.address3') }}" >{!! $order->address3 !!}</a></td>
                     </tr>
                     @endif
 
                     @if (gp247_config_admin('customer_country'))
                     <tr>
-                      <td class="td-title">{{ gp247_language_render('order.country') }}:</td><td><a href="#" class="updateInfoRequired" data-name="country" data-type="select" data-source ="{{ json_encode($country) }}" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.country') }}" data-value="{!! $order->country !!}"></a></td>
+                      <td class="td-title">{{ gp247_language_render('order.country') }}:</td><td><a href="#" class="updateInfoRequired" data-name="country" data-type="select" data-source ="{{ json_encode($country) }}" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.country') }}" data-value="{!! $order->country !!}"></a></td>
                     </tr>
                     @endif
 
@@ -78,13 +78,13 @@
             </div>
             <div class="col-sm-6">
                 <table  class="table table-bordered">
-                    <tr><td  class="td-title">{{ gp247_language_render('order.order_status') }}:</td><td><a href="#" class="updateStatus" data-name="status" data-type="select" data-source ="{{ json_encode($statusOrder) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->status !!}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.order_status') }}">{{ $statusOrder[$order->status] ?? $order->status }}</a></td></tr>
-                    <tr><td>{{ gp247_language_render('order.shipping_status') }}:</td><td><a href="#" class="updateStatus" data-name="shipping_status" data-type="select" data-source ="{{ json_encode($statusShipping) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->shipping_status !!}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.shipping_status') }}">{{ $statusShipping[$order->shipping_status]??$order->shipping_status }}</a></td></tr>
-                    <tr><td>{{ gp247_language_render('order.payment_status') }}:</td><td><a href="#" class="updateStatus" data-name="payment_status" data-type="select" data-source ="{{ json_encode($statusPayment) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->payment_status !!}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.payment_status') }}">{{ $statusPayment[$order->payment_status]??$order->payment_status }}</a></td></tr>
-                    <tr><td>{{ gp247_language_render('order.shipping_method') }}:</td><td><a href="#" class="updateStatus" data-name="shipping_method" data-type="select" data-source ="{{ json_encode($shippingMethod) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->shipping_method !!}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.shipping_method') }}">{{ $order->shipping_method }}</a></td></tr>
-                    <tr><td>{{ gp247_language_render('order.payment_method') }}:</td><td><a href="#" class="updateStatus" data-name="payment_method" data-type="select" data-source ="{{ json_encode($paymentMethod) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->payment_method !!}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.payment_method') }}">{{ $order->payment_method }}</a></td></tr>
-                    <tr><td>{{ gp247_language_render('order.domain') }}:</td><td>{{ $order->domain }}</td></tr>
-                    <tr><td></i> {{ gp247_language_render('admin.created_at') }}:</td><td>{{ $order->created_at }}</td></tr>
+                    <tr><td class="td-title">{{ gp247_language_render('order.order_status') }}:</td><td><a href="#" class="updateStatus" data-name="status" data-type="select" data-source ="{{ json_encode($statusOrder) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->status !!}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.order_status') }}">{{ $statusOrder[$order->status] ?? $order->status }}</a></td></tr>
+                    <tr><td class="td-title">{{ gp247_language_render('order.shipping_status') }}:</td><td><a href="#" class="updateStatus" data-name="shipping_status" data-type="select" data-source ="{{ json_encode($statusShipping) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->shipping_status !!}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.shipping_status') }}">{{ $statusShipping[$order->shipping_status]??$order->shipping_status }}</a></td></tr>
+                    <tr><td class="td-title">{{ gp247_language_render('order.payment_status') }}:</td><td><a href="#" class="updateStatus" data-name="payment_status" data-type="select" data-source ="{{ json_encode($statusPayment) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->payment_status !!}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.payment_status') }}">{{ $statusPayment[$order->payment_status]??$order->payment_status }}</a></td></tr>
+                    <tr><td class="td-title">{{ gp247_language_render('order.shipping_method') }}:</td><td><a href="#" class="updateStatus" data-name="shipping_method" data-type="select" data-source ="{{ json_encode($shippingMethod) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->shipping_method !!}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.shipping_method') }}">{{ $order->shipping_method }}</a></td></tr>
+                    <tr><td class="td-title">{{ gp247_language_render('order.payment_method') }}:</td><td><a href="#" class="updateStatus" data-name="payment_method" data-type="select" data-source ="{{ json_encode($paymentMethod) }}"  data-pk="{{ $order->id }}" data-value="{!! $order->payment_method !!}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.payment_method') }}">{{ $order->payment_method }}</a></td></tr>
+                    <tr><td class="td-title">{{ gp247_language_render('order.domain') }}:</td><td>{{ $order->domain }}</td></tr>
+                    <tr><td class="td-title"></i> {{ gp247_language_render('admin.created_at') }}:</td><td>{{ $order->created_at }}</td></tr>
                   </table>
                  <table class="table table-hover box-body text-wrap table-bordered">
                     <tr>
@@ -144,10 +144,10 @@
                             {!! $html !!}
                             </td>
                             <td>{{ $item->sku }}</td>
-                            <td class="product_price"><a href="#" class="edit-item-detail" data-value="{{ $item->price }}" data-name="price" data-type="text" min=0 data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin("admin_order.edit_item") }}" data-title="{{ gp247_language_render('product.price') }}">{{ $item->price }}</a></td>
-                            <td class="product_qty">x <a href="#" class="edit-item-detail" data-value="{{ $item->qty }}" data-name="qty" data-type="number" min=0 data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin("admin_order.edit_item") }}" data-title="{{ gp247_language_render('order.qty') }}"> {{ $item->qty }}</a></td>
+                            <td class="product_price"><a href="#" class="edit-item-detail" data-value="{{ $item->price }}" data-name="price" data-type="text" min=0 data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin("admin_order.post_edit_item") }}" data-title="{{ gp247_language_render('product.price') }}">{{ $item->price }}</a></td>
+                            <td class="product_qty">x <a href="#" class="edit-item-detail" data-value="{{ $item->qty }}" data-name="qty" data-type="number" min=0 data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin("admin_order.post_edit_item") }}" data-title="{{ gp247_language_render('order.qty') }}"> {{ $item->qty }}</a></td>
                             <td class="product_total item_id_{{ $item->id }}">{{ gp247_currency_render_symbol($item->total_price,$order->currency)}}</td>
-                            <td class="product_tax"><a href="#" class="edit-item-detail" data-value="{{ $item->tax }}" data-name="tax" data-type="text" min=0 data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin("admin_order.edit_item") }}" data-title="{{ gp247_language_render('order.tax') }}"> {{ $item->tax }}</a></td>
+                            <td class="product_tax"><a href="#" class="edit-item-detail" data-value="{{ $item->tax }}" data-name="tax" data-type="text" min=0 data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin("admin_order.post_edit_item") }}" data-title="{{ gp247_language_render('order.tax') }}"> {{ $item->tax }}</a></td>
                             <td>
                                 <span  onclick="deleteItem({{ $item->id }});" class="btn btn-danger btn-xs" data-title="Delete"><i class="fa fa-trash" aria-hidden="true"></i></span>
                             </td>
@@ -183,20 +183,20 @@
                     @endif
 
                     @if ($element['code'] =='shipping')
-                      <tr><td>{!! $element['title'] !!}:</td><td style="text-align:right"><a href="#" class="updatePrice data-{{ $element['code'] }}"  data-name="{{ $element['code'] }}" data-type="text" data-pk="{{ $element['id'] }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.totals.shipping') }}">{{$element['value'] }}</a></td></tr>
+                      <tr><td>{!! $element['title'] !!}:</td><td style="text-align:right"><a href="#" class="updatePrice data-{{ $element['code'] }}"  data-name="{{ $element['code'] }}" data-type="text" data-pk="{{ $element['id'] }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.totals.shipping') }}">{{$element['value'] }}</a></td></tr>
                     @endif
                     @if ($element['code'] =='discount')
-                      <tr><td>{!! $element['title'] !!}(-):</td><td style="text-align:right"><a href="#" class="updatePrice data-{{ $element['code'] }}" data-name="{{ $element['code'] }}" data-type="text" data-pk="{{ $element['id'] }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.totals.discount') }}">{{$element['value'] }}</a></td></tr>
+                      <tr><td>{!! $element['title'] !!}(-):</td><td style="text-align:right"><a href="#" class="updatePrice data-{{ $element['code'] }}" data-name="{{ $element['code'] }}" data-type="text" data-pk="{{ $element['id'] }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.totals.discount') }}">{{$element['value'] }}</a></td></tr>
                     @endif
                     @if ($element['code'] =='other_fee')
-                      <tr><td>{!! $element['title'] !!}:</td><td style="text-align:right"><a href="#" class="updatePrice data-{{ $element['code'] }}" data-name="{{ $element['code'] }}" data-type="text" data-pk="{{ $element['id'] }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ config('cart.process.other_fee.title') }}">{{$element['value'] }}</a></td></tr>
+                      <tr><td>{!! $element['title'] !!}:</td><td style="text-align:right"><a href="#" class="updatePrice data-{{ $element['code'] }}" data-name="{{ $element['code'] }}" data-type="text" data-pk="{{ $element['id'] }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ config('cart.process.other_fee.title') }}">{{$element['value'] }}</a></td></tr>
                     @endif
                      @if ($element['code'] =='total')
                       <tr style="background:#f5f3f3;font-weight: bold;"><td>{!! $element['title'] !!}:</td><td style="text-align:right" class="data-{{ $element['code'] }}">{{ gp247_currency_format($element['value']) }}</td></tr>
                     @endif
 
                     @if ($element['code'] =='received')
-                      <tr><td>{!! $element['title'] !!}(-):</td><td style="text-align:right"><a href="#" class="updatePrice data-{{ $element['code'] }}" data-name="{{ $element['code'] }}" data-type="text" data-pk="{{ $element['id'] }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="{{ gp247_language_render('order.totals.received') }}">{{$element['value'] }}</a></td></tr>
+                      <tr><td>{!! $element['title'] !!}(-):</td><td style="text-align:right"><a href="#" class="updatePrice data-{{ $element['code'] }}" data-name="{{ $element['code'] }}" data-type="text" data-pk="{{ $element['id'] }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="{{ gp247_language_render('order.totals.received') }}">{{$element['value'] }}</a></td></tr>
                     @endif
 
                   @endforeach
@@ -215,7 +215,7 @@
                 <tr>
                   <td  class="td-title">{{ gp247_language_render('order.order_note') }}:</td>
                   <td>
-                    <a href="#" class="updateInfo" data-name="comment" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.update") }}" data-title="" >
+                    <a href="#" class="updateInfo" data-name="comment" data-type="text" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin("admin_order.post_update") }}" data-title="" >
                       {{ $order->comment }}
                     </a>
                 </td>
@@ -323,15 +323,15 @@
 
 </style>
 <!-- Ediable -->
-<link rel="stylesheet" href="{{ gp247_file('admin/plugin/bootstrap-editable.css')}}">
+<link rel="stylesheet" href="{{ gp247_file('GP247/Core/plugin/bootstrap-editable.css')}}">
 @endpush
 
 @push('scripts')
 {{-- //Pjax --}}
-<script src="{{ gp247_file('admin/plugin/jquery.pjax.js')}}"></script>
+<script src="{{ gp247_file('GP247/Core/plugin/jquery.pjax.js')}}"></script>
 
 <!-- Ediable -->
-<script src="{{ gp247_file('admin/plugin/bootstrap-editable.min.js')}}"></script>
+<script src="{{ gp247_file('GP247/Core/plugin/bootstrap-editable.min.js')}}"></script>
 
 
 
@@ -391,7 +391,7 @@ $('#add-item-button-save').click(function(event) {
     $('#add-item-button').prop('disabled', true);
     $('#add-item-button-save').button('loading');
     $.ajax({
-        url:'{{ gp247_route_admin("admin_order.add_item") }}',
+        url:'{{ gp247_route_admin("admin_order.post_add_item") }}',
         type:'post',
         dataType:'json',
         data:$('form#form-add-item').serialize(),
@@ -560,7 +560,7 @@ function deleteItem(id){
         return new Promise(function(resolve) {
             $.ajax({
                 method: 'POST',
-                url: '{{ gp247_route_admin("admin_order.delete_item") }}',
+                url: '{{ gp247_route_admin("admin_order.post_delete_item") }}',
                 data: {
                   'pId':id,
                     _token: '{{ csrf_token() }}',

@@ -1114,9 +1114,9 @@ class ShopCartController extends RootFrontController
         gp247_event_order_success($order = ShopOrder::find($orderID));
 
         // Process after order compled: send mail, data response ...
-        $dataResponse = $this->processAfterOrderSuccess($orderID);
+        $this->processAfterOrderSuccess($orderID);
 
-        return redirect(gp247_route_front('order.success'))->with($dataResponse);
+        return redirect(gp247_route_front('order.success'))->with(['orderID' => $orderID]);
     }
 
 
@@ -1208,12 +1208,11 @@ class ShopCartController extends RootFrontController
      *
      * @param   string  $orderID  [$orderID description]
      *
-     * @return  array            [return description]
      */
     private function processAfterOrderSuccess (string $orderID)
     {
         //Clear session
         $this->clearSession();
-        return gp247_order_process_after_success($orderID);
+        gp247_order_process_after_success($orderID);
     }
 }

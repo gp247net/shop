@@ -17,7 +17,7 @@ $email
             <div class="card">
 
                 <div class="card-body">
-                    <form method="POST" action="{{ gp247_route_front('password.request') }}" aria-label="{{ gp247_language_render('customer.password_reset') }}">
+                    <form method="POST" action="{{ gp247_route_front('customer.password_request') }}" aria-label="{{ gp247_language_render('customer.password_reset') }}">
                         @csrf
 
                         <input type="hidden" name="token" value="{{ $token }}">

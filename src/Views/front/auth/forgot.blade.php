@@ -13,7 +13,7 @@ $layout_page = shop_auth
         <div class="col-12 col-sm-12">
             <h2>{{ gp247_language_render('customer.password_forgot') }}</h2>
 
-            <form class="form-horizontal" method="POST" action="{{ gp247_route_front('customer.password.email') }}" id="gp247_form-process">
+            <form class="form-horizontal" method="POST" action="{{ gp247_route_front('customer.password_email') }}" id="gp247_form-process">
                 {{ csrf_field() }}
                 <div class="form-group{{ $errors->has('email') ? ' has-error' : '' }}">
                     <label for="email" class="col-md-12 control-label"><i class="fas fa-envelope"></i>

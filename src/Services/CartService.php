@@ -400,4 +400,68 @@ class CartService
         $this->removeDatabase($identifier);
         $this->saveDatabase($identifier);
     }
+
+    /**
+     * Sync cart data after user login
+     * 
+     * @param int $userId User ID after login
+     * @return void
+     */
+    public function syncCartAfterLogin($userId)
+    {
+        // Get cart data from database
+        $dbCart = ShopCart::where('identifier', $userId)
+            ->where('instance', $this->currentInstance())
+            ->where('store_id', config('app.storeId'))
+            ->first();
+
+        if ($dbCart) {
+            // If user has cart in database, merge with current session cart
+            $dbContent = collect(json_decode($dbCart->content, true));
+            $sessionContent = $this->getContent();
+
+            // Merge products from both carts
+            $mergedContent = new Collection();
+            
+            // Add items from database cart
+            foreach ($dbContent as $item) {
+                $product = \GP247\Shop\Models\ShopProduct::where('id', $item['id'])
+                    ->where('status', 1)
+                    ->where('approve', 1)
+                    ->first();
+                    
+                if ($product) {
+                    $cartItem = CartItem::fromArray($item);
+                    $cartItem->setQuantity($item['qty']);
+                    $mergedContent->put($cartItem->rowId, $cartItem);
+                }
+            }
+
+            // Add or update items from session cart
+            foreach ($sessionContent as $item) {
+                $product = \GP247\Shop\Models\ShopProduct::where('id', $item->id)
+                    ->where('status', 1)
+                    ->where('approve', 1)
+                    ->first();
+                    
+                if ($product) {
+                    if ($mergedContent->has($item->rowId)) {
+                        // If item exists in both carts, add quantities
+                        $mergedContent->get($item->rowId)->qty += $item->qty;
+                    } else {
+                        $mergedContent->put($item->rowId, $item);
+                    }
+                }
+            }
+
+            // Update session with merged content
+            session([$this->instance => $mergedContent]);
+            
+            // Update database
+            $this->_updateDatabase($userId);
+        } else {
+            // If no database cart, just save current session cart
+            $this->_updateDatabase($userId);
+        }
+    }
 }

@@ -136,7 +136,7 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
                                                     <label class="radio-inline">
                                                         <img title="{{ $paymentMethodData['title'] }}"
                                                             alt="{{ $paymentMethodData['title'] }}"
-                                                            src="{{ gp247_file($paymentMethodData['image']) }}"
+                                                            src="{{ gp247_file('GP247/'.$paymentMethodData['image']) }}"
                                                             style="width: 120px;">
                                                     </label>
                                                 </div>

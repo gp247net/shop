@@ -13,6 +13,7 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
 
 {{-- block_main_content_center --}}
 @section('block_main_content_center')
+<div class="col-lg-9 col-xl-9">
   {{-- sub category --}}
   @isset ($subCategory)
     @if($subCategory->count())
@@ -56,8 +57,6 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
       @include($view, ['filterSort' => $filter_sort])
       <!--// Render include filter sort -->
     </div>
-
-
     <!-- Product list -->
     <div class="row row-30 row-lg-50">
       @foreach ($products as $key => $product)
@@ -81,7 +80,7 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
     <p style="text-align:center">{!! gp247_language_render('front.no_item') !!}</p>
   </div>
   @endif
-
+</div>
 @endsection
 {{-- //block_main_content_center --}}
 
