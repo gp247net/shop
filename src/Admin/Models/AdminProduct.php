@@ -86,7 +86,6 @@ class AdminProduct extends ShopProduct
                     ->orWhere($tableProduct . '.sku', 'like', '%' . $keyword . '%');
             });
         }
-        $productList->groupBy($tableProduct.'.id', $tableDescription.'.name', $tableDescription.'.keyword', $tableDescription.'.description');
 
         if ($sort_order && array_key_exists($sort_order, $arrSort)) {
             $field = explode('__', $sort_order)[0];

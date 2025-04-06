@@ -1119,6 +1119,18 @@ class ShopCartController extends RootFrontController
         return redirect(gp247_route_front('order.success'))->with(['orderID' => $orderID]);
     }
 
+    /**
+     * Cancel order
+     */
+    public function cancelOrder()
+    {
+        $orderID = session('orderID', null);
+        \GP247\Shop\Models\ShopOrder::where('id', $orderID)->update(['status' => 4]);
+        //Clear session
+        $this->clearSession();
+        return redirect()->route('front.home')->with('error', 'Payment cancelled');
+    }
+
 
     /**
      * Process front page order success

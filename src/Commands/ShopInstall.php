@@ -35,7 +35,8 @@ class ShopInstall extends Command
         
         // Install gp247 shop
         \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '00_00_00_create_tables_shop')->delete();
-        $this->call('migrate', ['--path' => '/vendor/GP247/Shop/src/DB/migrations/00_00_00_create_tables_shop.php']);
+
+        $this->call('migrate', ['--path' => '/vendor/gp247/shop/src/DB/migrations/00_00_00_create_tables_shop.php']);
         $this->info('---------------> Migrate schema Shop default done!');
 
         $this->call('db:seed', ['--class' => '\GP247\Shop\DB\seeders\DataShopDefaultSeeder', '--force' => true]);

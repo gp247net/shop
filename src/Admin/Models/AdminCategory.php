@@ -61,7 +61,6 @@ class AdminCategory extends ShopCategory
         } else {
             $categoryList = $categoryList->sort('created_at', 'desc');
         }
-        $categoryList->groupBy($tableCategory.'.id',$tableDescription.'.title',$tableDescription.'.keyword',$tableDescription.'.description');
 
         $categoryList = $categoryList->paginate(20);
 
