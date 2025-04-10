@@ -212,6 +212,7 @@ class AdminOrderStatusController extends RootAdminController
             '4' => 'Canceled',
             '5' => 'Done',
             '6' => 'Failed',
+            '7' => 'Refunded',
         ];
     }
 }

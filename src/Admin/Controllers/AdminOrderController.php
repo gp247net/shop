@@ -69,7 +69,9 @@ class AdminOrderController extends RootAdminController
             'tax'            => gp247_language_render('order.tax'),
             'total'          => '<i class="fas fa-coins" aria-hidden="true" title="'.gp247_language_render('order.total').'"></i>',
             'payment_method' => '<i class="fa fa-credit-card" aria-hidden="true" title="'.gp247_language_render('admin.order.payment_method_short').'"></i>',
-            'status'         => gp247_language_render('admin.order.status'),
+            'payment_status' => gp247_language_render('order.payment_status'),
+            'shipping_status'=> gp247_language_render('order.shipping_status'),
+            'status'         => gp247_language_render('order.status'),
         ];
         if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
             // Only show store info if store is root
@@ -126,6 +128,8 @@ class AdminOrderController extends RootAdminController
                 'tax'            => gp247_currency_render_symbol($row['tax'] ?? 0, $row['currency']),
                 'total'          => gp247_currency_render_symbol($row['total'] ?? 0, $row['currency']),
                 'payment_method' => $row['payment_method'].'<br>('.$row['currency'] . '/' . $row['exchange_rate'].')',
+                'payment_status' => $this->statusPayment[$row['payment_status']] ?? $row['payment_status'],
+                'shipping_status'=> $this->statusShipping[$row['shipping_status']] ?? $row['shipping_status'],
                 'status'         => $styleStatus[$row['status']] ?? $row['status'],
             ];
             if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {

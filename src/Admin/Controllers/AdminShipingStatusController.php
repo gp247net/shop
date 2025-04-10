@@ -207,6 +207,7 @@ class AdminShipingStatusController extends RootAdminController
             '1' => 'Not sent',
             '2' => 'Sending',
             '3' => 'Shipping done',
+            '4' => 'Refunded',
         ];
     }
 }

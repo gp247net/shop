@@ -1597,6 +1597,7 @@ class DataShopDefaultSeeder extends Seeder
             ['id' => '1','name' => 'Not sent'],
             ['id' => '2','name' => 'Sending'],
             ['id' => '3','name' => 'Shipping done'],
+            ['id' => '4','name' => 'Refunded'],
         ];
         return $dataShippingStatus;
     }
@@ -1618,6 +1619,7 @@ class DataShopDefaultSeeder extends Seeder
             ['id' => '4','name' => 'Canceled'],
             ['id' => '5','name' => 'Done'],
             ['id' => '6','name' => 'Failed'],
+            ['id' => '7','name' => 'Refunded'],
         ];
         return $dataOrderStatus;
     }
