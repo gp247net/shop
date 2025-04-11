@@ -82,6 +82,24 @@ composer create-project s-cart/s-cart
 <img src="https://static.s-cart.org/guide/use/common/shop.jpg">
 <img src="https://static.s-cart.org/guide/use/common/dashboard.jpg">
 
+## Customization
+
+### Admin Views Customization
+To customize admin views, run the following command:
+```bash
+php artisan vendor:publish --tag=gp247:view-shop-admin
+```
+The views will be published to `resources/views/vendor/gp247-shop-admin`
+
+### Front Views Customization
+To customize and update front views, run:
+```bash
+php artisan vendor:publish --tag=gp247:view-shop-admin
+```
+The views will be stored in `app/GP247/Templates/Default`
+
+If you are not using the `Default` template, you need to manually copy the views from `vendor/gp247/shop/Views/front` to your new template directory.
+
 ## Documentation
 - For complete GP247 system documentation, visit [https://gp247.net](https://gp247.net)
 - For specific e-commerce features documentation, visit [https://s-cart.org](https://s-cart.org)

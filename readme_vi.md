@@ -77,12 +77,29 @@ composer require GP247/Shop
 Bạn có thể sử dụng mã nguồn s-cart đầy đủ đã bao gồm tất cả các thành phần cần thiết:
 ```bash
 composer create-project s-cart/s-cart
-```
+``` 
 
 <img src="https://static.s-cart.org/guide/info/s-cart-content.jpg">
 <img src="https://static.s-cart.org/guide/use/common/shop.jpg">
 <img src="https://static.s-cart.org/guide/use/common/dashboard.jpg">
 
+## Tùy chỉnh
+
+### Tùy chỉnh giao diện Admin
+Để tùy chỉnh giao diện admin, chạy lệnh sau:
+```bash
+php artisan vendor:publish --tag=gp247:view-shop-admin
+```
+Các view sẽ được lưu trữ tại `resources/views/vendor/gp247-shop-admin`
+
+### Tùy chỉnh giao diện Front
+Để tùy chỉnh và cập nhật giao diện front, chạy lệnh:
+```bash
+php artisan vendor:publish --tag=gp247:view-shop-admin
+```
+Các view sẽ được lưu trữ tại `app/GP247/Templates/Default`
+
+Trường hợp bạn không sử dụng template `Default`, vui lòng copy thủ công các view từ `vendor/gp247/shop/Views/front` tới view mới.
 
 ## Tài liệu
 - Để xem tài liệu đầy đủ về hệ thống GP247, truy cập [https://gp247.net](https://gp247.net)
