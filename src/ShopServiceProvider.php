@@ -26,7 +26,7 @@ class ShopServiceProvider extends ServiceProvider
             if (!is_dir($directory = app_path('GP247/Shop/Controllers'))) {
                 mkdir($directory, 0777, true);
             }
-            if (!is_dir($directory = app_path('GP247/Shop/Controllers/Admin'))) {
+            if (!is_dir($directory = app_path('GP247/Shop/Admin/Controllers'))) {
                 mkdir($directory, 0777, true);
             }
         } catch (\Throwable $e) {
