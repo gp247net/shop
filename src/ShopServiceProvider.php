@@ -137,6 +137,24 @@ class ShopServiceProvider extends ServiceProvider
         $configFrontMiddleware[] = 'check.email_verified';
         config(['gp247-config.front.middleware' => $configFrontMiddleware]);
 
+        $formatConfig = [
+            'folder_name' => 'format_folder_name',
+            'startup_view' => 'grid',
+            'max_size' => 30000, // size in KB
+            'valid_mime' => [
+                'image/jpeg',
+                'image/pjpeg',
+                'image/png',
+                'image/gif',
+                'image/svg+xml',
+                'image/webp',
+            ],
+        ];
+        foreach (['product', 'category', 'brand', 'supplier', 'customer'] as $item) {
+            $formatConfig['folder_name'] = $item;
+            config(['lfm.folder_categories.'.$item => $formatConfig]);
+        }
+
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_guards.php', 'auth.guards');
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_passwords.php', 'auth.passwords');
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_providers.php', 'auth.providers');
