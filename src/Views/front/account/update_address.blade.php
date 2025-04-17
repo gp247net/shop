@@ -184,19 +184,7 @@ $layout_page = shop_profile
 
             <div class="form-group row mb-0">
                 <div class="col-md-6 offset-md-4">
-                    @php
-                    $dataButton = [
-                            'class' => '', 
-                            'id' =>  '',
-                            'type_w' => '',
-                            'type_t' => 'buy',
-                            'type_a' => '',
-                            'type' => 'submit',
-                            'name' => ''.gp247_language_render('customer.update_infomation'),
-                            'html' => ''
-                        ];
-                    @endphp
-                    @include($GP247TemplatePath.'.common.button.button', $dataButton)
+                    <button class="button-secondary" type="submit" id="">{{ gp247_language_render('customer.update_infomation') }}</button>
                 </div>
             </div>
         </form>

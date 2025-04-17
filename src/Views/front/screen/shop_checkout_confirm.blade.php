@@ -154,35 +154,10 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
                             <div class="row" style="padding-bottom: 20px;">
                                 <div class="col-md-12 text-center">
                                     <div class="pull-left">
-                                        @php
-                                        $dataButton = [
-                                                'class' => '', 
-                                                'id' =>  '',
-                                                'type_w' => '',
-                                                'type_t' => '',
-                                                'type_a' => '',
-                                                'type' => 'button',
-                                                'name' => '<i class="fa fa-arrow-left"></i>'.gp247_language_render('cart.back_to_cart'),
-                                                'html' => 'onClick="location.href=\' '.gp247_route_front('cart').' \'"'
-                                            ];
-                                        @endphp
-                                        @include($GP247TemplatePath.'.common.button.button', $dataButton)
-
+                                        <button onClick="location.href='{{ gp247_route_front('cart') }}'" class="button-secondary" type="button" id=""><i class="fa fa-arrow-left"></i>{{ gp247_language_render('cart.back_to_cart') }}</button>
                                     </div>
                                     <div class="pull-right">
-                                        @php
-                                        $dataButton = [
-                                                'class' => '', 
-                                                'id' =>  '',
-                                                'type_w' => '',
-                                                'type_t' => 'buy',
-                                                'type_a' => '',
-                                                'type' => 'submit',
-                                                'name' => '<i class="fa fa-check"></i>'.gp247_language_render('cart.confirm'),
-                                                'html' => ''
-                                            ];
-                                        @endphp
-                                        @include($GP247TemplatePath.'.common.button.button', $dataButton)
+                                        <button class="button-secondary" type="submit" id="">{{ gp247_language_render('cart.confirm') }}</button>
                                     </div>
                                 </div>
                             </div>

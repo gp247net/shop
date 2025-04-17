@@ -46,19 +46,7 @@ $layout_page = shop_cart
                     {{-- Button checkout --}}
                     <div class="col-md-12 text-center">
                         <div class="pull-right">
-                            @php
-                                $dataButton = [
-                                    'class' => '', 
-                                    'id' =>  '',
-                                    'type_w' => '',
-                                    'type_t' => 'buy',
-                                    'type_a' => '',
-                                    'type' => 'submit',
-                                    'name' => ''.gp247_language_render('cart.checkout'),
-                                    'html' => ''
-                                ];
-                            @endphp
-                            @include($GP247TemplatePath.'.common.button.button', $dataButton)
+                            <button class="button-secondary" type="submit" id="">{{ gp247_language_render('cart.checkout') }}</button>
                         </div>
                     </div>
                     {{-- Button checkout --}}

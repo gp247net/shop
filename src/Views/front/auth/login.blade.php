@@ -55,19 +55,7 @@
                         {{ gp247_language_render('customer.title_register') }}
                     </a>
                 </p>
-                @php
-                $dataButton = [
-                        'class' => '', 
-                        'id' =>  '',
-                        'type_w' => '',
-                        'type_t' => 'buy',
-                        'type_a' => '',
-                        'type' => 'submit',
-                        'name' => ''.gp247_language_render('front.login'),
-                        'html' => 'name="SubmitLogin"'
-                    ];
-                @endphp
-                @include($GP247TemplatePath.'.common.button.button', $dataButton)
+                <button class="button-secondary" type="submit" id="">{{ gp247_language_render('front.login') }}</button>
             </form>
         </div>
     </div>

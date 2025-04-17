@@ -88,19 +88,7 @@ $layout_page = shop_product_detail
                       <input class="form-input" name="qty" type="number" data-zeros="true" value="1" min="1" max="100">
                     </div>
                     <div>
-                      @php
-                      $dataButton = [
-                              'class' => '', 
-                              'id' =>  'gp247_button-form-process',
-                              'type_w' => '',
-                              'type_t' => 'buy',
-                              'type_a' => '',
-                              'type' => 'submit',
-                              'name' => ''.gp247_language_render('action.add_to_cart'),
-                              'html' => ''
-                          ];
-                      @endphp
-                      @include($GP247TemplatePath.'.common.button.button', $dataButton)
+                      <button class="button-secondary" type="submit" id="gp247_button-form-process">{{ gp247_language_render('action.add_to_cart') }}</button>
                     </div>
                 </div>
                 @endif

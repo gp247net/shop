@@ -28,19 +28,7 @@ $layout_page = shop_auth
                         <br />
                         @endif
                         {!! $viewCaptcha ?? ''!!}
-                        @php
-                        $dataButton = [
-                                'class' => '', 
-                                'id' =>  'gp247_button-form-process',
-                                'type_w' => '',
-                                'type_t' => 'buy',
-                                'type_a' => '',
-                                'type' => 'submit',
-                                'name' => ''.gp247_language_render('action.submit'),
-                                'html' => ''
-                            ];
-                        @endphp
-                        @include($GP247TemplatePath.'.common.button.button', $dataButton)
+                        <button class="button-secondary" type="submit" id="gp247_button-form-process">{{ gp247_language_render('action.submit') }}</button>
                     </div>
                 </div>
             </form>
