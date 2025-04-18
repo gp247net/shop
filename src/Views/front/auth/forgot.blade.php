@@ -28,7 +28,7 @@ $layout_page = shop_auth
                         <br />
                         @endif
                         {!! $viewCaptcha ?? ''!!}
-                        <button class="button-secondary" type="submit" id="gp247_button-form-process">{{ gp247_language_render('action.submit') }}</button>
+                        <button class="button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('action.submit') }}</button>
                     </div>
                 </div>
             </form>

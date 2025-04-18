@@ -380,7 +380,7 @@ $layout_page = shop_checkout
                             <div class="col-md-12 text-center">
                                 <div class="pull-right">
                                     {!! $viewCaptcha ?? ''!!}
-                                    <button class="button-secondary" type="submit" id="gp247_button-form-process">{{ gp247_language_render('cart.checkout') }}</button>
+                                    <button class="button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('cart.checkout') }}</button>
                                 </div>
                             </div>
                         </div>
@@ -427,7 +427,7 @@ $layout_page = shop_checkout
 
 <script type="text/javascript">
 
-    $('#gp247_button-form-process').click(function(){
+    $('#gp247-button-process').click(function(){
         $('#gp247_form-process').submit();
         $(this).prop('disabled',true);
     });

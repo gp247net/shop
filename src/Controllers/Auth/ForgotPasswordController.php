@@ -96,7 +96,7 @@ class ForgotPasswordController extends RootFrontController
                 $dataView = [
                     'titleButton' => gp247_language_render('action.submit'),
                     'idForm' => 'gp247_form-process',
-                    'idButtonForm' => 'gp247_button-form-process',
+                    'idButtonForm' => 'gp247-button-process',
                 ];
                 $viewCaptcha = view(gp247_captcha_method()->pathPlugin.'::render', $dataView)->render();
             }
