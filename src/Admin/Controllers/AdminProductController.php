@@ -618,7 +618,7 @@ class AdminProductController extends RootAdminController
             //Insert path download
             if (!empty($data['tag']) && $data['tag'] == GP247_TAG_DOWNLOAD && $downloadPath) {
                 $dataDownload = gp247_clean(['product_id' => $product->id, 'path' => $downloadPath], [], true);
-                $dataDownload['id'] = gp247_generate_id($type = 'shop_product_download');
+                $dataDownload['id'] = gp247_generate_id();
                 ShopProductDownload::insert($dataDownload);
             }
 
@@ -954,7 +954,7 @@ class AdminProductController extends RootAdminController
             (new ShopProductDownload)->where('product_id', $product->id)->delete();
             if ($product['tag'] == GP247_TAG_DOWNLOAD && $downloadPath) {
                 $dataDownload = gp247_clean(['product_id' => $product->id, 'path' => $downloadPath], [], true);
-                $dataDownload['id'] = gp247_generate_id($type = 'shop_product_download');       
+                $dataDownload['id'] = gp247_generate_id();       
                 ShopProductDownload::insert($dataDownload);
             }
 

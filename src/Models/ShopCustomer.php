@@ -86,7 +86,7 @@ class ShopCustomer extends Authenticatable
         //Uuid
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = gp247_generate_id($type = 'shop_customer');
+                $model->{$model->getKeyName()} = gp247_generate_id('CUS');
             }
         });
     }

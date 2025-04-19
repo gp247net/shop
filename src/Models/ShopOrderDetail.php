@@ -52,7 +52,7 @@ class ShopOrderDetail extends Model
         //Uuid
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = gp247_generate_id($type = 'shop_order_detail');
+                $model->{$model->getKeyName()} = gp247_generate_id('ODD');
             }
         });
     }

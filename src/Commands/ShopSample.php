@@ -46,7 +46,7 @@ class ShopSample extends Command
             $this->info('Creating sample categories...');
             $categories = [
                 [
-                    'id' => gp247_generate_id('shop_category'),
+                    'id' => gp247_generate_id(),
                     'alias' => 'am-thuc',
                     'image' => 'https://picsum.photos/400/300?random=1',
                     'parent' => '0',
@@ -67,7 +67,7 @@ class ShopSample extends Command
                     ]
                 ],
                 [
-                    'id' => gp247_generate_id('shop_category'),
+                    'id' => gp247_generate_id(),
                     'alias' => 'du-lich',
                     'image' => 'https://picsum.photos/400/300?random=2', 
                     'parent' => '0',
@@ -88,7 +88,7 @@ class ShopSample extends Command
                     ]
                 ],
                 [
-                    'id' => gp247_generate_id('shop_category'),
+                    'id' => gp247_generate_id(),
                     'alias' => 'trai-cay',
                     'image' => 'https://picsum.photos/400/300?random=3',
                     'parent' => '0', 
@@ -139,7 +139,7 @@ class ShopSample extends Command
             $this->info('Creating sample brands...');
             $brands = [
                 [
-                    'id' => gp247_generate_id('shop_brand'),
+                    'id' => gp247_generate_id(),
                     'name' => 'Nike',
                     'alias' => 'nike',
                     'image' => 'https://picsum.photos/200/100?random=1',
@@ -148,7 +148,7 @@ class ShopSample extends Command
                     'sort' => 0
                 ],
                 [
-                    'id' => gp247_generate_id('shop_brand'),
+                    'id' => gp247_generate_id(),
                     'name' => 'Adidas',
                     'alias' => 'adidas',
                     'image' => 'https://picsum.photos/200/100?random=2',
@@ -157,7 +157,7 @@ class ShopSample extends Command
                     'sort' => 0
                 ],
                 [
-                    'id' => gp247_generate_id('shop_brand'),
+                    'id' => gp247_generate_id(),
                     'name' => 'Puma',
                     'alias' => 'puma',
                     'image' => 'https://picsum.photos/200/100?random=3',
@@ -184,7 +184,7 @@ class ShopSample extends Command
             $this->info('Creating sample suppliers...');
             $suppliers = [
                 [
-                    'id' => gp247_generate_id('shop_supplier'),
+                    'id' => gp247_generate_id(),
                     'name' => 'ABC Corp',
                     'alias' => 'abc-corp',
                     'email' => 'contact@abc.com',
@@ -197,7 +197,7 @@ class ShopSample extends Command
                     'sort' => 0
                 ],
                 [
-                    'id' => gp247_generate_id('shop_supplier'),
+                    'id' => gp247_generate_id(),
                     'name' => 'XYZ Inc',
                     'alias' => 'xyz-inc',
                     'email' => 'contact@xyz.com',
@@ -210,7 +210,7 @@ class ShopSample extends Command
                     'sort' => 0
                 ],
                 [
-                    'id' => gp247_generate_id('shop_supplier'),
+                    'id' => gp247_generate_id(),
                     'name' => 'DEF Ltd',
                     'alias' => 'def-ltd',
                     'email' => 'contact@def.com',

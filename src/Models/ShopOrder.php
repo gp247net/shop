@@ -137,7 +137,7 @@ class ShopOrder extends Model
             //Insert order total
             foreach ($dataTotal as $key => $row) {
                 $row = gp247_clean($row);
-                $row['id'] = gp247_generate_id($type = 'shop_order_total');
+                $row['id'] = gp247_generate_id();
                 $row['order_id'] = $orderID;
                 $row['created_at'] = gp247_time_now();
                 $dataTotal[$key] = $row;
