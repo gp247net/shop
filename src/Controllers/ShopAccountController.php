@@ -34,15 +34,8 @@ class ShopAccountController extends RootFrontController
         $customer = customer()->user();
         
         $subPath = 'account.index';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view($view)
             ->with(
                 [
@@ -67,17 +60,8 @@ class ShopAccountController extends RootFrontController
         $customer = customer()->user();
 
         $subPath = 'account.change_password';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
-
-
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view($view)
         ->with(
             [
@@ -160,15 +144,8 @@ class ShopAccountController extends RootFrontController
         $customer = customer()->user();
 
         $subPath = 'account.change_infomation';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view($view)
         ->with(
                 [
@@ -239,15 +216,8 @@ class ShopAccountController extends RootFrontController
         $customer = customer()->user();
         $statusOrder = ShopOrderStatus::getIdAll();
         $subPath = 'account.order_list';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit(); 
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view($view)
             ->with(
                 [
@@ -282,15 +252,8 @@ class ShopAccountController extends RootFrontController
             return $this->pageNotFound();
         }
         $subPath = 'account.order_detail';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit(); 
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view($view)
         ->with(
             [
@@ -319,15 +282,8 @@ class ShopAccountController extends RootFrontController
     {
         $customer = customer()->user();
         $subPath = 'account.address_list';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit(); 
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view($view)
             ->with(
                 [
@@ -360,15 +316,8 @@ class ShopAccountController extends RootFrontController
             return $this->pageNotFound();
         }
         $subPath = 'account.update_address';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit(); 
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view($view)
         ->with(
             [
@@ -469,15 +418,8 @@ class ShopAccountController extends RootFrontController
             return redirect(gp247_route_front('customer.index'));
         }
         $subPath = 'account.verify';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view($view)
             ->with(
                 [

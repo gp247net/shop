@@ -54,15 +54,8 @@ class ShopCartController extends RootFrontController
         $cart = (new Cart)->content();
 
         $subPath = 'screen.shop_cart';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view(
             $view,
             [
@@ -288,15 +281,8 @@ class ShopCartController extends RootFrontController
 
         //Check view
         $subPath = 'screen.shop_checkout';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view(
             $view,
             [
@@ -511,15 +497,8 @@ class ShopCartController extends RootFrontController
         session(['dataTotal' => $dataTotal]);
 
         $subPath = 'screen.shop_checkout_confirm';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view(
             $view,
             [
@@ -922,15 +901,8 @@ class ShopCartController extends RootFrontController
     {
         $wishlist = (new Cart)->instance('wishlist')->content();
         $subPath = 'screen.shop_wishlist';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view(
             $view,
             array(
@@ -970,15 +942,8 @@ class ShopCartController extends RootFrontController
         $compare = (new Cart)->instance('compare')->content();
 
         $subPath = 'screen.shop_compare';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view(
             $view,
             array(
@@ -1163,15 +1128,8 @@ class ShopCartController extends RootFrontController
         }
         $orderInfo = ShopOrder::with('details')->find(session('orderID'))->toArray();
         $subPath = 'screen.shop_order_success';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view(
             $view,
             [

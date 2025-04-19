@@ -145,14 +145,7 @@ class ShopProduct extends Model
         // Process with tax
         $subPath = 'common.shop_show_price';
         $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'),$subPath);
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        gp247_check_view($view);
         return  view(
             $view,
             [
@@ -179,14 +172,7 @@ class ShopProduct extends Model
         // Process with tax
         $subPath = 'common.shop_show_price_detail';
         $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'),$subPath);
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        gp247_check_view($view);
         return  view(
             $view,
             [
@@ -344,14 +330,7 @@ class ShopProduct extends Model
     {
         $subPath = 'common.shop_render_attribute';
         $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'),$subPath);
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
+        gp247_check_view($view);
         return  view(
             $view,
             [
@@ -930,15 +909,8 @@ class ShopProduct extends Model
     {
         if ((gp247_store_check_multi_domain_installed()) && config('app.storeId') == GP247_STORE_ID_ROOT) {
             $subPath = 'shop_vendor.display_vendor';
-            $view = $this->GP247TemplatePath .'.'. $subPath;
-            if (!view()->exists($view)) {
-                if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                    gp247_report('View not found '.$view);
-                    echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                    exit();
-                }   
-                $view = 'gp247-shop-front::'.$subPath;
-            }
+            $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+            gp247_check_view($view);
             $vendorCode = $this->stores()->first()->code;
             $vendorUrl = $this->goToShop($vendorCode);
             return  view(

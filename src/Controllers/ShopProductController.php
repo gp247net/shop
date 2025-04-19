@@ -55,16 +55,8 @@ class ShopProductController extends RootFrontController
             ->getData();
 
             $subPath = 'screen.shop_product_list';
-        $view = $this->GP247TemplatePath .'.'. $subPath;
-        if (!view()->exists($view)) {
-            if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                gp247_report('View not found '.$view);
-                echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                exit();
-            }   
-            $view = 'gp247-shop-front::'.$subPath;
-        }
-
+            $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+            gp247_check_view($view);
         return view(
             $view,
             array(
@@ -148,15 +140,8 @@ class ShopProductController extends RootFrontController
                 ->getData();
 
             $subPath = 'screen.shop_product_detail';
-            $view = $this->GP247TemplatePath .'.'. $subPath;
-            if (!view()->exists($view)) {
-                if (!view()->exists('gp247-shop-front::'.$subPath)) {
-                    gp247_report('View not found '.$view);
-                    echo  gp247_language_render('front.view_not_exist', ['view' => $view]);
-                    exit();
-                }   
-                $view = 'gp247-shop-front::'.$subPath;
-            }
+            $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+            gp247_check_view($view);
             return view(
                 $view,
                 array(
