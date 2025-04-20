@@ -5,7 +5,8 @@
   <div class="col-md-5">
     <div class="card">
       <div class="card-header with-border">
-        <h3 class="card-title">{!! gp247_language_render('admin.shop.config_sendmail_note', ['url' => gp247_route_admin('admin_config.index ')]) !!}</h3>
+        <h4>{!! gp247_language_render('admin.shop.config_sendmail_status') !!}: <span class="badge bg-{{ gp247_config_admin('email_action_mode') ? 'success' : 'danger' }}">{{ gp247_config_admin('email_action_mode') ? 'ON' : 'OFF' }}</span></h4>
+        <p class="card-title">{!! gp247_language_render('admin.shop.config_sendmail_note', ['url' => gp247_route_admin('admin_config.index')]) !!}</p>
       </div>
 
       <div class="card-body table-responsivep-0">
