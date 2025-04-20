@@ -1,8 +1,4 @@
 <?php
-use GP247\Shop\Events\OrderSuccess;
-use GP247\Shop\Events\OrderCreated;
-use GP247\Shop\Events\CustomerCreated;
-use GP247\Shop\Events\OrderUpdateStatus;
 use GP247\Shop\Models\ShopOrder;
 use GP247\Shop\Models\ShopCustomer;
 
@@ -14,7 +10,9 @@ if (!function_exists('gp247_event_order_success') && !in_array('gp247_event_orde
      */
     function gp247_event_order_success(ShopOrder $order)
     {
-        OrderSuccess::dispatch($order);
+        if(function_exists('gp247_listen_order_success')){
+            gp247_listen_order_success($order);
+        }
     }
 }
 
@@ -26,7 +24,10 @@ if (!function_exists('gp247_event_order_created') && !in_array('gp247_event_orde
      */
     function gp247_event_order_created(ShopOrder $order)
     {
-        OrderCreated::dispatch($order);
+        if(function_exists('gp247_listen_order_created')){
+            gp247_listen_order_created($order);
+        }
+
     }
 }
 
@@ -38,7 +39,9 @@ if (!function_exists('gp247_event_order_update_status') && !in_array('gp247_even
      */
     function gp247_event_order_update_status(ShopOrder $order)
     {
-        OrderUpdateStatus::dispatch($order);
+        if(function_exists('gp247_listen_order_update_status')){
+            gp247_listen_order_update_status($order);
+        }
     }
 }
 
@@ -50,7 +53,9 @@ if (!function_exists('gp247_event_customer_created') && !in_array('gp247_event_c
      */
     function gp247_event_customer_created(ShopCustomer $customer)
     {
-        CustomerCreated::dispatch($customer);
+        if(function_exists('gp247_listen_customer_created')){
+            gp247_listen_customer_created($customer);
+        }
     }
 }
 
