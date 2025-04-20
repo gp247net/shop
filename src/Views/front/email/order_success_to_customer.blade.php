@@ -17,7 +17,28 @@
         <h3 style="color: #2c3e50; margin-top: 0; text-align: center;">{{gp247_language_render('order.order_details')}}</h3>
         <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
             <tbody>
-                {!! $orderDetail !!}
+                <tr>
+                        <td>{{ gp247_language_render('email.order.sort') }}</td>
+                        <td>{{ gp247_language_render('email.order.sku') }}</td>
+                        <td>{{ gp247_language_render('email.order.name') }}</td>
+                        <td>{{ gp247_language_render('email.order.price') }}</td>
+                        <td>{{ gp247_language_render('email.order.qty') }}</td>
+                        <td>{{ gp247_language_render('email.order.total') }}</td>
+                </tr>
+                @foreach ($orderDetail as $key => $item)
+                    <tr>
+                        <td>{{ $key + 1 }}</td>
+                        <td>{{ $item['sku'] }}</td>
+                        <td>{{ $item['name'] }} 
+                            @if ($item['linkDownload'])
+                                <a href="{{ $item['linkDownload'] }}">Download</a>
+                            @endif
+                        </td>
+                        <td>{{ $item['price'] }}</td>
+                        <td>{{ $item['qty'] }}</td>
+                        <td  align="right">{{ $item['total'] }}</td>
+                    </tr>
+                @endforeach
             </tbody>
         </table>
 

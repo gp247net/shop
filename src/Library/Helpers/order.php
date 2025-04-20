@@ -9,31 +9,23 @@ if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_or
     {
         if ((gp247_config('order_success_to_admin') || gp247_config('order_success_to_customer')) && gp247_config('email_action_mode')) {
             $data = \GP247\Shop\Models\ShopOrder::with('details')->find($orderID)->toArray();
-                $orderDetail = '';
-                $orderDetail .= '<tr>
-                                    <td>' . gp247_language_render('email.order.sort') . '</td>
-                                    <td>' . gp247_language_render('email.order.sku') . '</td>
-                                    <td>' . gp247_language_render('email.order.name') . '</td>
-                                    <td>' . gp247_language_render('email.order.price') . '</td>
-                                    <td>' . gp247_language_render('email.order.qty') . '</td>
-                                    <td>' . gp247_language_render('email.order.total') . '</td>
-                                </tr>';
+            $orderDetail = [];
                 foreach ($data['details'] as $key => $detail) {
                     $product = (new \GP247\Shop\Models\ShopProduct)->getDetail($detail['product_id']);
                     $pathDownload = $product->downloadPath->path ?? '';
                     $nameProduct = $detail['name'];
                     if ($product && $pathDownload && $product->tag == GP247_TAG_DOWNLOAD) {
+                        $linkDownload = $pathDownload;
                         $nameProduct .="<br><a href='".$pathDownload."'>Download</a>";
                     }
-
-                    $orderDetail .= '<tr>
-                                    <td>' . ($key + 1) . '</td>
-                                    <td>' . $detail['sku'] . '</td>
-                                    <td>' . $nameProduct . '</td>
-                                    <td>' . gp247_currency_render($detail['price'], '', '', '', false) . '</td>
-                                    <td>' . number_format($detail['qty']) . '</td>
-                                    <td align="right">' . gp247_currency_render($detail['total_price'], '', '', '', false) . '</td>
-                                </tr>';
+                    $orderDetail[] = [
+                        'sku' => $detail['sku'],
+                        'name' => $nameProduct,
+                        'linkDownload' => $linkDownload,
+                        'price' => gp247_currency_render($detail['price'], '', '', '', false),
+                        'qty' => number_format($detail['qty']),
+                        'total' => gp247_currency_render($detail['total_price'], '', '', '', false),
+                    ];
                 }
               
 
