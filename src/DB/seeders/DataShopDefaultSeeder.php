@@ -784,6 +784,10 @@ class DataShopDefaultSeeder extends Seeder
                 ['code' => 'product.price_promotion_end','text' => 'Ngày kết thúc','position' => 'product','location' => 'vi'],
                 ['code' => 'product.edit_product','text' => 'Edit product','position' => 'product','location' => 'en'],
                 ['code' => 'product.edit_product','text' => 'Chỉnh sửa sản phẩm','position' => 'product','location' => 'vi'],
+
+                ['code' => 'product.free','text' => 'Free','position' => 'product','location' => 'en'],
+                ['code' => 'product.free','text' => 'Miễn phí','position' => 'product','location' => 'vi'],
+
                 ['code' => 'product.config_manager.title','text' => 'Config product','position' => 'product.admin','location' => 'en'],
                 ['code' => 'product.config_manager.field','text' => 'Field config','position' => 'product.admin','location' => 'en'],
                 ['code' => 'product.config_manager.value','text' => 'Value','position' => 'product.admin','location' => 'en'],
@@ -1399,6 +1403,8 @@ class DataShopDefaultSeeder extends Seeder
                 ['code' => 'front.brands','text' => 'Brands','position' => 'front','location' => 'en'],
                 ['code' => 'front.categories','text' => 'Danh mục','position' => 'front','location' => 'vi'],
                 ['code' => 'front.categories','text' => 'Categries','position' => 'front','location' => 'en'],
+                ['code' => 'front.shop','text' => 'Cửa hàng','position' => 'front','location' => 'vi'],
+                ['code' => 'front.shop','text' => 'Shop','position' => 'front','location' => 'en'],
 
                 ['code' => 'action.confirm','text' => 'Xác nhận','position' => 'action','location' => 'vi'],
                 ['code' => 'action.confirm','text' => 'Confirmation','position' => 'action','location' => 'en'],
