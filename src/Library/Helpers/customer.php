@@ -34,7 +34,9 @@ if (!function_exists('gp247_customer_sendmail_reset_notification') && !in_array(
                 'to' => $emailReset,
                 'subject' => gp247_language_render('email.forgot_password.reset_button'),
             ];
-            gp247_mail_send('gp247-shop-front::email.forgot_password', $dataView, $config, $dataAtt = []);
+            $subPath = 'email.forgot_password';
+            $view = gp247_shop_process_view('GP247TemplatePath::'.gp247_store_info('template'),$subPath);
+            gp247_mail_send($view, $dataView, $config, []);
     }
 }
 
@@ -68,7 +70,10 @@ if (!function_exists('gp247_customer_sendmail_verify') && !in_array('gp247_custo
             'to' => $emailVerify,
             'subject' => gp247_language_render('customer.verify_email.button_verify'),
         ];
-        gp247_mail_send('gp247-shop-front::email.customer_verify', $dataView, $config, $dataAtt = []);
+
+        $subPath = 'email.customer_verify';
+        $view = gp247_shop_process_view('GP247TemplatePath::'.gp247_store_info('template'),$subPath);
+        gp247_mail_send($view, $dataView, $config, $dataAtt = []);
         return true;
     }
 }
@@ -89,8 +94,9 @@ if (!function_exists('gp247_customer_sendmail_welcome') && !in_array('gp247_cust
                     'to' => $customer['email'],
                     'subject' => gp247_language_render('email.welcome_customer.title'),
                 ];
-
-                gp247_mail_send('gp247-shop-front::email.welcome_customer', $dataView, $config, $dataAtt = []);      
+                $subPath = 'email.welcome_customer';
+                $view = gp247_shop_process_view('GP247TemplatePath::'.gp247_store_info('template'),$subPath);
+                gp247_mail_send($view, $dataView, $config, $dataAtt = []);      
         }
     }
 }
