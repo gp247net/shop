@@ -137,6 +137,24 @@ class ShopServiceProvider extends ServiceProvider
         $configFrontMiddleware[] = 'check.email_verified';
         config(['gp247-config.front.middleware' => $configFrontMiddleware]);
 
+        //Exclude route language
+        $arrShopRouteExcludeLanguage = [
+            'customer.index',
+            'customer.order_list',
+            'customer.order_detail',
+            'customer.address_list',
+            'customer.update_address',
+            'customer.change_password',
+            'customer.change_infomation',
+            'customer.address_detail',
+            'customer.verify',
+            'customer.verify_process'
+        ];
+        $configFrontRoute = config('gp247-config.front.route.GP247_ROUTE_EXCLUDE_LANGUAGE','');
+        $configFrontRoute .= ','.implode(',', $arrShopRouteExcludeLanguage);
+        config(['gp247-config.front.route.GP247_ROUTE_EXCLUDE_LANGUAGE' => $configFrontRoute]);
+
+        //Config for file manager
         $formatConfig = [
             'folder_name' => 'format_folder_name',
             'startup_view' => 'grid',
@@ -155,6 +173,7 @@ class ShopServiceProvider extends ServiceProvider
             config(['lfm.folder_categories.'.$item => $formatConfig]);
         }
 
+        //Config for customer auth
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_guards.php', 'auth.guards');
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_passwords.php', 'auth.passwords');
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_providers.php', 'auth.providers');
