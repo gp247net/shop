@@ -126,7 +126,6 @@ class ShopCartController extends RootFrontController
         //End check minimum
 
         //Set session
-        session(['dataCheckout' => $cart]);
         session(['storeCheckout' => $storeId]);
 
         return redirect(gp247_route_front('checkout'));
@@ -160,15 +159,19 @@ class ShopCartController extends RootFrontController
      */
     private function _getCheckout()
     {
-        $dataCheckout = session('dataCheckout') ?? '';
         $storeCheckout = session('storeCheckout') ?? '';
+        if (!$storeCheckout) {
+            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'storeCheckout'])]);
+        }
+        $cartGroup = (new Cart)->getItemsGroupByStore();
+        $dataCheckout = $cartGroup[$storeCheckout] ?? [];
+
         //If cart info empty
         if (!$dataCheckout) {
             return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.cart_empty')]);
         }
-        if (!$storeCheckout) {
-            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'storeCheckout'])]);
-        }
+        //Set session dataCheckout
+        session(['dataCheckout' => $dataCheckout]);
 
         //Shipping
         $moduleShipping = gp247_extension_get_via_code(code: 'shipping');
