@@ -16,7 +16,6 @@ if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_or
                     $nameProduct = $detail['name'];
                     if ($product && $pathDownload && $product->tag == GP247_TAG_DOWNLOAD) {
                         $linkDownload = $pathDownload;
-                        $nameProduct .="<br><a href='".$pathDownload."'>Download</a>";
                     }
                     $orderDetail[] = [
                         'sku' => $detail['sku'],
