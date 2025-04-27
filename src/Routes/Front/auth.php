@@ -3,22 +3,22 @@ $prefixCustomer = config('gp247-config.shop.route.GP247_PREFIX_MEMBER') ?? 'cust
 $langUrl = GP247_SEO_LANG ?'{lang?}/' : '';
 $suffix = GP247_SUFFIX_URL;
 //Process namespace
-if (file_exists(app_path('App/GP247/Shop/Controllers/Auth/LoginController.php'))) {
+if (file_exists(app_path('GP247/Shop/Controllers/Auth/LoginController.php'))) {
     $nameSpaceFrontLogin = 'App\GP247\Shop\Controllers';
 } else {
     $nameSpaceFrontLogin = 'GP247\Shop\Controllers';
 }
-if (file_exists(app_path('App/GP247/Shop/Controllers/Auth/RegisterController.php'))) {
+if (file_exists(app_path('GP247/Shop/Controllers/Auth/RegisterController.php'))) {
     $nameSpaceFrontRegister = 'App\GP247\Shop\Controllers';
 } else {
     $nameSpaceFrontRegister = 'GP247\Shop\Controllers';
 }
-if (file_exists(app_path('App/GP247/Shop/Controllers/Auth/ForgotPasswordController.php'))) {
+if (file_exists(app_path('GP247/Shop/Controllers/Auth/ForgotPasswordController.php'))) {
     $nameSpaceFrontForgot = 'App\GP247\Shop\Controllers';
 } else {
     $nameSpaceFrontForgot = 'GP247\Shop\Controllers';
 }
-if (file_exists(app_path('App/GP247/Shop/Controllers/Auth/ResetPasswordController.php'))) {
+if (file_exists(app_path('GP247/Shop/Controllers/Auth/ResetPasswordController.php'))) {
     $nameSpaceFrontReset = 'App\GP247\Shop\Controllers';
 } else {
     $nameSpaceFrontReset = 'GP247\Shop\Controllers';
