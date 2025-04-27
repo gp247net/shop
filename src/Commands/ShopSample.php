@@ -8,6 +8,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopCategoryDescription;
+use GP247\Shop\Models\ShopProduct;
+use GP247\Shop\Models\ShopProductDescription;
+use GP247\Shop\Models\ShopProductStore;
+use GP247\Shop\Models\ShopProductPromotion;
+use GP247\Shop\Models\ShopProductCategory;
+use Carbon\Carbon;
 
 class ShopSample extends Command
 {
@@ -41,6 +47,11 @@ class ShopSample extends Command
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand_store')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_supplier')->truncate();
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product')->truncate();
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_description')->truncate();
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_store')->truncate();
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_category')->truncate();
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_promotion')->truncate();
             
             // Create sample categories
             $this->info('Creating sample categories...');
@@ -110,11 +121,14 @@ class ShopSample extends Command
                 ]
             ];
 
-            DB::connection(GP247_DB_CONNECTION)->transaction(function () use ($categories) {
+            $categoryIds = [];
+
+            DB::connection(GP247_DB_CONNECTION)->transaction(function () use ($categories, &$categoryIds) {
                 foreach ($categories as $category) {
                     // Create category
                     $categoryData = collect($category)->except('descriptions')->toArray();
                     $cat = ShopCategory::create($categoryData);
+                    $categoryIds[] = $cat->id;
 
                     // Create descriptions
                     foreach ($category['descriptions'] as $lang => $description) {
@@ -229,6 +243,107 @@ class ShopSample extends Command
                     DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_supplier')->insert($supplier);
                 }
             });
+
+            // Create sample products for each category
+            $this->info('Creating sample products...');
+
+            foreach ($categoryIds as $categoryKey => $categoryId) {
+                // Create 3 products per category
+                for ($i = 1; $i <= 3; $i++) {
+                    $hasPromotion = ($i <= 2) ? true : false; // First 2 products have promotion
+                    $productId = gp247_generate_id();
+                    $productNumber = $categoryKey * 3 + $i;
+                    
+                    // Basic product data
+                    $productData = [
+                        'id' => $productId,
+                        'sku' => 'SAMPLE-' . $categoryKey . '-' . $i,
+                        'alias' => 'sample-product-' . $productNumber,
+                        'image' => 'https://picsum.photos/500/500?random=' . $productNumber,
+                        'brand_id' => null,
+                        'supplier_id' => null,
+                        'price' => rand(100, 500), // Random price between 100 and 500
+                        'cost' => 0,
+                        'stock' => 100,
+                        'sold' => 0,
+                        'minimum' => 1,
+                        'weight_class' => 'kg',
+                        'weight' => 1,
+                        'length_class' => 'cm',
+                        'length' => 10,
+                        'width' => 10,
+                        'height' => 10,
+                        'kind' => 0, // Single product
+                        'tag' => 0, // Physical product
+                        'tax_id' => 0,
+                        'status' => 1,
+                        'sort' => 0,
+                        'view' => 0,
+                        'date_available' => Carbon::now()->format('Y-m-d H:i:s'),
+                        'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
+                        'updated_at' => Carbon::now()->format('Y-m-d H:i:s'),
+                    ];
+
+                    // Product descriptions
+                    $productDescriptions = [
+                        'vi' => [
+                            'product_id' => $productId,
+                            'lang' => 'vi',
+                            'name' => 'Sản phẩm mẫu ' . $productNumber . ' - Tiếng Việt',
+                            'keyword' => 'sample, product',
+                            'description' => 'Mô tả ngắn cho sản phẩm mẫu ' . $productNumber,
+                            'content' => '<p>Nội dung chi tiết cho sản phẩm mẫu ' . $productNumber . '</p>'
+                        ],
+                        'en' => [
+                            'product_id' => $productId,
+                            'lang' => 'en',
+                            'name' => 'Sample product ' . $productNumber . ' - English',
+                            'keyword' => 'sample, product',
+                            'description' => 'Short description for sample product ' . $productNumber,
+                            'content' => '<p>Detailed content for sample product ' . $productNumber . '</p>'
+                        ]
+                    ];
+
+                    DB::connection(GP247_DB_CONNECTION)->transaction(function () use (
+                        $productData, 
+                        $productDescriptions, 
+                        $categoryId, 
+                        $hasPromotion, 
+                        $productId
+                    ) {
+                        // Create product
+                        ShopProduct::create($productData);
+
+                        // Create descriptions
+                        foreach ($productDescriptions as $description) {
+                            ShopProductDescription::create($description);
+                        }
+
+                        // Link to category
+                        ShopProductCategory::create([
+                            'product_id' => $productId,
+                            'category_id' => $categoryId
+                        ]);
+
+                        // Link to store
+                        ShopProductStore::create([
+                            'product_id' => $productId,
+                            'store_id' => GP247_STORE_ID_ROOT
+                        ]);
+
+                        // Create promotion if needed
+                        if ($hasPromotion) {
+                            $promotionPrice = floor($productData['price'] * 0.8); // 20% discount, rounded down to ensure integer
+                            ShopProductPromotion::create([
+                                'product_id' => $productId,
+                                'price_promotion' => $promotionPrice,
+                                'date_start' => Carbon::now()->format('Y-m-d H:i:s'),
+                                'date_end' => Carbon::now()->addMonths(2)->format('Y-m-d H:i:s')
+                            ]);
+                        }
+                    });
+                }
+            }
 
             $this->info('Created sample data successfully!');
 
