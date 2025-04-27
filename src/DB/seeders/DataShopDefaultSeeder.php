@@ -1420,6 +1420,8 @@ class DataShopDefaultSeeder extends Seeder
                 ['code' => 'action.re_order','text' => 'Mua lại','position' => 'action','location' => 'vi'],
                 ['code' => 'action.order','text' => 'Đặt hàng','position' => 'action','location' => 'vi'],
                 ['code' => 'action.order','text' => 'Order','position' => 'action','location' => 'en'],
+                ['code' => 'action.select_version','text' => 'Chọn phiên bản','position' => 'action','location' => 'vi'],
+                ['code' => 'action.select_version','text' => 'Select version','position' => 'action','location' => 'en'],
     
                 ['code' => 'admin.shop.config_order','text' => 'Order','position' => 'store.admin','location' => 'en'],
                 ['code' => 'admin.shop.config_order','text' => 'Đơn hàng','position' => 'store.admin','location' => 'vi'],
