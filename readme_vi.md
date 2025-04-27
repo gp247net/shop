@@ -1,8 +1,6 @@
 <p align="center">
-    <img src="https://static.gp247.net/logo/logo.png" width="150">
-</p>
-<p align="center">
-    <img src="https://s-cart.org/logo.png?v=4" width="150">
+    <a href="https://gp247.net"><img src="https://static.gp247.net/logo/logo.png" height="100"></a>
+    <a href="https://s-cart.org"><img src="https://s-cart.org/logo.png" height="100"><a/>
 </p>
 <p align="center">Hệ thống website thương mại điện tử miễn phí cho doanh nghiệp<br>
     <code><b>composer require GP247/Shop</b></code></p>
