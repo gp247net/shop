@@ -137,7 +137,7 @@
                                 if($item->attribute && is_array(json_decode($item->attribute,true))){
                                   $array = json_decode($item->attribute,true);
                                       foreach ($array as $key => $element){
-                                        $html .= '<br><b>'.$attributesGroup[$key].'</b> : <i>'.gp247_render_option_price($element, $order->currency, $order->exchange_rate).'</i>';
+                                        $html .= '<br><b>'.($attributesGroup[$key] ?? $key).'</b> : <i>'.gp247_render_option_price($element, $order->currency, $order->exchange_rate).'</i>';
                                       }
                                 }
                               @endphp
