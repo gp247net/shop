@@ -824,7 +824,7 @@ class ShopProduct extends Model
                             $checkSort = true;
                         } elseif ($rowSort[0] == 'id') {
                             //Process sort with product id
-                            $query = $query->orderBy($this->getTable().'.id', $rowSort[1]);
+                            $query = $query->orderBy($this->getTable().'.created_at', $rowSort[1]);
                             $ckeckId = true;
                         } else {
                             $query = $query->orderBy($rowSort[0], $rowSort[1]);
@@ -838,7 +838,7 @@ class ShopProduct extends Model
             }
             //Default, will sort id
             if (!$ckeckId) {
-                $query = $query->orderBy($this->getTable().'.id', 'desc');
+                $query = $query->orderBy($this->getTable().'.created_at', 'desc');
             }
         }
 

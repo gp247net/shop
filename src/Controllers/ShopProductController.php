@@ -33,7 +33,7 @@ class ShopProductController extends RootFrontController
     private function _allProducts()
     {
         $sortBy = 'sort';
-        $sortOrder = 'asc';
+        $sortOrder = 'desc';
         $filter_sort = request('filter_sort');
         $filterArr = [
             'price_desc' => ['price', 'desc'],

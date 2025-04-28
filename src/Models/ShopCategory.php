@@ -269,7 +269,7 @@ class ShopCategory extends Model
                 $query = $query->orderBy($this->getTable().'.sort', 'asc');
             }
             //Default, will sort id
-            $query = $query->orderBy($this->getTable().'.id', 'desc');
+            $query = $query->orderBy($this->getTable().'.created_at', 'desc');
         }
 
         return $query;
