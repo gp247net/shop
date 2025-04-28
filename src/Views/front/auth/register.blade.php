@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-12 col-sm-12">
             <h2>{{ gp247_language_render('customer.title_register') }}</h2>
-            <form action="{{gp247_route_front('customer.postRegister')}}" method="post" class="box" id="gp247_form-process">
+            <form action="{{gp247_route_front('customer.postRegister')}}" method="post" class="box" id="gp247-form-process">
                 {!! csrf_field() !!}
                 <div class="form_content" id="collapseExample">
             

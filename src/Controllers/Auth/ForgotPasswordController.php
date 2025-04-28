@@ -42,9 +42,11 @@ class ForgotPasswordController extends RootFrontController
     {
         $data = $request->all();
         $dataMapping['email'] = 'required|string|email';
+        
+        //Process captcha
         if (gp247_captcha_method() && in_array('forgot', gp247_captcha_page())) {
             $data['captcha_field'] = $data[gp247_captcha_method()->getField()] ?? '';
-            $dataMapping['captcha_field'] = ['required', 'string', new \GP247\Shop\Rules\CaptchaRule];
+            $dataMapping['captcha_field'] = ['required', 'string', new \GP247\Core\Rules\CaptchaRule];
         }
         $validator = \Illuminate\Support\Facades\Validator::make($data, $dataMapping);
         if ($validator->fails()) {
@@ -90,17 +92,7 @@ class ForgotPasswordController extends RootFrontController
         if (customer()->user()) {
             return redirect()->route('front.home');
         }
-        $viewCaptcha = '';
-        if (gp247_captcha_method() && in_array('forgot', gp247_captcha_page())) {
-            if (view()->exists(gp247_captcha_method()->pathPlugin.'::render')) {
-                $dataView = [
-                    'titleButton' => gp247_language_render('action.submit'),
-                    'idForm' => 'gp247_form-process',
-                    'idButtonForm' => 'gp247-button-process',
-                ];
-                $viewCaptcha = view(gp247_captcha_method()->pathPlugin.'::render', $dataView)->render();
-            }
-        }
+        $viewCaptcha = gp247_captcha_processview('forgot', gp247_language_render('action.submit'));
         $subPath = 'auth.forgot';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);

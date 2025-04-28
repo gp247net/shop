@@ -60,9 +60,11 @@ class RegisterController extends RootFrontController
     protected function validator(array $data)
     {
         $dataMapping = $this->mappingValidator($data);
+
+        //Process captcha
         if (gp247_captcha_method() && in_array('register', gp247_captcha_page())) {
             $data['captcha_field'] = $data[gp247_captcha_method()->getField()] ?? '';
-            $dataMapping['validate']['captcha_field'] = ['required', 'string', new \GP247\Shop\Rules\CaptchaRule];
+            $dataMapping['validate']['captcha_field'] = ['required', 'string', new \GP247\Core\Rules\CaptchaRule];
         }
         return Validator::make($data, $dataMapping['validate'], $dataMapping['messages']);
     }
@@ -121,17 +123,7 @@ class RegisterController extends RootFrontController
         if (session('customer')) {
             return redirect()->route('front.home');
         }
-        $viewCaptcha = '';
-        if (gp247_captcha_method() && in_array('register', gp247_captcha_page())) {
-            if (view()->exists(gp247_captcha_method()->pathPlugin.'::render')) {
-                $dataView = [
-                    'titleButton' => gp247_language_render('customer.signup'),
-                    'idForm' => 'gp247_form-process',
-                    'idButtonForm' => 'gp247-button-process',
-                ];
-                $viewCaptcha = view(gp247_captcha_method()->pathPlugin.'::render', $dataView)->render();
-            }
-        }
+        $viewCaptcha = gp247_captcha_processview('register', gp247_language_render('customer.signup'));
         $subPath = 'auth.register';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);

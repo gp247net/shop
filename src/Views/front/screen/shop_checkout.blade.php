@@ -38,7 +38,7 @@ $layout_page = shop_checkout
 
 
             <div class="col-md-12">
-            <form class="gp247-shipping-address" id="gp247_form-process" role="form" method="POST" action="{{ gp247_route_front('checkout.process') }}">
+            <form class="gp247-shipping-address" id="gp247-form-process" role="form" method="POST" action="{{ gp247_route_front('checkout.process') }}">
                 @csrf
                 <div class="row">
                     {{-- Begin address shipping --}}
@@ -428,7 +428,7 @@ $layout_page = shop_checkout
 <script type="text/javascript">
 
     $('#gp247-button-process').click(function(){
-        $('#gp247_form-process').submit();
+        $('#gp247-form-process').submit();
         $(this).prop('disabled',true);
     });
 
@@ -437,15 +437,15 @@ $layout_page = shop_checkout
         if(!id) {
             return;   
         } else if(id == 'new') {
-            $('#gp247_form-process [name="first_name"]').val('');
-            $('#gp247_form-process [name="last_name"]').val('');
-            $('#gp247_form-process [name="phone"]').val('');
-            $('#gp247_form-process [name="postcode"]').val('');
-            $('#gp247_form-process [name="company"]').val('');
-            $('#gp247_form-process [name="country"]').val('');
-            $('#gp247_form-process [name="address1"]').val('');
-            $('#gp247_form-process [name="address2"]').val('');
-            $('#gp247_form-process [name="address3"]').val('');
+            $('#gp247-form-process [name="first_name"]').val('');
+            $('#gp247-form-process [name="last_name"]').val('');
+            $('#gp247-form-process [name="phone"]').val('');
+            $('#gp247-form-process [name="postcode"]').val('');
+            $('#gp247-form-process [name="company"]').val('');
+            $('#gp247-form-process [name="country"]').val('');
+            $('#gp247-form-process [name="address1"]').val('');
+            $('#gp247-form-process [name="address2"]').val('');
+            $('#gp247-form-process [name="address3"]').val('');
         } else {
             $.ajax({
             url: '{{ gp247_route_front('customer.address_detail') }}',
@@ -462,15 +462,15 @@ $layout_page = shop_checkout
                 {
                     alert(data.msg);
                 }else{
-                    $('#gp247_form-process [name="first_name"]').val(data.first_name);
-                    $('#gp247_form-process [name="last_name"]').val(data.last_name);
-                    $('#gp247_form-process [name="phone"]').val(data.phone);
-                    $('#gp247_form-process [name="postcode"]').val(data.postcode);
-                    $('#gp247_form-process [name="company"]').val(data.company);
-                    $('#gp247_form-process [name="country"]').val(data.country);
-                    $('#gp247_form-process [name="address1"]').val(data.address1);
-                    $('#gp247_form-process [name="address2"]').val(data.address2);
-                    $('#gp247_form-process [name="address3"]').val(data.address3);
+                    $('#gp247-form-process [name="first_name"]').val(data.first_name);
+                    $('#gp247-form-process [name="last_name"]').val(data.last_name);
+                    $('#gp247-form-process [name="phone"]').val(data.phone);
+                    $('#gp247-form-process [name="postcode"]').val(data.postcode);
+                    $('#gp247-form-process [name="company"]').val(data.company);
+                    $('#gp247-form-process [name="country"]').val(data.country);
+                    $('#gp247-form-process [name="address1"]').val(data.address1);
+                    $('#gp247-form-process [name="address2"]').val(data.address2);
+                    $('#gp247-form-process [name="address3"]').val(data.address3);
                 }
 
                 }

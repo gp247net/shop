@@ -270,17 +270,7 @@ class ShopCartController extends RootFrontController
         $objects = ShopOrderTotal::getObjectOrderTotal();
 
         //Process captcha
-        $viewCaptcha = '';
-        if (gp247_captcha_method() && in_array('checkout', gp247_captcha_page())) {
-            if (view()->exists(gp247_captcha_method()->pathPlugin.'::render')) {
-                $dataView = [
-                    'titleButton' => gp247_language_render('cart.checkout'),
-                    'idForm' => 'gp247_form-process',
-                    'idButtonForm' => 'gp247-button-process',
-                ];
-                $viewCaptcha = view(gp247_captcha_method()->pathPlugin.'::render', $dataView)->render();
-            }
-        }
+        $viewCaptcha = gp247_captcha_processview('checkout', gp247_language_render('cart.checkout'));
 
         //Check view
         $subPath = 'screen.shop_checkout';
@@ -340,9 +330,10 @@ class ShopCartController extends RootFrontController
         $validate = $dataMap['validate'];
         $messages = $dataMap['messages'];
 
+        //Process captcha
         if (gp247_captcha_method() && in_array('checkout', gp247_captcha_page())) {
             $data['captcha_field'] = $data[gp247_captcha_method()->getField()] ?? '';
-            $validate['captcha_field'] = ['required', 'string', new \GP247\Shop\Rules\CaptchaRule];
+            $validate['captcha_field'] = ['required', 'string', new \GP247\Core\Rules\CaptchaRule];
         }
 
         $v = Validator::make(
