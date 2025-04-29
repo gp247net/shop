@@ -130,10 +130,16 @@ $layout_page = shop_product_detail
 
                 {{-- Category info --}}
                 <div>
+                  @php
+                      $categories = [];
+                  @endphp
                 {{ gp247_language_render('product.category') }}: 
                 @foreach ($product->categories as $category)
-                  <a href="{{ $category->getUrl() }}">{{ $category->getTitle() }}</a>,
+                  @php
+                      $categories[] = '<a href="'.$category->getUrl().'">'.$category->getTitle().'</a>';
+                  @endphp
                 @endforeach
+                {!! implode(', ', $categories) !!}
                 </div>
                 {{--// Category info --}}
 

@@ -4,7 +4,6 @@
 if (!function_exists('gp247_shop_process_view') && !in_array('gp247_shop_process_view', config('gp247_functions_except', []))) {
     function gp247_shop_process_view(string $prefix, string $subPath)
     {
-        // Kiểm tra nếu giữa $prefix và $subPath không có dấu . thì thêm vào
         if (strpos($prefix, '.') === false) {
             $prefix = $prefix . '.';
         }
