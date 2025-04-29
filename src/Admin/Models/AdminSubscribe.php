@@ -2,9 +2,9 @@
 
 namespace GP247\Shop\Admin\Models;
 
-use GP247\Shop\Models\ShopSubscribe;
+use GP247\Front\Models\FrontSubscribe;
 
-class AdminSubscribe extends ShopSubscribe
+class AdminSubscribe extends FrontSubscribe
 {
     /**
      * Get subcribe detail in admin
