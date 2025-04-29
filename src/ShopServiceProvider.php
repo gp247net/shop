@@ -106,6 +106,15 @@ class ShopServiceProvider extends ServiceProvider
             $this->loadViewsFrom(__DIR__.'/Views/admin', 'gp247-shop-admin');
             $this->loadViewsFrom(__DIR__.'/Views/front', 'gp247-shop-front');
 
+            //Add module to homepage admin
+            gp247_add_module('homepage', 'gp247-shop-admin::component.order_month');
+            gp247_add_module('homepage', 'gp247-shop-admin::component.new_order');
+            gp247_add_module('homepage', 'gp247-shop-admin::component.new_customer');
+            gp247_add_module('homepage', 'gp247-shop-admin::component.top_info');
+
+            //Add module to header right admin (button shop)
+            gp247_add_module('module_header_right', 'gp247-shop-admin::component.shop_button');
+
             try {
                 $this->validationExtend();
             } catch (\Throwable $e) {

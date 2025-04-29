@@ -14,6 +14,7 @@ use GP247\Shop\Models\ShopOrderStatus;
 use GP247\Front\Models\FrontLink;
 use GP247\Front\Models\FrontLinkStore;
 use GP247\Core\Models\AdminConfig;
+use GP247\Core\Models\AdminHome;
 
 class DataShopDefaultSeeder extends Seeder
 {
@@ -213,6 +214,24 @@ class DataShopDefaultSeeder extends Seeder
         $dataOrderStatus = $this->dataOrderStatus();
         ShopOrderStatus::insertOrIgnore($dataOrderStatus);
 
+
+        //Add module to homepage admin
+        AdminHome::whereIn('view', 
+            [
+                'gp247-shop-admin::component.order_month', 
+                'gp247-shop-admin::component.new_order', 
+                'gp247-shop-admin::component.new_customer',
+                'gp247-shop-admin::component.top_info'
+            ]
+        )->delete();
+        AdminHome::insertOrIgnore(
+            [
+                ['size' => 12, 'sort'=> 100,'view' => 'gp247-shop-admin::component.top_info','status' => 1],
+                ['size' => 12, 'sort'=> 90,'view' => 'gp247-shop-admin::component.order_month','status' => 1],
+                ['size' => 6, 'sort'=> 70,'view' => 'gp247-shop-admin::component.new_order','status' => 1],
+                ['size' => 6, 'sort'=> 60,'view' => 'gp247-shop-admin::component.new_customer','status' => 1],
+            ]
+        );
 
         Languages::insertOrIgnore(
             [
@@ -1049,6 +1068,8 @@ class DataShopDefaultSeeder extends Seeder
                 ['code' => 'customer.my_profile','text' => 'My profile','position' => 'customer','location' => 'en'],
                 ['code' => 'customer.status','text' => 'Trạng thái','position' => 'customer','location' => 'vi'],
                 ['code' => 'customer.status','text' => 'Status','position' => 'customer','location' => 'en'],
+                ['code' => 'customer.provider','text' => 'Provider','position' => 'customer','location' => 'en'],
+                ['code' => 'customer.provider','text' => 'Nhà cung cấp','position' => 'customer','location' => 'vi'],
                 ['code' => 'customer.group','text' => 'Group','position' => 'customer','location' => 'en'],
                 ['code' => 'customer.group','text' => 'Nhóm','position' => 'customer','location' => 'vi'],
                 ['code' => 'customer.account_already','text' => 'Already have an account?','position' => 'customer','location' => 'en'],
@@ -1352,6 +1373,25 @@ class DataShopDefaultSeeder extends Seeder
                 ['code' => 'admin.order.shop_allow_guest','text' => 'Cho phép mua không cần đăng nhập','position' => 'order.admin','location' => 'vi'],
                 ['code' => 'admin.order.select_customer','text' => 'Select customer','position' => 'order.admin','location' => 'en'],
                 ['code' => 'admin.order.select_customer','text' => 'Chọn khách hàng','position' => 'order.admin','location' => 'vi'],
+                
+                ['code' => 'admin.dashboard.order_month','text' => 'Order in month','position' => 'admin.dashboard','location' => 'en'],
+                ['code' => 'admin.dashboard.order_month','text' => 'Đơn hàng trong tháng','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.order_year','text' => 'Order in year','position' => 'admin.dashboard','location' => 'en'],
+                ['code' => 'admin.dashboard.order_year','text' => 'Đơn hàng trong năm','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.order','text' => 'Đơn hàng','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.order','text' => 'Order','position' => 'admin.dashboard','location' => 'en'],
+                ['code' => 'admin.dashboard.amount','text' => 'Số tiền','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.amount','text' => 'Amount','position' => 'admin.dashboard','location' => 'en'],
+                ['code' => 'admin.dashboard.total_product','text' => 'Tổng sản phẩm','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.total_product','text' => 'Total product','position' => 'admin.dashboard','location' => 'en'],
+                ['code' => 'admin.dashboard.total_customer','text' => 'Tổng khách hàng','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.total_customer','text' => 'Total customer','position' => 'admin.dashboard','location' => 'en'],
+                ['code' => 'admin.dashboard.total_order','text' => 'Tổng đơn hàng','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.total_order','text' => 'Total order','position' => 'admin.dashboard','location' => 'en'],
+                ['code' => 'admin.dashboard.top_order_new','text' => 'Đơn hàng mới nhất','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.top_order_new','text' => 'New order','position' => 'admin.dashboard','location' => 'en'],
+                ['code' => 'admin.dashboard.top_customer_new','text' => 'Khách hàng mới nhất','position' => 'admin.dashboard','location' => 'vi'],
+                ['code' => 'admin.dashboard.top_customer_new','text' => 'New customer','position' => 'admin.dashboard','location' => 'en'],
     
                 ['code' => 'front.currency','text' => 'Tiền tệ','position' => 'front','location' => 'vi'],
                 ['code' => 'front.currency','text' => 'Currency','position' => 'front','location' => 'en'],
