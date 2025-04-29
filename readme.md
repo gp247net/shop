@@ -63,17 +63,40 @@ GP247/Shop is one of the core packages in the GP247 ecosystem, transforming GP24
 
 ## Installation
 
-### Option 1: For Existing GP247 CMS
-1. Ensure you have GP247 CMS installed (including Laravel, GP247/Core, GP247/Front)
-2. Install GP247/Shop via Composer:
+### Option 1: New Installation with GP247 CMS
+1. Install gp247/cms (Includes Laravel, GP247/Core, GP247/Front)
 ```bash
-composer require GP247/Shop
+composer create-project gp247/cms
 ```
 
-### Option 2: For New Projects
-You can use the complete s-cart source code which includes all required components:
+2. Install gp247/shop package
+```bash
+composer require gp247/shop
+```
+
+3. Register the service provider in `bootstrap/providers.php` (add to the end of the array)
+```php
+GP247\Shop\ShopServiceProvider::class,
+```
+
+4. Install and create sample data
+```bash
+php artisan gp247:shop-install
+php artisan gp247:shop-sample
+```
+
+### Option 2: Using S-Cart Source Code
+S-Cart already includes all the necessary components. You can view the full details at [S-Cart GitHub repository](https://github.com/s-cart/s-cart).
+
+1. Install the package
 ```bash
 composer create-project s-cart/s-cart
+```
+
+2. Install data
+```bash
+php artisan sc:install
+php artisan sc:sample
 ```
 
 <img src="https://static.s-cart.org/guide/info/s-cart-content.jpg">
