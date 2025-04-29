@@ -247,7 +247,7 @@
                     </div>
                     {!! $viewCaptcha ?? ''!!}
                     <div class="submit">
-                        <button class="button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('customer.signup') }}</button>
+                        <button class="button button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('customer.signup') }}</button>
                     </div>
                 </div>
             

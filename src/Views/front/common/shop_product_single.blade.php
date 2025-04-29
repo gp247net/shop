@@ -12,7 +12,7 @@
       @endif
 
       @if ($product->allowSale() && gp247_config('product_use_button_add_to_cart'))
-      <a onClick="addToCartAjax('{{ $product->id }}','default','{{ $product->store_id }}')" class="button button-secondary button-zakaria add-to-cart-list"><i class="fa fa-cart-plus"></i>{{ gp247_language_render('action.add_to_cart') }}</a>
+      <a onClick="addToCartAjax('{{ $product->id }}','default','{{ $product->store_id }}')" class="button button-secondary button-zakaria add-to-cart-list"><i class="fa fa-cart-plus"></i> {{ gp247_language_render('action.add_to_cart') }}</a>
       @endif
 
       {!! $product->showPrice() !!}

@@ -60,7 +60,7 @@ $email
 
                         <div class="form-group row mb-0">
                             <div class="col-md-6 offset-md-4">
-                                <button class="button-secondary" type="submit" id="">{{ gp247_language_render('customer.password_reset') }}</button>
+                                <button class="button button-secondary" type="submit" id="">{{ gp247_language_render('customer.password_reset') }}</button>
                             </div>
                         </div>
                     </form>

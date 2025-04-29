@@ -380,7 +380,7 @@ $layout_page = shop_checkout
                             <div class="col-md-12 text-center">
                                 <div class="pull-right">
                                     {!! $viewCaptcha ?? ''!!}
-                                    <button class="button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('cart.checkout') }}</button>
+                                    <button class="button button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('cart.checkout') }}</button>
                                 </div>
                             </div>
                         </div>

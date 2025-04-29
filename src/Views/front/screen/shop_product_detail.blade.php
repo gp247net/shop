@@ -88,7 +88,7 @@ $layout_page = shop_product_detail
                       <input class="form-input" name="qty" type="number" data-zeros="true" value="1" min="1" max="100">
                     </div>
                     <div>
-                      <button class="button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('action.add_to_cart') }}</button>
+                      <button class="button button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('action.add_to_cart') }}</button>
                     </div>
                 </div>
                 @endif

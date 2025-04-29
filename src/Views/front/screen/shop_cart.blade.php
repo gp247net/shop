@@ -46,7 +46,7 @@ $layout_page = shop_cart
                     {{-- Button checkout --}}
                     <div class="col-md-12 text-center">
                         <div class="pull-right">
-                            <button class="button-secondary" type="submit" id="">{{ gp247_language_render('cart.checkout') }}</button>
+                            <button class="button button-secondary" type="submit" id="">{{ gp247_language_render('cart.checkout') }}</button>
                         </div>
                     </div>
                     {{-- Button checkout --}}

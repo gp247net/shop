@@ -55,7 +55,7 @@
                         {{ gp247_language_render('customer.title_register') }}
                     </a>
                 </p>
-                <button class="button-secondary" type="submit" id="">{{ gp247_language_render('front.login') }}</button>
+                <button class="button button-secondary" type="submit" id="">{{ gp247_language_render('front.login') }}</button>
             </form>
         </div>
     </div>

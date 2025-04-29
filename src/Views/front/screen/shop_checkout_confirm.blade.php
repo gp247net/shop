@@ -154,10 +154,10 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
                             <div class="row" style="padding-bottom: 20px;">
                                 <div class="col-md-12 text-center">
                                     <div class="pull-left">
-                                        <button onClick="location.href='{{ gp247_route_front('cart') }}'" class="button-secondary" type="button" id=""><i class="fa fa-arrow-left"></i>{{ gp247_language_render('cart.back_to_cart') }}</button>
+                                        <button onClick="location.href='{{ gp247_route_front('cart') }}'" class="button button-secondary" type="button" id=""><i class="fa fa-arrow-left"></i>{{ gp247_language_render('cart.back_to_cart') }}</button>
                                     </div>
                                     <div class="pull-right">
-                                        <button class="button-secondary" type="submit" id="">{{ gp247_language_render('cart.confirm') }}</button>
+                                        <button class="button button-secondary" type="submit" id="">{{ gp247_language_render('cart.confirm') }}</button>
                                     </div>
                                 </div>
                             </div>
