@@ -49,10 +49,6 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
   {{-- Render pagination --}}
   @includeIf($GP247TemplatePath.'.common.pagination', ['items' => $products])
   {{--// Render pagination --}}
-
-  <!-- Render include view -->
-  @include($GP247TemplatePath.'.common.include_view')
-  <!--// Render include view -->
 </div>
 @endsection
 {{-- //block_main_content_center --}}

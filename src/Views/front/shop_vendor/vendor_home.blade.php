@@ -53,9 +53,6 @@ $productsNew = $modelProduct->start()->getProductLatest()->setlimit(gp247_config
         </section>
         @endforeach
         @endif
-        <!-- Render include view -->
-        @include($GP247TemplatePath.'.common.include_view')
-        <!--// Render include view -->
 </div>
 @endsection
 
