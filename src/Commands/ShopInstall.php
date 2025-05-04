@@ -42,6 +42,9 @@ class ShopInstall extends Command
         $this->call('db:seed', ['--class' => '\GP247\Shop\DB\seeders\DataShopDefaultSeeder', '--force' => true]);
         $this->info('---------------> Seeding database Shop default done!');
 
+        // Copy template default
+        $this->call('vendor:publish', ['--tag' => 'gp247:view-shop-front']);
+
         $this->welcome();
     }
 

@@ -13,6 +13,7 @@ use GP247\Shop\Models\ShopShippingStatus;
 use GP247\Shop\Models\ShopOrderStatus;
 use GP247\Front\Models\FrontLink;
 use GP247\Front\Models\FrontLinkStore;
+use GP247\Front\Models\FrontLayoutBlock;
 use GP247\Core\Models\AdminConfig;
 use GP247\Core\Models\AdminHome;
 
@@ -232,6 +233,36 @@ class DataShopDefaultSeeder extends Seeder
                 ['size' => 6, 'sort'=> 60,'view' => 'gp247-shop-admin::component.new_customer','status' => 1],
             ]
         );
+
+        FrontLayoutBlock::where('name','like', '%Shop Package%')->delete();
+        FrontLayoutBlock::insert([
+            [
+                'id'       => (string)\Illuminate\Support\Str::orderedUuid(),
+                'name'     => 'Product Home (Shop Package)',
+                'position' => 'bottom',
+                'page'     => 'front_home',
+                'text'     => 'shop_product_home',
+                'type'     => 'view',
+                'sort'     => 10,
+                'status'   => 1,
+                'template' => GP247_TEMPLATE_FRONT_DEFAULT,
+                'store_id' => GP247_STORE_ID_ROOT,
+            ],
+            [
+                'id'       => (string)\Illuminate\Support\Str::orderedUuid(),
+                'name'     => 'Product Last View (Shop Package)',
+                'position' => 'left',
+                'page'     => 'shop_product_detail,shop_product_list,shop_home,shop_search',
+                'text'     => 'shop_product_last_view',
+                'type'     => 'view',
+                'sort'     => 20,
+                'status'   => 1,
+                'template' => GP247_TEMPLATE_FRONT_DEFAULT,
+                'store_id' => GP247_STORE_ID_ROOT,
+            ]
+        ]);
+    
+
 
         Languages::insertOrIgnore(
             [

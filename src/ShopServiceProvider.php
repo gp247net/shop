@@ -189,6 +189,21 @@ class ShopServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_passwords.php', 'auth.passwords');
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_providers.php', 'auth.providers');
 
+        //Process layout_page
+        $layoutPage = config('gp247-config.front.layout_page');
+        $layoutPage['shop_item_list'] = 'shop_item_list';
+        $layoutPage['shop_product_detail'] = 'shop_product_detail';
+        $layoutPage['shop_product_list'] = 'shop_product_list';
+        $layoutPage['shop_home'] = 'shop_home';
+        $layoutPage['shop_profile'] = 'shop_profile';
+        $layoutPage['shop_cart'] = 'shop_cart';
+        $layoutPage['shop_checkout'] = 'shop_checkout';
+        $layoutPage['shop_wishlist'] = 'shop_wishlist';
+        $layoutPage['shop_compare'] = 'shop_compare';
+        $layoutPage['shop_auth'] = 'shop_auth';
+        $layoutPage['shop_search'] = 'shop_search';
+        config(['gp247-config.front.layout_page' => $layoutPage]);
+
     }
 
     public function bootDefault()
