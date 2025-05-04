@@ -758,7 +758,7 @@ class ShopProduct extends Model
                         ->orWhereNull($tablePromotion . '.date_end');
                 })
                 ->where(function ($query) use ($tablePromotion) {
-                    $query->where($tablePromotion . '.date_start', '<=', date("Y-m-d"))
+                    $query->where($tablePromotion . '.date_start', '<=', date("Y-m-d H:i:s"))
                         ->orWhereNull($tablePromotion . '.date_start');
                 });
         }
