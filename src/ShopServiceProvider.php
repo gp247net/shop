@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use GP247\Shop\Commands\ShopInstall;
 use GP247\Shop\Commands\ShopUninstall;
 use GP247\Shop\Commands\ShopSample;
+use GP247\Shop\Commands\ShopClearCart;
 use GP247\Shop\Middleware\CurrencyMiddleware;
 use GP247\Shop\Middleware\EmailIsVerifiedMiddleware;
 use GP247\Shop\Middleware\CustomerAuth;
@@ -50,6 +51,7 @@ class ShopServiceProvider extends ServiceProvider
                 ShopInstall::class,
                 ShopUninstall::class,
                 ShopSample::class,
+                ShopClearCart::class,
             ]);
         } catch (\Throwable $e) {
             $msg = '#GP247-SHOP:: '.$e->getMessage().' - Line: '.$e->getLine().' - File: '.$e->getFile();

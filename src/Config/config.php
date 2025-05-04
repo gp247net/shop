@@ -40,5 +40,13 @@ return [
 
         //Product length unit
         'product_length_unit' => env('GP247_PRODUCT_LENGTH_UNIT', 'mm,cm,m,in,ft'),
+
+        //Cart expire
+        'cart_expire' => [
+            'cart' => env('GP247_CART_EXPIRE_CART', 7), //days
+            'wishlist' => env('GP247_CART_EXPIRE_WISHLIST', 30), //days
+            'compare' => env('GP247_CART_EXPIRE_COMPARE', 30), //days
+            'lastview' => env('GP247_CART_EXPIRE_PRODUCT_LASTVIEW', 30), //days
+        ],
     ],
 ];
