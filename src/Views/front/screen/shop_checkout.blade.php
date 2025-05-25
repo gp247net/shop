@@ -479,14 +479,6 @@ $layout_page = shop_checkout
     });
 
 </script>
-
-    <!-- Render include js cart -->
-    @php
-        $view = gp247_shop_process_view($GP247TemplatePath, 'common.shop_js');
-    @endphp
-    @include($view)
-    <!--// Render include js cart -->
-
 @endpush
 
 @push('styles')

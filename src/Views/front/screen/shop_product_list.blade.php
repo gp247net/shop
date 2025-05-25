@@ -95,10 +95,4 @@ Use paginate: $products->appends(request()->except(['page','_token']))->links()
 @endpush
 
 @push('scripts')
-      <!-- Render include js cart -->
-      @php
-          $view = gp247_shop_process_view($GP247TemplatePath, 'common.shop_js');
-      @endphp
-      @include($view)
-      <!--// Render include js cart -->
 @endpush
