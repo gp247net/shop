@@ -4,7 +4,7 @@ use GP247\Shop\Models\ShopProduct;
 use GP247\Shop\Models\ShopProductStore;
 use GP247\Shop\Models\ShopProductDescription;
 
-if (!function_exists('gp247_product_admin_select_list') && !in_array('gp247_get_plugin_captcha_installed', config('gp247_functions_except', []))) {
+if (!function_exists('gp247_product_admin_select_list') && !in_array('gp247_product_admin_select_list', config('gp247_functions_except', []))) {
     /**
      * Get list product select use in admin page
      *
