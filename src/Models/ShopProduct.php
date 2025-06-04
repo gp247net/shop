@@ -907,7 +907,7 @@ class ShopProduct extends Model
      */
     public function displayVendor()
     {
-        if ((gp247_store_check_multi_domain_installed()) && config('app.storeId') == GP247_STORE_ID_ROOT) {
+        if ((gp247_store_check_multi_partner_installed()) && config('app.storeId') == GP247_STORE_ID_ROOT) {
             $subPath = 'shop_vendor.display_vendor';
             $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'), $subPath);
             gp247_check_view($view);
