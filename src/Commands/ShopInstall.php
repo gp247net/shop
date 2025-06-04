@@ -39,8 +39,11 @@ class ShopInstall extends Command
         $this->call('migrate', ['--path' => '/vendor/gp247/shop/src/DB/migrations/00_00_00_create_tables_shop.php']);
         $this->info('---------------> Migrate schema Shop default done!');
 
-        $this->call('db:seed', ['--class' => '\GP247\Shop\DB\seeders\DataShopDefaultSeeder', '--force' => true]);
+        $this->call('db:seed', ['--class' => '\GP247\Shop\DB\seeders\DataShopInitializeSeeder', '--force' => true]);
         $this->info('---------------> Seeding database Shop default done!');
+
+        $this->call('db:seed', ['--class' => '\GP247\Shop\DB\seeders\DataShopDefaultSeeder', '--force' => true]);
+        $this->info('---------------> Seeding database for store root done!');
 
         // Copy template default
         $this->call('vendor:publish', ['--tag' => 'gp247:view-shop-front']);
