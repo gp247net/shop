@@ -643,7 +643,7 @@ class ShopProduct extends Model
     public function getProductLatest()
     {
         $this->setLimit(10);
-        $this->setSort(['id', 'desc']);
+        $this->setSort(['created_at', 'desc']);
         return $this;
     }
 
@@ -711,14 +711,17 @@ class ShopProduct extends Model
             ->where($tableDescription . '.lang', gp247_get_locale());
 
         if (gp247_store_check_multi_domain_installed()) {
+            // Multi store or multi vendor
             $dataSelect .= ', '.$tableProductStore.'.store_id';
             $query = $query->join($tableProductStore, $tableProductStore.'.product_id', $this->getTable() . '.id');
             $query = $query->join($tableStore, $tableStore . '.id', $tableProductStore.'.store_id');
             $query = $query->where($tableStore . '.status', '1');
 
-            if (gp247_store_check_multi_domain_installed()  
+            if (gp247_store_check_multi_store_installed()
+                // Multi store
                 || (
-                    (gp247_store_check_multi_domain_installed()) 
+                    // Multi vendor and not root store
+                    (gp247_store_check_multi_partner_installed()) 
                     && (!empty($this->gp247_store_info_id) || config('app.storeId') != GP247_STORE_ID_ROOT)
                     )
             ) {
@@ -726,15 +729,15 @@ class ShopProduct extends Model
                 $query = $query->where($tableProductStore.'.store_id', $storeId);
             }
 
-            if (count($this->gp247_category_vendor) && gp247_store_check_multi_domain_installed()) {
+            if (count($this->gp247_category_vendor) && gp247_store_check_multi_partner_installed()) {
                 if (gp247_config_global('MultiVendorPro')) {
-                    $tablePTC = (new \App\Plugins\Other\MultiVendorPro\Models\VendorProductCategory)->getTable();
+                    $vendorProductCategoryClass = '\App\GP247\Plugins\MultiVendorPro\Models\VendorProductCategory';
+                    if (class_exists($vendorProductCategoryClass)) {
+                        $tablePTC = (new $vendorProductCategoryClass)->getTable();
+                        $query = $query->leftJoin($tablePTC, $tablePTC . '.product_id', $this->getTable() . '.id');
+                        $query = $query->whereIn($tablePTC . '.vendor_category_id', $this->gp247_category_vendor);
+                    }
                 }
-                if (gp247_config_global('MultiVendor')) {
-                    $tablePTC = (new \App\Plugins\Other\MultiVendor\Models\VendorProductCategory)->getTable();
-                }
-                $query = $query->leftJoin($tablePTC, $tablePTC . '.product_id', $this->getTable() . '.id');
-                $query = $query->whereIn($tablePTC . '.vendor_category_id', $this->gp247_category_vendor);
             }
         }
 
@@ -822,7 +825,7 @@ class ShopProduct extends Model
                             //Process sort with sort value
                             $query = $query->orderBy($this->getTable().'.sort', $rowSort[1]);
                             $checkSort = true;
-                        } elseif ($rowSort[0] == 'id') {
+                        } elseif ($rowSort[0] == 'id' || $rowSort[0] == 'new') {
                             //Process sort with product id
                             $query = $query->orderBy($this->getTable().'.created_at', $rowSort[1]);
                             $ckeckId = true;

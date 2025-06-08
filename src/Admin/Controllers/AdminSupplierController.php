@@ -38,7 +38,7 @@ class AdminSupplierController extends RootAdminController
             'action' => gp247_language_render('action.title'),
         ];
         $obj = new ShopSupplier;
-        $obj = $obj->orderBy('id', 'desc');
+        $obj = $obj->orderBy('created_at', 'desc');
         $dataTmp = $obj->paginate(20);
 
         $dataTr = [];
@@ -159,7 +159,7 @@ class AdminSupplierController extends RootAdminController
     ];
 
         $obj = new ShopSupplier;
-        $obj = $obj->orderBy('id', 'desc');
+        $obj = $obj->orderBy('created_at', 'desc');
         $dataTmp = $obj->paginate(20);
 
         $dataTr = [];
