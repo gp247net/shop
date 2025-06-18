@@ -361,8 +361,13 @@ class ShopProduct extends Model
             return false;
         }
         if ($this->status &&
-            (gp247_config('product_preorder', config('app.storeId')) == 1 || $this->date_available === null || gp247_time_now() >= $this->date_available)
-            && (gp247_config('product_buy_out_of_stock', config('app.storeId')) || $this->stock || empty(gp247_config('product_stock', config('app.storeId'))))
+            (gp247_config('product_preorder', config('app.storeId')) == 1 
+                || $this->date_available === null 
+                || gp247_time_now() >= $this->date_available)
+            && (
+                gp247_config('product_buy_out_of_stock', config('app.storeId')) 
+                || $this->stock 
+                || empty(gp247_config('product_stock', config('app.storeId'))))
             && $this->kind != GP247_PRODUCT_GROUP
         ) {
             return true;
@@ -914,13 +919,17 @@ class ShopProduct extends Model
             $subPath = 'shop_vendor.display_vendor';
             $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'), $subPath);
             gp247_check_view($view);
-            $vendorCode = $this->stores()->first()->code;
-            $vendorUrl = $this->goToShop($vendorCode);
+            $vendorCode = $this->stores()->pluck('code')->toArray();
+            $arrVendor = [];
+            if ($vendorCode) {
+                foreach ($vendorCode as $key => $code) {
+                    $arrVendor[$code] = $this->goToShop($code);
+                }
+            }
             return  view(
                 $view,
                 [
-                    'vendorCode' => $vendorCode,
-                    'vendorUrl' => $vendorUrl,
+                    'arrVendor' => $arrVendor,
                 ]
             )->render();
         }

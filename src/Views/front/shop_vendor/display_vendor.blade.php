@@ -1,3 +1,7 @@
+@if (count($arrVendor))
 <div class="store-url">
-    <a href="{{ $vendorUrl }}"><i class="fa fa-shopping-bag" aria-hidden="true"></i> {{ $vendorCode }}</a>
+    @foreach ($arrVendor as $vendorCode => $vendorUrl)
+        <a href="{{ $vendorUrl }}"><span class="fa fa-shopping-bag" aria-hidden="true"></span> {{ $vendorCode }}</a><br>
+    @endforeach
 </div>
+@endif
