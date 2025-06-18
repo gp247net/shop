@@ -706,21 +706,15 @@ class ShopProduct extends Model
         $tableStore = (new AdminStore)->getTable();
         $tableProductStore = (new ShopProductStore)->getTable();
         $storeId = $this->gp247_store_info_id ? $this->gp247_store_info_id : config('app.storeId');
-        //Select field
-        $dataSelect = $this->getTable().'.*, '.$tableDescription.'.name, '.$tableDescription.'.keyword, '.$tableDescription.'.description';
-
-        //description
-        $query = $this
-            //join description
-            ->leftJoin($tableDescription, $tableDescription . '.product_id', $this->getTable() . '.id')
-            ->where($tableDescription . '.lang', gp247_get_locale());
-
+        
+        // Start with a subquery to get unique product IDs first
+        $subQuery = $this->select($this->getTable().'.id');
+        
+        // Apply store filters in subquery
         if (gp247_store_check_multi_domain_installed()) {
-            // Multi store or multi vendor
-            $dataSelect .= ', '.$tableProductStore.'.store_id';
-            $query = $query->join($tableProductStore, $tableProductStore.'.product_id', $this->getTable() . '.id');
-            $query = $query->join($tableStore, $tableStore . '.id', $tableProductStore.'.store_id');
-            $query = $query->where($tableStore . '.status', '1');
+            $subQuery = $subQuery->join($tableProductStore, $tableProductStore.'.product_id', $this->getTable() . '.id');
+            $subQuery = $subQuery->join($tableStore, $tableStore . '.id', $tableProductStore.'.store_id');
+            $subQuery = $subQuery->where($tableStore . '.status', '1');
 
             if (gp247_store_check_multi_store_installed()
                 // Multi store
@@ -731,7 +725,7 @@ class ShopProduct extends Model
                     )
             ) {
                 //store of vendor
-                $query = $query->where($tableProductStore.'.store_id', $storeId);
+                $subQuery = $subQuery->where($tableProductStore.'.store_id', $storeId);
             }
 
             if (count($this->gp247_category_vendor) && gp247_store_check_multi_partner_installed()) {
@@ -739,12 +733,88 @@ class ShopProduct extends Model
                     $vendorProductCategoryClass = '\App\GP247\Plugins\MultiVendorPro\Models\VendorProductCategory';
                     if (class_exists($vendorProductCategoryClass)) {
                         $tablePTC = (new $vendorProductCategoryClass)->getTable();
-                        $query = $query->leftJoin($tablePTC, $tablePTC . '.product_id', $this->getTable() . '.id');
-                        $query = $query->whereIn($tablePTC . '.vendor_category_id', $this->gp247_category_vendor);
+                        $subQuery = $subQuery->leftJoin($tablePTC, $tablePTC . '.product_id', $this->getTable() . '.id');
+                        $subQuery = $subQuery->whereIn($tablePTC . '.vendor_category_id', $this->gp247_category_vendor);
                     }
                 }
             }
         }
+
+        // Apply category filters in subquery
+        if (count($this->gp247_category)) {
+            $tablePTC = (new ShopProductCategory)->getTable();
+            $subQuery = $subQuery->leftJoin($tablePTC, $tablePTC . '.product_id', $this->getTable() . '.id');
+            $subQuery = $subQuery->whereIn($tablePTC . '.category_id', $this->gp247_category);
+        }
+
+        // Apply promotion filters in subquery
+        if ($this->gp247_promotion == 1) {
+            $tablePromotion = (new ShopProductPromotion)->getTable();
+            $subQuery = $subQuery->join($tablePromotion, $this->getTable() . '.id', '=', $tablePromotion . '.product_id')
+                ->where($tablePromotion . '.status_promotion', 1)
+                ->where(function ($query) use ($tablePromotion) {
+                    $query->where($tablePromotion . '.date_end', '>=', date("Y-m-d"))
+                        ->orWhereNull($tablePromotion . '.date_end');
+                })
+                ->where(function ($query) use ($tablePromotion) {
+                    $query->where($tablePromotion . '.date_start', '<=', date("Y-m-d H:i:s"))
+                        ->orWhereNull($tablePromotion . '.date_start');
+                });
+        }
+
+        // Apply other filters in subquery
+        if (count($this->gp247_array_ID)) {
+            $subQuery = $subQuery->whereIn($this->getTable().'.id', $this->gp247_array_ID);
+        }
+
+        $subQuery = $subQuery->where($this->getTable().'.status', 1);
+        $subQuery = $subQuery->where($this->getTable().'.approve', 1);
+
+        if ($this->gp247_kind !== []) {
+            $subQuery = $subQuery->whereIn($this->getTable().'.kind', $this->gp247_kind);
+        }
+
+        //Filter with tag
+        if ($this->gp247_tag !== 'all') {
+            $subQuery = $subQuery->where($this->getTable().'.tag', $this->gp247_tag);
+        }
+        //Filter with brand
+        if (count($this->gp247_brand)) {
+            $subQuery = $subQuery->whereIn($this->getTable().'.brand_id', $this->gp247_brand);
+        }
+        //Filter with range price
+        if ($this->gp247_range_price) {
+            $price = explode('__', $this->gp247_range_price);
+            $rangePrice['min'] = $price[0] ?? 0;
+            $rangePrice['max'] = $price[1] ?? 0;
+            if ($rangePrice['max']) {
+                $subQuery = $subQuery->whereBetween($this->getTable().'.price', $rangePrice);
+            }
+        }
+        //Filter with supplier
+        if (count($this->gp247_supplier)) {
+            $subQuery = $subQuery->whereIn($this->getTable().'.supplier_id', $this->gp247_supplier);
+        }
+
+        //Hidden product out of stock
+        if (empty(gp247_config('product_display_out_of_stock', $storeId)) && !empty(gp247_config('product_stock', $storeId))) {
+            $subQuery = $subQuery->where($this->getTable().'.stock', '>', 0);
+        }
+
+        // Get unique product IDs
+        $subQuery = $subQuery->distinct($this->getTable().'.id');
+
+        // Now build the main query with the filtered product IDs
+        $query = $this->whereIn($this->getTable().'.id', $subQuery);
+        
+        //Select field - remove store_id from select to prevent duplicates
+        $dataSelect = $this->getTable().'.*, '.$tableDescription.'.name, '.$tableDescription.'.keyword, '.$tableDescription.'.description';
+
+        //description
+        $query = $query
+            //join description
+            ->leftJoin($tableDescription, $tableDescription . '.product_id', $this->getTable() . '.id')
+            ->where($tableDescription . '.lang', gp247_get_locale());
 
         //search keyword
         if ($this->gp247_keyword !='') {
@@ -756,67 +826,11 @@ class ShopProduct extends Model
             });
         }
 
-        //Promotion
-        if ($this->gp247_promotion == 1) {
-            $tablePromotion = (new ShopProductPromotion)->getTable();
-            $query = $query->join($tablePromotion, $this->getTable() . '.id', '=', $tablePromotion . '.product_id')
-                ->where($tablePromotion . '.status_promotion', 1)
-                ->where(function ($query) use ($tablePromotion) {
-                    $query->where($tablePromotion . '.date_end', '>=', date("Y-m-d"))
-                        ->orWhereNull($tablePromotion . '.date_end');
-                })
-                ->where(function ($query) use ($tablePromotion) {
-                    $query->where($tablePromotion . '.date_start', '<=', date("Y-m-d H:i:s"))
-                        ->orWhereNull($tablePromotion . '.date_start');
-                });
-        }
         $query = $query->selectRaw($dataSelect);
         $query = $query->with('promotionPrice');
         $query = $query->with('stores');
-            
-
-        if (count($this->gp247_category)) {
-            $tablePTC = (new ShopProductCategory)->getTable();
-            $query = $query->leftJoin($tablePTC, $tablePTC . '.product_id', $this->getTable() . '.id');
-            $query = $query->whereIn($tablePTC . '.category_id', $this->gp247_category);
-        }
-
-
-        if (count($this->gp247_array_ID)) {
-            $query = $query->whereIn($this->getTable().'.id', $this->gp247_array_ID);
-        }
-
-        $query = $query->where($this->getTable().'.status', 1);
-        $query = $query->where($this->getTable().'.approve', 1);
-
-        if ($this->gp247_kind !== []) {
-            $query = $query->whereIn($this->getTable().'.kind', $this->gp247_kind);
-        }
-
-        //Filter with tag
-        if ($this->gp247_tag !== 'all') {
-            $query = $query->where($this->getTable().'.tag', $this->gp247_tag);
-        }
-        //Filter with brand
-        if (count($this->gp247_brand)) {
-            $query = $query->whereIn($this->getTable().'.brand_id', $this->gp247_brand);
-        }
-        //Filter with range price
-        if ($this->gp247_range_price) {
-            $price = explode('__', $this->gp247_range_price);
-            $rangePrice['min'] = $price[0] ?? 0;
-            $rangePrice['max'] = $price[1] ?? 0;
-            if ($rangePrice['max']) {
-                $query = $query->whereBetween($this->getTable().'.price', $rangePrice);
-            }
-        }
-        //Filter with supplier
-        if (count($this->gp247_supplier)) {
-            $query = $query->whereIn($this->getTable().'.supplier_id', $this->gp247_supplier);
-        }
 
         $query = $this->processMoreQuery($query);
-        
 
         if ($this->gp247_random) {
             $query = $query->inRandomOrder();
@@ -848,11 +862,6 @@ class ShopProduct extends Model
             if (!$ckeckId) {
                 $query = $query->orderBy($this->getTable().'.created_at', 'desc');
             }
-        }
-
-        //Hidden product out of stock
-        if (empty(gp247_config('product_display_out_of_stock', $storeId)) && !empty(gp247_config('product_stock', $storeId))) {
-            $query = $query->where($this->getTable().'.stock', '>', 0);
         }
 
         return $query;
@@ -902,9 +911,6 @@ class ShopProduct extends Model
      */
     public function goToShop($code = null)
     {
-        if (!$code) {
-            $code = $this->stores()->first()->code;
-        }
         return url(gp247_path_vendor().'/'.$code);
     }
 
@@ -919,7 +925,7 @@ class ShopProduct extends Model
             $subPath = 'shop_vendor.display_vendor';
             $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'), $subPath);
             gp247_check_view($view);
-            $vendorCode = $this->stores()->pluck('code')->toArray();
+            $vendorCode = $this->stores->pluck('code')->toArray();
             $arrVendor = [];
             if ($vendorCode) {
                 foreach ($vendorCode as $key => $code) {
