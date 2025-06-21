@@ -169,6 +169,21 @@ if (!function_exists('gp247_get_list_store_of_banner') && !in_array('gp247_get_l
             ->groupBy('banner_id');
     }
 }
+/**
+ * Get store list of pages
+ */
+if (!function_exists('gp247_get_list_store_of_page') && !in_array('gp247_get_list_store_of_page', config('gp247_functions_except', []))) {
+    function gp247_get_list_store_of_page(array $arrPageId)
+    {
+        $tableStore = (new \GP247\Core\Models\AdminStore)->getTable();
+        $tablePageStore = (new \GP247\Front\Models\FrontPageStore)->getTable();
+        return \GP247\Front\Models\FrontPageStore::select($tableStore.'.code', $tableStore.'.id', 'page_id')
+            ->leftJoin($tableStore, $tableStore.'.id', $tablePageStore.'.store_id')
+            ->whereIn('page_id', $arrPageId)
+            ->get()
+            ->groupBy('page_id');
+    }
+}
 
 /**
  * Get list store of banner detail

@@ -81,7 +81,7 @@ class AdminProductController extends RootAdminController
             $listTh['kind'] = gp247_language_render('product.kind');
         }
 
-        if ((gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT)) {
+        if (((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT)) {
             // Only show store info if store is root
             $listTh['shop_store'] = gp247_language_render('front.store_list');
         }
@@ -112,7 +112,7 @@ class AdminProductController extends RootAdminController
         $arrProductId = $dataTmp->pluck('id')->toArray();
         $categoriesTmp = (new AdminProduct)->getListCategoryIdFromProductId($arrProductId);
 
-        if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
             // Only show store info if store is root
             $tableStore = (new AdminStore)->getTable();
             $tableProductStore = (new ShopProductStore)->getTable();
@@ -155,7 +155,7 @@ class AdminProductController extends RootAdminController
                 $dataMap['kind'] = $kind;
             }
 
-            if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+            if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
                 // Only show store info if store is root
                 if (!empty($dataStores[$row['id']])) {
                     $storeTmp = $dataStores[$row['id']]->pluck('code', 'id')->toArray();

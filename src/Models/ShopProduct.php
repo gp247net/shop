@@ -216,15 +216,15 @@ class ShopProduct extends Model
 
         $product = $this->leftJoin($tableDescription, $tableDescription . '.product_id', $this->getTable() . '.id');
         
-        if (gp247_store_check_multi_domain_installed()) {
+        if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) {
             $dataSelect .= ', '.$tableProductStore.'.store_id';
             $product = $product->join($tableProductStore, $tableProductStore.'.product_id', $this->getTable() . '.id');
             $product = $product->join($tableStore, $tableStore . '.id', $tableProductStore.'.store_id');
             $product = $product->where($tableStore . '.status', '1');
 
-            if (gp247_store_check_multi_domain_installed()  
+            if (gp247_store_check_multi_store_installed()  
                 || (
-                    (gp247_store_check_multi_domain_installed()) 
+                    (gp247_store_check_multi_partner_installed()) 
                     && (!empty($this->gp247_store_info_id) || config('app.storeId') != GP247_STORE_ID_ROOT)
                     )
             ) {
@@ -711,7 +711,7 @@ class ShopProduct extends Model
         $subQuery = $this->select($this->getTable().'.id');
         
         // Apply store filters in subquery
-        if (gp247_store_check_multi_domain_installed()) {
+        if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) {
             $subQuery = $subQuery->join($tableProductStore, $tableProductStore.'.product_id', $this->getTable() . '.id');
             $subQuery = $subQuery->join($tableStore, $tableStore . '.id', $tableProductStore.'.store_id');
             $subQuery = $subQuery->where($tableStore . '.status', '1');
@@ -925,17 +925,13 @@ class ShopProduct extends Model
             $subPath = 'shop_vendor.display_vendor';
             $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'), $subPath);
             gp247_check_view($view);
-            $vendorCode = $this->stores->pluck('code')->toArray();
-            $arrVendor = [];
-            if ($vendorCode) {
-                foreach ($vendorCode as $key => $code) {
-                    $arrVendor[$code] = $this->goToShop($code);
-                }
-            }
+            $vendorCode = $this->stores()->first()->code;
+            $vendorUrl = $this->goToShop($vendorCode);
             return  view(
                 $view,
                 [
-                    'arrVendor' => $arrVendor,
+                    'vendorCode' => $vendorCode,
+                    'vendorUrl' => $vendorUrl,
                 ]
             )->render();
         }

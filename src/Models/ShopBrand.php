@@ -112,7 +112,7 @@ class ShopBrand extends Model
         } else {
             $data = $data->where($type, $key);
         }
-        if (gp247_store_check_multi_domain_installed()) {
+        if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) {
             $tableBrandStore = (new ShopBrandStore)->getTable();
             $tableStore = (new AdminStore)->getTable();
             $data = $data->join($tableBrandStore, $tableBrandStore.'.brand_id', $this->getTable() . '.id');
@@ -147,7 +147,7 @@ class ShopBrand extends Model
         $query = $this->selectRaw($dataSelect)
             ->where($this->getTable().'.status', 1);
 
-        if (gp247_store_check_multi_domain_installed()) {
+        if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) {
             $tableBrandStore = (new ShopBrandStore)->getTable();
             $tableStore = (new AdminStore)->getTable();
             $query = $query->join($tableBrandStore, $tableBrandStore.'.brand_id', $this->getTable() . '.id');

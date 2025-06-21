@@ -137,7 +137,7 @@
 
 
 
-@if (gp247_store_check_multi_domain_installed())
+@if (gp247_store_check_multi_store_installed())
                         {{-- select shop_store --}}
                         @php
                         $listStore = [];

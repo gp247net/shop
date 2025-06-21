@@ -73,7 +73,7 @@ class AdminOrderController extends RootAdminController
             'shipping_status'=> gp247_language_render('order.shipping_status'),
             'status'         => gp247_language_render('order.status'),
         ];
-        if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
             // Only show store info if store is root
             $listTh['shop_store'] = '<i class="fab fa-shopify" aria-hidden="true" title="'.gp247_language_render('front.store_list').'"></i>';
         }
@@ -104,7 +104,7 @@ class AdminOrderController extends RootAdminController
             'order_status' => $order_status,
         ];
         $dataTmp = (new AdminOrder)->getOrderListAdmin($dataSearch);
-        if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
             $arrId = $dataTmp->pluck('id')->toArray();
             // Only show store info if store is root
             if (function_exists('gp247_get_list_store_of_order')) {
@@ -132,7 +132,7 @@ class AdminOrderController extends RootAdminController
                 'shipping_status'=> $this->statusShipping[$row['shipping_status']] ?? $row['shipping_status'],
                 'status'         => $styleStatus[$row['status']] ?? $row['status'],
             ];
-            if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+            if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
                 // Only show store info if store is root
                 if (!empty($dataStores[$row['id']])) {
                     $storeTmp = $dataStores[$row['id']]->pluck('code', 'id')->toArray();

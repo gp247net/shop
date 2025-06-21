@@ -135,7 +135,7 @@ class ShopCategory extends Model
             ->leftJoin($tableDescription, $tableDescription . '.category_id', $this->getTable() . '.id')
             ->where($tableDescription . '.lang', gp247_get_locale());
 
-        if (gp247_store_check_multi_domain_installed()) {
+        if (gp247_store_check_multi_store_installed()) {
             $tableCategoryStore = (new ShopCategoryStore)->getTable();
             $tableStore = (new AdminStore)->getTable();
             $category = $category->join($tableCategoryStore, $tableCategoryStore.'.category_id', $this->getTable() . '.id');
@@ -228,7 +228,7 @@ class ShopCategory extends Model
             });
         }
 
-        if (gp247_store_check_multi_domain_installed()) {
+        if (gp247_store_check_multi_store_installed()) {
             $tableCategoryStore = (new ShopCategoryStore)->getTable();
             $tableStore = (new AdminStore)->getTable();
             $query = $query->join($tableCategoryStore, $tableCategoryStore.'.category_id', $this->getTable() . '.id');

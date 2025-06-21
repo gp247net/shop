@@ -35,7 +35,7 @@ class AdminBrandController extends RootAdminController
             'status' => gp247_language_render('admin.brand.status'),
         ];
         
-        if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
             // Only show store info if store is root
             $listTh['shop_store'] = gp247_language_render('front.store_list');
         }
@@ -45,7 +45,7 @@ class AdminBrandController extends RootAdminController
         $obj = $obj->orderBy('id', 'desc');
         $dataTmp = $obj->paginate(20);
 
-        if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
             $arrId = $dataTmp->pluck('id')->toArray();
             // Only show store info if store is root
             if (function_exists('gp247_get_list_store_of_brand')) {
@@ -62,7 +62,7 @@ class AdminBrandController extends RootAdminController
                 'image' => gp247_image_render($row->getThumb(), '50px', '', $row['name']),
                 'status' => $row['status'] ? '<span class="badge badge-success">ON</span>' : '<span class="badge badge-danger">OFF</span>',
             ];
-            if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+            if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
                 // Only show store info if store is root
                 if (!empty($dataStores[$row['id']])) {
                     $storeTmp = $dataStores[$row['id']]->pluck('code', 'id')->toArray();

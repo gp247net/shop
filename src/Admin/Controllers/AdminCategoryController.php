@@ -46,8 +46,7 @@ class AdminCategoryController extends RootAdminController
             'sort'   => gp247_language_render('admin.category.sort'),
         ];
 
-        if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
-            // Only show store info if store is root
+        if (gp247_store_check_multi_store_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
             $listTh['shop_store'] = gp247_language_render('front.store_list');
         }
 
@@ -69,8 +68,7 @@ class AdminCategoryController extends RootAdminController
         ];
         $dataTmp = (new AdminCategory)->getCategoryListAdmin($dataSearch);
         
-        if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
-            // Only show store info if store is root
+        if (gp247_store_check_multi_store_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
             $arrId = $dataTmp->pluck('id')->toArray();
             if (function_exists('gp247_get_list_store_of_category')) {
                 $dataStores = gp247_get_list_store_of_category($arrId);
@@ -90,8 +88,7 @@ class AdminCategoryController extends RootAdminController
                 'sort' => $row['sort'],
             ];
 
-            if (gp247_store_check_multi_domain_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
-                // Only show store info if store is root
+            if (gp247_store_check_multi_store_installed() && session('adminStoreId') == GP247_STORE_ID_ROOT) {
                 if (!empty($dataStores[$row['id']])) {
                     $storeTmp = $dataStores[$row['id']]->pluck('code', 'id')->toArray();
                     $storeTmp = array_map(function ($code) {
@@ -243,7 +240,7 @@ class AdminCategoryController extends RootAdminController
         $dataDes  = gp247_clean($dataDes, [], true);
         AdminCategory::insertDescriptionAdmin($dataDes);
 
-        if (gp247_store_check_multi_domain_installed()) {
+        if (gp247_store_check_multi_store_installed()) {
             // If multi-store
             $shopStore        = $data['shop_store'] ?? [];
             $category->stores()->detach();
@@ -357,7 +354,7 @@ class AdminCategoryController extends RootAdminController
         $dataDes = gp247_clean($dataDes, [], true);
         AdminCategory::insertDescriptionAdmin($dataDes);
 
-        if (gp247_store_check_multi_domain_installed()) {
+        if (gp247_store_check_multi_store_installed()) {
             // If multi-store
             $shopStore        = $data['shop_store'] ?? [];
             $category->stores()->detach();
