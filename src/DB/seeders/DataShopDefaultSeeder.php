@@ -4,6 +4,10 @@ namespace GP247\Shop\DB\seeders;
 
 use Illuminate\Database\Seeder;
 use GP247\Core\Models\AdminConfig;
+use GP247\Core\Models\AdminStore;
+use GP247\Front\Models\FrontLink;
+use GP247\Front\Models\FrontLayoutBlock;
+
 
 class DataShopDefaultSeeder extends Seeder
 {
@@ -16,8 +20,74 @@ class DataShopDefaultSeeder extends Seeder
     public function run()
     {
         $storeId = empty(session('lastStoreId')) ? GP247_STORE_ID_ROOT : session('lastStoreId');
+
+        $store = AdminStore::find($storeId);
+
+        if (!$store) {
+            gp247_report(msg: 'Store # ' . $storeId . ' not found in command DataShopDefaultSeeder');
+            return;
+        }
+
+
         $dataConfig = $this->dataConfigShop($storeId);
         AdminConfig::insertOrIgnore($dataConfig);
+        
+        $links = [
+            [
+                'name' => 'front.all_product',
+                'url' => 'route_front::product.all',
+                'target' => '_self', 
+                'group' => 'menu', // menu main
+                'sort' => 2,
+                'status' => 1,
+            ],
+
+        ];
+        foreach ($links as $link) {
+            $frontLink = FrontLink::create([
+                'id' => (string)\Illuminate\Support\Str::orderedUuid(),
+                'name' => $link['name'],
+                'url' => $link['url'],
+                'target' => $link['target'],
+                'group' => $link['group'],
+                'sort' => $link['sort'],
+                'status' => $link['status'],
+                'module' => 'gp247/shop',
+            ]);
+
+            // Attach to store using model relationship
+            $frontLink->stores()->attach($storeId);
+        }
+
+        // Add new layout block
+        FrontLayoutBlock::insert([
+            [
+                'id'       => (string)\Illuminate\Support\Str::orderedUuid(),
+                'name'     => 'Product Home (Shop Package)',
+                'position' => 'bottom',
+                'page'     => 'front_home',
+                'text'     => 'shop_product_home',
+                'type'     => 'view',
+                'sort'     => 10,
+                'status'   => 1,
+                'template' => $store->template,
+                'store_id' => $storeId,
+            ],
+            [
+                'id'       => (string)\Illuminate\Support\Str::orderedUuid(),
+                'name'     => 'Product Last View (Shop Package)',
+                'position' => 'left',
+                'page'     => 'shop_product_detail,shop_product_list,shop_home,shop_search',
+                'text'     => 'shop_product_last_view',
+                'type'     => 'view',
+                'sort'     => 20,
+                'status'   => 1,
+                'template' => $store->template,
+                'store_id' => $storeId,
+            ]
+        ]);
+    
+
     }
 
         

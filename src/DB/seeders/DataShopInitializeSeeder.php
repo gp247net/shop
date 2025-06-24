@@ -10,9 +10,6 @@ use GP247\Shop\Models\ShopCurrency;
 use GP247\Shop\Models\ShopPaymentStatus;
 use GP247\Shop\Models\ShopShippingStatus;
 use GP247\Shop\Models\ShopOrderStatus;
-use GP247\Front\Models\FrontLink;
-use GP247\Front\Models\FrontLinkStore;
-use GP247\Front\Models\FrontLayoutBlock;
 use GP247\Core\Models\AdminHome;
 
 class DataShopInitializeSeeder extends Seeder
@@ -49,39 +46,6 @@ class DataShopInitializeSeeder extends Seeder
             ->delete();
         }
 
-        // Delete old links
-        $links = FrontLink::where('module', 'gp247/shop')->pluck('id');
-        FrontLink::where('module', 'gp247/shop')->delete();
-        FrontLinkStore::whereIn('link_id', $links)->delete();
-
-        
-        $links = [
-            [
-                'name' => 'front.all_product',
-                'url' => 'route_front::product.all',
-                'target' => '_self', 
-                'group' => 'menu', // menu main
-                'sort' => 2,
-                'status' => 1,
-            ],
-
-        ];
-        foreach ($links as $link) {
-            $frontLink = FrontLink::create([
-                'id' => (string)\Illuminate\Support\Str::orderedUuid(),
-                'name' => $link['name'],
-                'url' => $link['url'],
-                'target' => $link['target'],
-                'group' => $link['group'],
-                'sort' => $link['sort'],
-                'status' => $link['status'],
-                'module' => 'gp247/shop',
-            ]);
-
-            // Attach to store using model relationship
-            $frontLink->stores()->attach(GP247_STORE_ID_ROOT);
-        }
-
 
 
 
@@ -109,7 +73,7 @@ class DataShopInitializeSeeder extends Seeder
                 'parent_id' => $idBlockShop,
                 'sort'      => 60,
                 'title'     => 'admin.menu_titles.ADMIN_SHOP_ORDER',
-                'icon'      => 'nav-icon fas fa-shopping-cart',
+                'icon'      => 'nav-icon fas fa-shopping-basket',
                 'key'       => 'ADMIN_SHOP_ORDER',
             ]
         );
@@ -227,34 +191,6 @@ class DataShopInitializeSeeder extends Seeder
             ]
         );
 
-        FrontLayoutBlock::where('name','like', '%Shop Package%')->delete();
-        FrontLayoutBlock::insert([
-            [
-                'id'       => (string)\Illuminate\Support\Str::orderedUuid(),
-                'name'     => 'Product Home (Shop Package)',
-                'position' => 'bottom',
-                'page'     => 'front_home',
-                'text'     => 'shop_product_home',
-                'type'     => 'view',
-                'sort'     => 10,
-                'status'   => 1,
-                'template' => GP247_TEMPLATE_FRONT_DEFAULT,
-                'store_id' => GP247_STORE_ID_ROOT,
-            ],
-            [
-                'id'       => (string)\Illuminate\Support\Str::orderedUuid(),
-                'name'     => 'Product Last View (Shop Package)',
-                'position' => 'left',
-                'page'     => 'shop_product_detail,shop_product_list,shop_home,shop_search',
-                'text'     => 'shop_product_last_view',
-                'type'     => 'view',
-                'sort'     => 20,
-                'status'   => 1,
-                'template' => GP247_TEMPLATE_FRONT_DEFAULT,
-                'store_id' => GP247_STORE_ID_ROOT,
-            ]
-        ]);
-    
 
 
         Languages::insertOrIgnore(
