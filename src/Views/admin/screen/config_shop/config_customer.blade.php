@@ -16,7 +16,7 @@
            @foreach ($customerConfigsDefault as $config)
            <tr>
             <td>{{ gp247_language_render($config['detail']) }}</td>
-            <td><input class="check-data-config" data-store="{{ $storeId }}"  type="checkbox" name="{{ $config['key'] }}"  {{ $config['value']?"checked":"" }}></td>
+            <td><input class="check-data-config-global" data-store="{{ $storeId }}"  type="checkbox" name="{{ $config['key'] }}"  {{ $config['value']?"checked":"" }}></td>
           </tr>
            @endforeach
          </tbody>
@@ -41,10 +41,10 @@
         @foreach ($customerConfigsAttribute as $key => $customerConfig)
           <tr>
             <td>{{ gp247_language_render($customerConfig['detail']) }}</td>
-            <td><input class="check-data-config" data-store="{{ $storeId }}" type="checkbox" name="{{ $customerConfig['key'] }}"  {{ $customerConfig['value']?"checked":"" }}></td>
+            <td><input class="check-data-config-global" data-store="{{ $storeId }}" type="checkbox" name="{{ $customerConfig['key'] }}"  {{ $customerConfig['value']?"checked":"" }}></td>
             <td>
               @if (!empty($customerConfigsAttributeRequired[$key.'_required']))
-              <input class="check-data-config" data-store="{{ $storeId }}" type="checkbox" name="{{ $customerConfigsAttributeRequired[$key.'_required']['key'] }}"  {{ $customerConfigsAttributeRequired[$key.'_required']['value']?"checked":"" }}>
+              <input class="check-data-config-global" data-store="{{ $storeId }}" type="checkbox" name="{{ $customerConfigsAttributeRequired[$key.'_required']['key'] }}"  {{ $customerConfigsAttributeRequired[$key.'_required']['value']?"checked":"" }}>
               @endif
             </td>
           </tr>

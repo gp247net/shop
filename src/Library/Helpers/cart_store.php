@@ -250,13 +250,10 @@ if (!function_exists('gp247_path_vendor') && !in_array('gp247_path_vendor', conf
         {
             $path = 'vendor';
             if (gp247_config_global('MultiVendorPro')) {
-                $path = config('MultiVendorPro.front_path');
+                $path = config('MultiVendorPro.route.front_path', 'vendor');
             }
             if (gp247_config_global('MultiVendor')) {
-                $path = config('MultiVendor.front_path');
-            }
-            if (gp247_config_global('B2B')) {
-                $path = config('B2B.front_path');
+                $path = config('MultiVendor.route.front_path', 'vendor');
             }
             return $path;
         }

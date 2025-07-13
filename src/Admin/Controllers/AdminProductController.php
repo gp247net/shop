@@ -572,7 +572,6 @@ class AdminProductController extends RootAdminController
             }
 
             $shopStore        = $data['shop_store'] ?? [session('adminStoreId')];
-            $product->stores()->detach();
             if ($shopStore) {
                 $product->stores()->attach($shopStore);
             }
@@ -879,6 +878,7 @@ class AdminProductController extends RootAdminController
         $dataUpdate = gp247_clean($dataUpdate, [], true);
 
         try {
+            
             DB::connection(GP247_DB_CONNECTION)->beginTransaction();
             $product->update($dataUpdate);
 

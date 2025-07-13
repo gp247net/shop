@@ -44,7 +44,7 @@ class AdminShopConfigController extends RootAdminController
         // Customer config
         $dataCustomerConfigDefault = [
             'code' => 'customer_config',
-            'storeId' => $id,
+            'storeId' => GP247_STORE_ID_GLOBAL,
             'keyBy' => 'key',
         ];
         $customerConfigsDefault = AdminConfig::getListConfigByCode($dataCustomerConfigDefault);
@@ -52,14 +52,14 @@ class AdminShopConfigController extends RootAdminController
 
         $dataCustomerConfigAttribute = [
             'code' => 'customer_config_attribute',
-            'storeId' => $id,
+            'storeId' => GP247_STORE_ID_GLOBAL,
             'keyBy' => 'key',
         ];
         $customerConfigsAttribute = AdminConfig::getListConfigByCode($dataCustomerConfigAttribute);
 
         $dataCustomerConfigAttributeRequired = [
             'code' => 'customer_config_attribute_required',
-            'storeId' => $id,
+            'storeId' => GP247_STORE_ID_GLOBAL,
             'keyBy' => 'key',
         ];
         $customerConfigsAttributeRequired = AdminConfig::getListConfigByCode($dataCustomerConfigAttributeRequired);
@@ -69,28 +69,28 @@ class AdminShopConfigController extends RootAdminController
         $taxs = (new ShopTax)->getListAll();
         $productConfigQuery = [
             'code' => 'product_config',
-            'storeId' => $id,
+            'storeId' => GP247_STORE_ID_GLOBAL,
             'keyBy' => 'key',
         ];
         $productConfig = AdminConfig::getListConfigByCode($productConfigQuery);
 
         $productConfigAttributeQuery = [
             'code' => 'product_config_attribute',
-            'storeId' => $id,
+            'storeId' => GP247_STORE_ID_GLOBAL,
             'keyBy' => 'key',
         ];
         $productConfigAttribute = AdminConfig::getListConfigByCode($productConfigAttributeQuery);
 
         $productConfigAttributeRequiredQuery = [
             'code' => 'product_config_attribute_required',
-            'storeId' => $id,
+            'storeId' => GP247_STORE_ID_GLOBAL,
             'keyBy' => 'key',
         ];
         $productConfigAttributeRequired = AdminConfig::getListConfigByCode($productConfigAttributeRequiredQuery);
 
         $orderConfigQuery = [
             'code' => 'order_config',
-            'storeId' => $id,
+            'storeId' => GP247_STORE_ID_GLOBAL,
             'keyBy' => 'key',
         ];
         $orderConfig = AdminConfig::getListConfigByCode($orderConfigQuery);

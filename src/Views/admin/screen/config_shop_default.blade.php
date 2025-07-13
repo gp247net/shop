@@ -5,31 +5,31 @@
           <ul class="nav nav-tabs" id="custom-tabs-four-tab" role="tablist">
             
             <li class="nav-item">
-              <a class="nav-link active" id="tab-admin-product-tab" data-toggle="pill" href="#tab-admin-product" role="tab" aria-controls="tab-admin-product" aria-selected="false">{{ gp247_language_render('admin.shop.config_product') }}</a>
+              <a class="nav-link active" id="tab-admin-product-tab" data-toggle="pill" href="#tab-admin-product" role="tab" aria-controls="tab-admin-product" aria-selected="false"><i class="fas fa-cog"></i> {{ gp247_language_render('admin.shop.config_product') }}</a>
             </li>
 
             <li class="nav-item">
-              <a class="nav-link" id="tab-admin-customer-tab" data-toggle="pill" href="#tab-admin-customer" role="tab" aria-controls="tab-admin-customer" aria-selected="false">{{ gp247_language_render('admin.shop.config_customer') }}</a>
+              <a class="nav-link" id="tab-admin-customer-tab" data-toggle="pill" href="#tab-admin-customer" role="tab" aria-controls="tab-admin-customer" aria-selected="false"><i class="fas fa-cog"></i> {{ gp247_language_render('admin.shop.config_customer') }}</a>
             </li>
 
             <li class="nav-item">
-              <a class="nav-link" id="tab-admin-order-tab" data-toggle="pill" href="#tab-admin-order" role="tab" aria-controls="tab-admin-order" aria-selected="false">{{ gp247_language_render('admin.shop.config_order') }}</a>
+              <a class="nav-link" id="tab-admin-order-tab" data-toggle="pill" href="#tab-admin-order" role="tab" aria-controls="tab-admin-order" aria-selected="false"><i class="fas fa-cog"></i> {{ gp247_language_render('admin.shop.config_order') }}</a>
             </li>
 
             <li class="nav-item">
-              <a class="nav-link" id="tab-admin-sendmail-tab" data-toggle="pill" href="#tab-admin-sendmail" role="tab" aria-controls="tab-admin-sendmail" aria-selected="false">{{ gp247_language_render('admin.shop.config_sendmail') }}</a>
+              <a class="nav-link" id="tab-admin-sendmail-tab" data-toggle="pill" href="#tab-admin-sendmail" role="tab" aria-controls="tab-admin-sendmail" aria-selected="false"><i class="fas fa-map-pin"></i> {{ gp247_language_render('admin.shop.config_sendmail') }}</a>
             </li>
 
             <li class="nav-item">
-              <a class="nav-link" id="tab-admin-limit-data-tab" data-toggle="pill" href="#tab-admin-limit-data" role="tab" aria-controls="tab-admin-limit-data" aria-selected="false">{{ gp247_language_render('admin.shop.config_limit_per_page') }}</a>
+              <a class="nav-link" id="tab-admin-limit-data-tab" data-toggle="pill" href="#tab-admin-limit-data" role="tab" aria-controls="tab-admin-limit-data" aria-selected="false"><i class="fas fa-map-pin"></i> {{ gp247_language_render('admin.shop.config_limit_per_page') }}</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="tab-admin-layout-tab" data-toggle="pill" href="#tab-admin-layout" role="tab" aria-controls="tab-admin-layout" aria-selected="false">{{ gp247_language_render('admin.shop.config_layout') }}</a>
+              <a class="nav-link" id="tab-admin-layout-tab" data-toggle="pill" href="#tab-admin-layout" role="tab" aria-controls="tab-admin-layout" aria-selected="false"><i class="fas fa-map-pin"></i> {{ gp247_language_render('admin.shop.config_layout') }}</a>
             </li>
 
 
             <li class="nav-item">
-              <a class="nav-link" id="tab-admin-captcha-tab" data-toggle="pill" href="#tab-admin-captcha" role="tab" aria-controls="tab-admin-captcha" aria-selected="false">{{ gp247_language_render('admin.shop.config_captcha') }}</a>
+              <a class="nav-link" id="tab-admin-captcha-tab" data-toggle="pill" href="#tab-admin-captcha" role="tab" aria-controls="tab-admin-captcha" aria-selected="false"><i class="fas fa-map-pin"></i> {{ gp247_language_render('admin.shop.config_captcha') }}</a>
             </li>
           </ul>
         </div>

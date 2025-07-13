@@ -11,6 +11,7 @@ use GP247\Shop\Models\ShopPaymentStatus;
 use GP247\Shop\Models\ShopShippingStatus;
 use GP247\Shop\Models\ShopOrderStatus;
 use GP247\Core\Models\AdminHome;
+use GP247\Core\Models\AdminConfig;
 
 class DataShopInitializeSeeder extends Seeder
 {
@@ -155,7 +156,7 @@ class DataShopInitializeSeeder extends Seeder
                 ['parent_id' => $idBlockSetting,'sort' => 70,'title' => 'admin.menu_titles.payment_status','icon' => 'fas fa-recycle','uri' => 'admin::payment_status','key' => null,'type' => 0],
                 ['parent_id' => $idBlockSetting,'sort' => 60,'title' => 'admin.menu_titles.attribute_group','icon' => 'fas fa-braille','uri' => 'admin::attribute_group','key' => null,'type' => 0],
                 ['parent_id' => $idBlockSetting,'sort' => 40,'title' => 'admin.menu_titles.tax','icon' => 'far fa-calendar-minus','uri' => 'admin::tax','key' => null,'type' => 0],
-                ['parent_id' => $idBlockSetting,'sort' => 10,'title' => 'admin.menu_titles.shop_config','icon' => 'fas fa-cog','uri' => 'admin::shop_config','key' => null,'type' => 0],
+                ['parent_id' => $idBlockSetting,'sort' => 10,'title' => 'admin.menu_titles.shop_config','icon' => 'fas fa-sliders-h','uri' => 'admin::shop_config','key' => null,'type' => 0],
 
 
             ]
@@ -191,6 +192,9 @@ class DataShopInitializeSeeder extends Seeder
             ]
         );
 
+
+        $dataConfig = $this->dataConfigShop();
+        AdminConfig::insertOrIgnore($dataConfig);
 
 
         Languages::insertOrIgnore(
@@ -246,7 +250,7 @@ class DataShopInitializeSeeder extends Seeder
                 ['code' => 'admin.menu_titles.report_product','text' => 'Báo cáo sản phẩm','position' => 'admin.menu_titles','location' => 'vi'],
                 ['code' => 'admin.menu_titles.report_product','text' => 'Report product','position' => 'admin.menu_titles','location' => 'en'],
                 ['code' => 'admin.menu_titles.shop_config','text' => 'Cấu hình cửa hàng','position' => 'admin.menu_titles','location' => 'vi'],
-                ['code' => 'admin.menu_titles.shop_config','text' => 'Shop config','position' => 'admin.menu_titles','location' => 'en'],
+                ['code' => 'admin.menu_titles.shop_config','text' => 'Shop configuration','position' => 'admin.menu_titles','location' => 'en'],
                 ['code' => 'admin.menu_titles.product_tag','text' => 'Thẻ sản phẩm','position' => 'admin.menu_titles','location' => 'vi'],
                 ['code' => 'admin.menu_titles.product_tag','text' => 'Product tag','position' => 'admin.menu_titles','location' => 'en'],
 
@@ -1539,6 +1543,75 @@ class DataShopInitializeSeeder extends Seeder
         ];
         return $dataOrderStatus;
     }
+
+    public function dataConfigShop() {
+        $dataConfig = [
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_brand','value' => '1','sort' => '0','detail' => 'product.config_manager.brand','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_brand_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_supplier','value' => '1','sort' => '0','detail' => 'product.config_manager.supplier','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_supplier_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_price','value' => '1','sort' => '0','detail' => 'product.config_manager.price','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_price_required','value' => '1','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_cost','value' => '1','sort' => '0','detail' => 'product.config_manager.cost','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_cost_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_promotion','value' => '1','sort' => '0','detail' => 'product.config_manager.promotion','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_promotion_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_stock','value' => '1','sort' => '0','detail' => 'product.config_manager.stock','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_stock_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_kind','value' => '1','sort' => '0','detail' => 'product.config_manager.kind','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_tag','value' => '1','sort' => '0','detail' => 'product.config_manager.tag','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_tag_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_attribute','value' => '1','sort' => '0','detail' => 'product.config_manager.attribute','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_attribute_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_available','value' => '1','sort' => '0','detail' => 'product.config_manager.available','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_available_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_weight','value' => '1','sort' => '0','detail' => 'product.config_manager.weight','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_weight_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_length','value' => '1','sort' => '0','detail' => 'product.config_manager.length','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_length_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute','key' => 'product_tag','value' => '1','sort' => '0','detail' => 'product.config_manager.tag','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config_attribute_required','key' => 'product_tag_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config','key' => 'product_display_out_of_stock','value' => '1','sort' => '19','detail' => 'product.config_manager.product_display_out_of_stock','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config','key' => 'show_date_available','value' => '1','sort' => '21','detail' => 'product.config_manager.show_date_available','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config','key' => 'product_use_button_add_to_cart','value' => '1','sort' => '22','detail' => 'product.config_manager.product_use_button_add_to_cart','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config','key' => 'product_use_button_wishlist','value' => '1','sort' => '23','detail' => 'product.config_manager.product_use_button_wishlist','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config','key' => 'product_use_button_compare','value' => '1','sort' => '24','detail' => 'product.config_manager.product_use_button_compare','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'product_config','key' => 'product_tax','value' => 'auto','sort' => '0','detail' => 'product.config_manager.tax','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_lastname','value' => '1','sort' => '1','detail' => 'customer.config_manager.lastname','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_lastname_required','value' => '1','sort' => '1','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_address1','value' => '1','sort' => '2','detail' => 'customer.config_manager.address1','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_address1_required','value' => '1','sort' => '2','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_address2','value' => '1','sort' => '2','detail' => 'customer.config_manager.address2','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_address2_required','value' => '1','sort' => '2','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_address3','value' => '0','sort' => '2','detail' => 'customer.config_manager.address3','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_address3_required','value' => '0','sort' => '2','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_company','value' => '0','sort' => '0','detail' => 'customer.config_manager.company','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_company_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_postcode','value' => '0','sort' => '0','detail' => 'customer.config_manager.postcode','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_postcode_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_country','value' => '1','sort' => '0','detail' => 'customer.config_manager.country','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_country_required','value' => '1','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_group','value' => '0','sort' => '0','detail' => 'customer.config_manager.group','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_group_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_birthday','value' => '0','sort' => '0','detail' => 'customer.config_manager.birthday','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_birthday_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_sex','value' => '0','sort' => '0','detail' => 'customer.config_manager.sex','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_sex_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_phone','value' => '1','sort' => '0','detail' => 'customer.config_manager.phone','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_phone_required','value' => '1','sort' => '1','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_name_kana','value' => '0','sort' => '0','detail' => 'customer.config_manager.name_kana','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_name_kana_required','value' => '0','sort' => '1','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config','key' => 'customer_verify','value' => '0','sort' => '1','detail' => 'customer.config_manager.customer_verify','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'order_config','key' => 'shop_allow_guest','value' => '1','sort' => '11','detail' => 'admin.order.shop_allow_guest','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'order_config','key' => 'product_preorder','value' => '1','sort' => '18','detail' => 'admin.order.product_preorder','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'order_config','key' => 'product_buy_out_of_stock','value' => '1','sort' => '20','detail' => 'admin.order.product_buy_out_of_stock','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'order_config','key' => 'use_shipping','value' => '0','sort' => '20','detail' => 'admin.order.use_shipping','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'order_config','key' => 'use_payment','value' => '0','sort' => '20','detail' => 'admin.order.use_payment','store_id' => GP247_STORE_ID_GLOBAL],
+
+        ];
+        return $dataConfig;
+    }
+
 
     public function updateDataVersion() {
 

@@ -37,11 +37,11 @@ class CustomerAuth
         $routeName = $request->route()->getName();
         $excepts = [
             'customer.login',
-            'customer.post_login',
+            'customer.postLogin',
             'customer.logout',
             'customer.forgot',
-            'customer.post_forgot',
             'customer.register',
+            'customer.postRegister',
             'customer.password_reset',
             'customer.password_request',
         ];
