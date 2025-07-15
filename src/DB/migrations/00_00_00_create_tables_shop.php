@@ -436,14 +436,6 @@ return new class extends Migration
             }
         );
 
-        $schema->create(
-            GP247_DB_PREFIX.'shop_brand_store',
-            function (Blueprint $table) {
-                $table->uuid('brand_id');
-                $table->uuid('store_id');
-                $table->primary(['brand_id', 'store_id']);
-            }
-        );
 
         $schema->create(
             GP247_DB_PREFIX.'shop_sessions',
@@ -512,7 +504,6 @@ return new class extends Migration
         //Multi store
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_store');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_category_store');
-        $schema->dropIfExists(GP247_DB_PREFIX.'shop_brand_store');
         
     }
 };

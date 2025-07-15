@@ -30,17 +30,12 @@ class ShopBrand extends Model
         return $this->hasMany(ShopProduct::class, 'brand_id', 'id');
     }
 
-    public function stores()
-    {
-        return $this->belongsToMany(AdminStore::class, ShopBrandStore::class, 'brand_id', 'store_id');
-    }
 
     protected static function boot()
     {
         parent::boot();
         // before delete() method call this
         static::deleting(function ($brand) {
-            $brand->stores()->detach();
 
             //Delete custom field
             (new \GP247\Core\Models\AdminCustomFieldDetail)

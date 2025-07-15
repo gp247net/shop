@@ -160,6 +160,40 @@
             </div>
           </div>
 
+
+
+          @if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed())
+          {{-- select shop_store --}}
+                  @php
+                    $shop_store = old('shop_store', $supplier['store_id'] ?? '');
+                  @endphp
+
+                  <div class="form-group row {{ $errors->has('shop_store') ? ' text-red' : '' }}">
+                      <label for="shop_store"
+                          class="col-sm-2 col-form-label">{{ gp247_language_render('admin.select_store') }}</label>
+                      <div class="col-sm-8">
+                        <select class="form-control shop_store select2" 
+                        data-placeholder="{{ gp247_language_render('admin.select_store') }}" style="width: 100%;"
+                        name="shop_store">
+                              <option value=""></option>
+                              @foreach (gp247_store_get_list_code() as $k => $v)
+                              <option value="{{ $k }}"
+                                  {{ ($shop_store == $k)?'selected':'' }}>{{ $v }}
+                              </option>
+                              @endforeach
+                          </select>
+                          @if ($errors->has('shop_store'))
+                          <span class="form-text">
+                              <i class="fa fa-info-circle"></i> {{ $errors->first('shop_store') }}
+                          </span>
+                          @endif
+                      </div>
+                  </div>
+                  {{-- //select shop_store --}}
+        @endif
+
+
+
           <div class="form-group row {{ $errors->has('sort') ? ' text-red' : '' }}">
             <label for="sort" class="col-sm-2 col-form-label">{!! gp247_language_render('admin.supplier.sort') !!}</label>
             <div class="col-sm-10 ">

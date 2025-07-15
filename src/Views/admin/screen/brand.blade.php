@@ -123,53 +123,6 @@
             </div>
           </div>
 
-
-@if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed())
-          {{-- select shop_store --}}
-          @php
-          $listStore = [];
-          if (function_exists('gp247_get_list_store_of_brand_detail')) {
-                  $oldData = gp247_get_list_store_of_brand_detail($brand['id'] ?? '');
-              } else {
-                  $oldData = null;
-              }
-          $shop_store = old('shop_store', $oldData);
-
-          if(is_array($shop_store)){
-              foreach($shop_store as $value){
-                  $listStore[] = $value;
-              }
-          }
-          @endphp
-
-          <div class="form-group row {{ $errors->has('shop_store') ? ' text-red' : '' }}">
-              <label for="shop_store"
-                  class="col-sm-2 col-form-label">{{ gp247_language_render('admin.select_store') }}</label>
-              <div class="col-sm-8">
-                <select class="form-control shop_store select2" 
-                @if (gp247_store_check_multi_store_installed())
-                    multiple="multiple"
-                @endif
-                data-placeholder="{{ gp247_language_render('admin.select_store') }}" style="width: 100%;"
-                name="shop_store[]">
-                      <option value=""></option>
-                      @foreach (gp247_store_get_list_code() as $k => $v)
-                      <option value="{{ $k }}"
-                          {{ (count($listStore) && in_array($k, $listStore))?'selected':'' }}>{{ $v }}
-                      </option>
-                      @endforeach
-                  </select>
-                  @if ($errors->has('shop_store'))
-                  <span class="form-text">
-                      <i class="fa fa-info-circle"></i> {{ $errors->first('shop_store') }}
-                  </span>
-                  @endif
-              </div>
-          </div>
-          {{-- //select shop_store --}}
-@endif
-
-
           <div class="form-group row {{ $errors->has('status') ? ' text-red' : '' }}">
             <label for="status" class="col-sm-2 col-form-label">{!! gp247_language_render('admin.brand.status') !!}</label>
             <div class="col-sm-10 ">

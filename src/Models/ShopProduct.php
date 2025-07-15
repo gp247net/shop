@@ -911,7 +911,7 @@ class ShopProduct extends Model
      */
     public function goToShop($code = null)
     {
-        return url(gp247_path_vendor().'/'.$code);
+        return gp247_path_vendor($code);
     }
 
     /**

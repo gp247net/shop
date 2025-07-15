@@ -45,7 +45,6 @@ class ShopSample extends Command
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category_store')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand_store')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_supplier')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_description')->truncate();
@@ -185,12 +184,6 @@ class ShopSample extends Command
                 foreach ($brands as $brand) {
                     // Create brand
                     DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand')->insert($brand);
-
-                    // Link to store
-                    DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand_store')->insert([
-                        'brand_id' => $brand['id'],
-                        'store_id' => GP247_STORE_ID_ROOT
-                    ]);
                 }
             });
 

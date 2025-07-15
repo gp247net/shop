@@ -35,25 +35,56 @@ class AdminSupplierController extends RootAdminController
             'image' => gp247_language_render('admin.supplier.image'),
             'email' => gp247_language_render('admin.supplier.email'),
             'sort' => gp247_language_render('admin.supplier.sort'),
-            'action' => gp247_language_render('action.title'),
         ];
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+            // Only show store info if store is root
+            $listTh['shop_store'] = gp247_language_render('front.store_list');
+        }
+        $listTh['action'] = gp247_language_render('action.title');
         $obj = new ShopSupplier;
         $obj = $obj->orderBy('created_at', 'desc');
         $dataTmp = $obj->paginate(20);
 
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+            $arrId = $dataTmp->pluck('id')->toArray();
+            // Only show store info if store is root
+            if (function_exists('gp247_get_list_store_of_supplier')) {
+                $dataStores = gp247_get_list_store_of_supplier($arrId);
+            } else {
+                $dataStores = [];
+            }
+        }
+
         $dataTr = [];
         foreach ($dataTmp as $key => $row) {
-            $dataTr[$row['id']] = [
+            $dataMap = [
                 'name' => $row['name'],
                 'image' => gp247_image_render($row->getThumb(), '50px', '50px', $row['name']),
                 'email' => $row['email'],
                 'sort' => $row['sort'],
-                'action' => '
-                    <a href="' . gp247_route_admin('admin_supplier.edit', ['id' => $row['id'] ? $row['id'] : 'not-found-id']) . '"><span title="' . gp247_language_render('action.edit') . '" type="button" class="btn btn-flat btn-sm btn-primary"><i class="fa fa-edit"></i></span></a>&nbsp;
-
-                  <span onclick="deleteItem(\'' . $row['id'] . '\');"  title="' . gp247_language_render('action.delete') . '" class="btn btn-flat btn-sm btn-danger"><i class="fas fa-trash-alt"></i></span>
-                  ',
             ];
+
+            if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+                // Only show store info if store is root
+                if (!empty($dataStores[$row['id']])) {
+                    $storeTmp = $dataStores[$row['id']]->pluck('code', 'id')->toArray();
+                    $storeTmp = array_map(function ($code) {
+                        if (is_null($code)) {
+                            return ;
+                        }
+                        $domain = gp247_store_get_domain_from_code($code);
+                        return '<a target=_new href="'.$domain.'">'.$code.'</a>';
+                    }, $storeTmp);
+                    $dataMap['shop_store'] = '<i class="nav-icon fab fa-shopify"></i> '.implode('<br><i class="nav-icon fab fa-shopify"></i> ', $storeTmp);
+                } else {
+                    $dataMap['shop_store'] = '';
+                }
+            }
+            $dataMap['action'] = '<a href="' . gp247_route_admin('admin_supplier.edit', ['id' => $row['id'] ? $row['id'] : 'not-found-id']) . '"><span title="' . gp247_language_render('action.edit') . '" type="button" class="btn btn-flat btn-sm btn-primary"><i class="fa fa-edit"></i></span></a>&nbsp;
+            <span onclick="deleteItem(\'' . $row['id'] . '\');"  title="' . gp247_language_render('action.delete') . '" class="btn btn-flat btn-sm btn-danger"><i class="fas fa-trash-alt"></i></span>
+            ';
+            $dataTr[$row['id']] = $dataMap;
+
         }
         $data['supplier'] = $supplier;
         $data['listTh'] = $listTh;
@@ -105,6 +136,8 @@ class AdminSupplierController extends RootAdminController
                 ->withInput($data);
         }
 
+        $shopStore = $data['shop_store'] ?? session('adminStoreId');
+
         $dataCreate = [
             'image' => $data['image'],
             'name' => $data['name'],
@@ -113,6 +146,7 @@ class AdminSupplierController extends RootAdminController
             'email' => $data['email'],
             'address' => $data['address'],
             'phone' => $data['phone'],
+            'store_id' => $shopStore,
             'sort' => (int) $data['sort'],
         ];
         $dataCreate = gp247_clean($dataCreate, [], true);
@@ -151,30 +185,61 @@ class AdminSupplierController extends RootAdminController
     ];
 
         $listTh = [
-        'name' => gp247_language_render('admin.supplier.name'),
-        'image' => gp247_language_render('admin.supplier.image'),
-        'email' => gp247_language_render('admin.supplier.email'),
-        'sort' => gp247_language_render('admin.supplier.sort'),
-        'action' => gp247_language_render('action.title'),
-    ];
+            'name' => gp247_language_render('admin.supplier.name'),
+            'image' => gp247_language_render('admin.supplier.image'),
+            'email' => gp247_language_render('admin.supplier.email'),
+            'sort' => gp247_language_render('admin.supplier.sort'),
+        ];
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+            // Only show store info if store is root
+            $listTh['shop_store'] = gp247_language_render('front.store_list');
+        }
+        $listTh['action'] = gp247_language_render('action.title');
 
         $obj = new ShopSupplier;
         $obj = $obj->orderBy('created_at', 'desc');
         $dataTmp = $obj->paginate(20);
 
+        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+            $arrId = $dataTmp->pluck('id')->toArray();
+            // Only show store info if store is root
+            if (function_exists('gp247_get_list_store_of_supplier')) {
+                $dataStores = gp247_get_list_store_of_supplier($arrId);
+            } else {
+                $dataStores = [];
+            }
+        }
+
         $dataTr = [];
         foreach ($dataTmp as $key => $row) {
-            $dataTr[$row['id']] = [
+            $dataMap = [
             'name' => $row['name'],
             'image' => gp247_image_render($row->getThumb(), '50px', '50px', $row['name']),
             'email' => $row['email'],
             'sort' => $row['sort'],
-            'action' => '
-                <a href="' . gp247_route_admin('admin_supplier.edit', ['id' => $row['id'] ? $row['id'] : 'not-found-id']) . '"><span title="' . gp247_language_render('action.edit') . '" type="button" class="btn btn-flat btn-sm btn-primary"><i class="fa fa-edit"></i></span></a>&nbsp;
+            ];
 
-                <span onclick="deleteItem(\'' . $row['id'] . '\');"  title="' . gp247_language_render('action.delete') . '" class="btn btn-flat btn-sm btn-danger"><i class="fas fa-trash-alt"></i></span>
-                ',
-        ];
+            if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
+                // Only show store info if store is root
+                if (!empty($dataStores[$row['id']])) {
+                    $storeTmp = $dataStores[$row['id']]->pluck('code', 'id')->toArray();
+                    $storeTmp = array_map(function ($code) {
+                        if (is_null($code)) {
+                            return ;
+                        }
+                        $domain = gp247_store_get_domain_from_code($code);
+                        return '<a target=_new href="'.$domain.'">'.$code.'</a>';
+                    }, $storeTmp);
+                    $dataMap['shop_store'] = '<i class="nav-icon fab fa-shopify"></i> '.implode('<br><i class="nav-icon fab fa-shopify"></i> ', $storeTmp);
+                } else {
+                    $dataMap['shop_store'] = '';
+                }
+            }
+            $dataMap['action'] = '<a href="' . gp247_route_admin('admin_supplier.edit', ['id' => $row['id'] ? $row['id'] : 'not-found-id']) . '"><span title="' . gp247_language_render('action.edit') . '" type="button" class="btn btn-flat btn-sm btn-primary"><i class="fa fa-edit"></i></span></a>&nbsp;
+            <span onclick="deleteItem(\'' . $row['id'] . '\');"  title="' . gp247_language_render('action.delete') . '" class="btn btn-flat btn-sm btn-danger"><i class="fas fa-trash-alt"></i></span>
+            ';
+            $dataTr[$row['id']] = $dataMap;
+
         }
 
         $data['listTh'] = $listTh;
@@ -226,7 +291,7 @@ class AdminSupplierController extends RootAdminController
                 ->withInput($data);
         }
         //Edit
-
+        $shopStore = $data['shop_store'] ?? session('adminStoreId');
         $dataUpdate = [
             'image' => $data['image'],
             'name' => $data['name'],
@@ -235,6 +300,7 @@ class AdminSupplierController extends RootAdminController
             'phone' => $data['phone'],
             'url' => $data['url'],
             'address' => $data['address'],
+            'store_id' => $shopStore,
             'sort' => (int) $data['sort'],
 
         ];

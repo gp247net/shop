@@ -125,32 +125,20 @@ if (!function_exists('gp247_get_list_store_of_product_detail') && !in_array('gp2
 }
 
 
+
 /**
- * Get store list of brands
+ * Get store list of supplier
  */
-if (!function_exists('gp247_get_list_store_of_brand') && !in_array('gp247_get_list_store_of_brand', config('gp247_functions_except', []))) {
-    function gp247_get_list_store_of_brand(array $arrBrandId)
+if (!function_exists('gp247_get_list_store_of_supplier') && !in_array('gp247_get_list_store_of_supplier', config('gp247_functions_except', []))) {
+    function gp247_get_list_store_of_supplier(array $arrSupplierId)
     {
         $tableStore = (new \GP247\Core\Models\AdminStore)->getTable();
-        $tableBrandStore = (new \GP247\Shop\Models\ShopBrandStore)->getTable();
-        return \GP247\Shop\Models\ShopBrandStore::select($tableStore.'.code', $tableStore.'.id', 'brand_id')
-            ->leftJoin($tableStore, $tableStore.'.id', $tableBrandStore.'.store_id')
-            ->whereIn('brand_id', $arrBrandId)
+        $tableSupplier = (new \GP247\Shop\Models\ShopSupplier)->getTable();
+        return \GP247\Shop\Models\ShopSupplier::selectRaw($tableStore.'.code,'.$tableStore.'.id,'.$tableSupplier.'.id as supplier_id')
+            ->leftJoin($tableStore, $tableStore.'.id', $tableSupplier.'.store_id')
+            ->whereIn($tableSupplier.'.id', $arrSupplierId)
             ->get()
-            ->groupBy('brand_id');
-    }
-}
-
-
-/**
- * Get list store of brand detail
- */
-if (!function_exists('gp247_get_list_store_of_brand_detail') && !in_array('gp247_get_list_store_of_brand_detail', config('gp247_functions_except', []))) {
-    function gp247_get_list_store_of_brand_detail($cId):array
-    {
-        return \GP247\Shop\Models\ShopBrandStore::where('brand_id', $cId)
-            ->pluck('store_id')
-            ->toArray();
+            ->groupBy('supplier_id');
     }
 }
 
@@ -246,15 +234,12 @@ if (!function_exists('gp247_get_list_store_of_category_detail') && !in_array('gp
  * Path vendor
  */
 if (!function_exists('gp247_path_vendor') && !in_array('gp247_path_vendor', config('gp247_functions_except', []))) {
-    function gp247_path_vendor()
+    function gp247_path_vendor($code = null)
         {
-            $path = 'vendor';
-            if (gp247_config_global('MultiVendorPro')) {
-                $path = config('MultiVendorPro.route.front_path', 'vendor');
+            if ($code) {
+                return gp247_route_front('MultiVendorPro.detail', ['code' => $code]);
+            } else {
+                return null;
             }
-            if (gp247_config_global('MultiVendor')) {
-                $path = config('MultiVendor.route.front_path', 'vendor');
-            }
-            return $path;
         }
 }
