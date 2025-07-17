@@ -299,11 +299,11 @@ class CartService
     public function removeDatabase($identifier)
     {
         $currentInstance = $this->currentInstance();
-        return (new ShopCart)
-            ->where('identifier', $identifier)
-            ->where('instance', $currentInstance)
-            ->where('store_id', config('app.storeId'))
-            ->delete();
+        return ShopCart::where([
+                ['identifier', '=', (string)$identifier],
+                ['instance', '=', (string)$currentInstance],
+                ['store_id', '=', (string)config('app.storeId')]
+            ])->delete();
     }
 
     /**

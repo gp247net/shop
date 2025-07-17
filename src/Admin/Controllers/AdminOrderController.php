@@ -127,7 +127,7 @@ class AdminOrderController extends RootAdminController
                 'discount'       => gp247_currency_render_symbol($row['discount'] ?? 0, $row['currency']),
                 'tax'            => gp247_currency_render_symbol($row['tax'] ?? 0, $row['currency']),
                 'total'          => gp247_currency_render_symbol($row['total'] ?? 0, $row['currency']),
-                'payment_method' => $row['payment_method'].'<br>('.$row['currency'] . '/' . $row['exchange_rate'].')',
+                'payment_method' => ($row['payment_method'] ?? 'N/A').'('.$row['currency'] . '/' . $row['exchange_rate'].')',
                 'payment_status' => $this->statusPayment[$row['payment_status']] ?? $row['payment_status'],
                 'shipping_status'=> $this->statusShipping[$row['shipping_status']] ?? $row['shipping_status'],
                 'status'         => $styleStatus[$row['status']] ?? $row['status'],
@@ -406,7 +406,7 @@ class AdminOrderController extends RootAdminController
         if (!$order) {
             return redirect()->route('admin.data_not_found')->with(['url' => url()->full()]);
         }
-        $products = (new AdminProduct)->getProductSelectAdmin(['kind' => [GP247_PRODUCT_SINGLE, GP247_PRODUCT_BUILD]]);
+        $products = (new AdminProduct)->getProductSelectAdmin(['kind' => [GP247_PRODUCT_SINGLE, GP247_PRODUCT_BUILD]], $order->store_id);
         $paymentMethod = [];
         $shippingMethod = [];
         $paymentMethodTmp = gp247_extension_get_via_code(code: 'payment', active: false);
