@@ -1,15 +1,14 @@
 
 <!--process cart-->
 <script type="text/javascript">
-  function addToCartAjax(id, instance = null, storeId = null){
+  function addToCartAjax(product_id, instance = null){
     $.ajax({
         url: "{{ gp247_route_front('cart.add_ajax') }}",
         type: "POST",
         dataType: "JSON",
         data: {
-          "id": id,
+          "product_id": product_id,
           "instance":instance,
-          "storeId":storeId,
           "_token":"{{ csrf_token() }}"
         },
         async: false,

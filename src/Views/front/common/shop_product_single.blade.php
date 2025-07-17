@@ -12,7 +12,7 @@
       @endif
 
       @if ($product->allowSale() && gp247_config('product_use_button_add_to_cart'))
-      <a onClick="addToCartAjax('{{ $product->id }}','default','{{ $product->store_id }}')" class="button button-secondary button-zakaria add-to-cart-list"><i class="fa fa-cart-plus"></i> {{ gp247_language_render('action.add_to_cart') }}</a>
+      <a onClick="addToCartAjax('{{ $product->id }}','default')" class="button button-secondary button-zakaria add-to-cart-list"><i class="fa fa-cart-plus"></i> {{ gp247_language_render('action.add_to_cart') }}</a>
       @endif
 
       {!! $product->showPrice() !!}
@@ -29,7 +29,7 @@
       
       @if (gp247_config('product_use_button_wishlist'))
       <div class="product-button">
-        <a class="button button-secondary button-zakaria" onClick="addToCartAjax('{{ $product->id }}','wishlist','{{ $product->store_id }}')">
+        <a class="button button-secondary button-zakaria" onClick="addToCartAjax('{{ $product->id }}','wishlist')">
           <i class="fas fa-heart"></i>
         </a>
       </div>
@@ -37,7 +37,7 @@
 
       @if (gp247_config('product_use_button_compare'))
       <div class="product-button">
-          <a class="button button-primary button-zakaria" onClick="addToCartAjax('{{ $product->id }}','compare','{{ $product->store_id }}')">
+          <a class="button button-primary button-zakaria" onClick="addToCartAjax('{{ $product->id }}','compare')">
               <i class="fa fa-exchange"></i>
           </a>
       </div>

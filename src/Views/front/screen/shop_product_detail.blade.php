@@ -61,7 +61,6 @@ $layout_page = shop_product_detail
             <form id="buy_block" class="product-information" action="{{ gp247_route_front('cart.add') }}" method="post">
               {{ csrf_field() }}
               <input type="hidden" name="product_id" id="product-detail-id" value="{{ $product->id }}" />
-              <input type="hidden" name="storeId" id="product-detail-storeId" value="{{ $product->store_id }}" />
               <div class="single-product">
                 <h3 class="text-transform-none font-weight-medium" id="product-detail-name">{{ $product->name }}</h3>
                 

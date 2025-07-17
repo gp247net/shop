@@ -684,25 +684,34 @@ class ShopCartController extends RootFrontController
     public function addToCart()
     {
         $data      = request()->all();
-
-        //Process escape
         $data      = gp247_clean($data);
 
         $productId = $data['product_id'];
         $qty       = $data['qty'] ?? 0;
-        $storeId   = $data['storeId'] ?? config('app.storeId');
 
         $formAttr = $data['form_attr'] ?? [];
 
-        $product = (new ShopProduct)->getDetail($productId, null, $storeId);
+        if (gp247_config_global('MultiVendorPro') && (config('app.storeId') == GP247_STORE_ID_ROOT)) {
 
-        if (!$product) {
-            return redirect()->back()
-                ->with(
-                    ['error' => gp247_language_render('front.data_notfound')]
-                );
+            $product = (new ShopProduct)->getDetail($productId);
+            if (!$product) {
+                return redirect()->back()
+                    ->with(
+                        ['error' => gp247_language_render('front.data_notfound')]
+                    );
+            }
+            $storeId = $product->stores()->first()->id; 
+        } else {
+            $storeId = config('app.storeId');
+            $product = (new ShopProduct)->getDetail($productId, null, $storeId);
+            if (!$product) {
+                return redirect()->back()
+                    ->with(
+                        ['error' => gp247_language_render('front.data_notfound')]
+                    );
+            }
         }
-        
+
 
         if ($product->allowSale()) {
             $options = $formAttr;
@@ -738,20 +747,38 @@ class ShopCartController extends RootFrontController
             return redirect(gp247_route_front('cart'));
         }
         $data     = request()->all();
+        $data      = gp247_clean($data);
+
         $instance = $data['instance'] ?? 'default';
-        $id       = $data['id'] ?? '';
-        $storeId  = $data['storeId'] ?? config('app.storeId');
+        $productId       = $data['product_id'] ?? '';
         $cart     = (new Cart)->instance($instance);
 
-        $product = (new ShopProduct)->getDetail($id, null, $storeId);
-        if (!$product) {
-            return response()->json(
-                [
-                    'error' => 1,
-                    'msg' => gp247_language_render('front.data_notfound'),
-                ]
-            );
+
+        if (gp247_config_global('MultiVendorPro') && (config('app.storeId') == GP247_STORE_ID_ROOT)) {
+            
+            $product = (new ShopProduct)->getDetail($productId);
+            if (!$product) {
+                return response()->json(
+                    [
+                        'error' => 1,
+                        'msg' => gp247_language_render('front.data_notfound'),
+                    ]
+                );
+            }
+            $storeId = $product->stores()->first()->id; 
+        } else {
+            $storeId = config('app.storeId');
+            $product = (new ShopProduct)->getDetail($productId, null, $storeId);
+            if (!$product) {
+                return response()->json(
+                    [
+                        'error' => 1,
+                        'msg' => gp247_language_render('front.data_notfound'),
+                    ]
+                );
+            }
         }
+
         switch ($instance) {
             case 'default':
                 if ($product->attributes->count() || $product->kind == GP247_PRODUCT_GROUP) {
@@ -770,7 +797,7 @@ class ShopCartController extends RootFrontController
                 if ($product->allowSale()) {
                     $cart->add(
                         array(
-                            'id'      => $id,
+                            'id'      => $productId,
                             'name'    => $product->name,
                             'qty'     => 1,
                             'storeId' => $storeId,
