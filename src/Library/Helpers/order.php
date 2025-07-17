@@ -13,6 +13,7 @@ if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_or
                 foreach ($data['details'] as $key => $detail) {
                     $product = (new \GP247\Shop\Models\ShopProduct)->getDetail($detail['product_id']);
                     $pathDownload = $product->downloadPath->path ?? '';
+                    $linkDownload = '';
                     $nameProduct = $detail['name'];
                     if ($product && $pathDownload && $product->tag == GP247_TAG_DOWNLOAD) {
                         $linkDownload = $pathDownload;
