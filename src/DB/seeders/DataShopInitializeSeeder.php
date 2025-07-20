@@ -1497,6 +1497,8 @@ class DataShopInitializeSeeder extends Seeder
                 ['code' => 'admin.order.search','text' => 'Tìm đơn hàng','position' => 'admin.order','location' => 'vi'],
                 ['code' => 'admin.order.search','text' => 'Search order','position' => 'admin.order','location' => 'en'],
     
+                ['code' => 'admin_notice.gp247_new_order_success','text' => 'New order success','position' => 'admin_notice','location' => 'en'],
+                ['code' => 'admin_notice.gp247_new_order_success','text' => 'Một đơn hàng đã hoàn thành','position' => 'admin_notice','location' => 'vi'],
 
             ]
         );
