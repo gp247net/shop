@@ -107,14 +107,6 @@ class ShopBrand extends Model
         } else {
             $data = $data->where($type, $key);
         }
-        if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) {
-            $tableBrandStore = (new ShopBrandStore)->getTable();
-            $tableStore = (new AdminStore)->getTable();
-            $data = $data->join($tableBrandStore, $tableBrandStore.'.brand_id', $this->getTable() . '.id');
-            $data = $data->join($tableStore, $tableStore . '.id', $tableBrandStore.'.store_id');
-            $data = $data->where($tableStore . '.status', '1');
-            $data = $data->where($tableBrandStore.'.store_id', $storeId);
-        }
         if ($checkActive) {
             $data = $data->where($this->getTable() .'.status', 1);
         }
@@ -141,15 +133,6 @@ class ShopBrand extends Model
         $dataSelect = $this->getTable().'.*';
         $query = $this->selectRaw($dataSelect)
             ->where($this->getTable().'.status', 1);
-
-        if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) {
-            $tableBrandStore = (new ShopBrandStore)->getTable();
-            $tableStore = (new AdminStore)->getTable();
-            $query = $query->join($tableBrandStore, $tableBrandStore.'.brand_id', $this->getTable() . '.id');
-            $query = $query->join($tableStore, $tableStore . '.id', $tableBrandStore.'.store_id');
-            $query = $query->where($tableStore . '.status', '1');
-            $query = $query->where($tableBrandStore.'.store_id', $storeId);
-        }
 
         $query = $this->processMoreQuery($query);
         
