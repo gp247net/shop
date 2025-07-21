@@ -54,9 +54,13 @@ class ShopSample extends Command
             
             // Create sample categories
             $this->info('Creating sample categories...');
+            $cateRoot1 = gp247_generate_id();
+            $cateRoot2 = gp247_generate_id();
+            $cateRoot3 = gp247_generate_id();
+            $cateRoot4 = gp247_generate_id();
             $categories = [
                 [
-                    'id' => gp247_generate_id(),
+                    'id' => $cateRoot1,
                     'alias' => 'am-thuc',
                     'image' => 'https://picsum.photos/400/300?random=1',
                     'parent' => '0',
@@ -76,8 +80,72 @@ class ShopSample extends Command
                         ]
                     ]
                 ],
+                // Create subcategories for "Ẩm thực" (Food)
                 [
                     'id' => gp247_generate_id(),
+                    'alias' => 'pho-nam-dinh',
+                    'image' => 'https://picsum.photos/400/300?random=11',
+                    'parent' => $cateRoot1,
+                    'top' => 0,
+                    'sort' => 1,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Phở Nam Định',
+                            'keyword' => 'pho nam dinh, am thuc',
+                            'description' => 'Danh mục các sản phẩm Phở Nam Định'
+                        ],
+                        'en' => [
+                            'title' => 'Pho Nam Dinh',
+                            'keyword' => 'pho nam dinh, food',
+                            'description' => 'Category of Pho Nam Dinh products'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'nem-chua-thanh-hoa',
+                    'image' => 'https://picsum.photos/400/300?random=12',
+                    'parent' => $cateRoot1,
+                    'top' => 0,
+                    'sort' => 2,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Nem chua Thanh Hóa',
+                            'keyword' => 'nem chua thanh hoa, am thuc',
+                            'description' => 'Danh mục các sản phẩm Nem chua Thanh Hóa'
+                        ],
+                        'en' => [
+                            'title' => 'Nem Chua Thanh Hoa',
+                            'keyword' => 'nem chua thanh hoa, food',
+                            'description' => 'Category of Nem Chua Thanh Hoa products'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'bun-cha-ha-noi',
+                    'image' => 'https://picsum.photos/400/300?random=13',
+                    'parent' => $cateRoot1,
+                    'top' => 0,
+                    'sort' => 3,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Bún Chả Hà Nội',
+                            'keyword' => 'bun cha ha noi, am thuc',
+                            'description' => 'Danh mục các sản phẩm Bún Chả Hà Nội'
+                        ],
+                        'en' => [
+                            'title' => 'Bun Cha Ha Noi',
+                            'keyword' => 'bun cha ha noi, food',
+                            'description' => 'Category of Bun Cha Ha Noi products'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => $cateRoot2,
                     'alias' => 'du-lich',
                     'image' => 'https://picsum.photos/400/300?random=2', 
                     'parent' => '0',
@@ -99,8 +167,155 @@ class ShopSample extends Command
                 ],
                 [
                     'id' => gp247_generate_id(),
+                    'alias' => 'vinh-ha-long',
+                    'image' => 'https://picsum.photos/400/300?random=21',
+                    'parent' => $cateRoot2,
+                    'top' => 0,
+                    'sort' => 1,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Vịnh Hạ Long',
+                            'keyword' => 'vinh ha long, du lich',
+                            'description' => 'Danh mục các sản phẩm, dịch vụ tại Vịnh Hạ Long'
+                        ],
+                        'en' => [
+                            'title' => 'Ha Long Bay',
+                            'keyword' => 'ha long bay, travel',
+                            'description' => 'Category of products and services at Ha Long Bay'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'dong-phong-nha',
+                    'image' => 'https://picsum.photos/400/300?random=22',
+                    'parent' => $cateRoot2,
+                    'top' => 0,
+                    'sort' => 2,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Động Phong Nha',
+                            'keyword' => 'dong phong nha, du lich',
+                            'description' => 'Danh mục các sản phẩm, dịch vụ tại Động Phong Nha'
+                        ],
+                        'en' => [
+                            'title' => 'Phong Nha Cave',
+                            'keyword' => 'phong nha cave, travel',
+                            'description' => 'Category of products and services at Phong Nha Cave'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'trang-an',
+                    'image' => 'https://picsum.photos/400/300?random=23',
+                    'parent' => $cateRoot2,
+                    'top' => 0,
+                    'sort' => 3,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Tràng An',
+                            'keyword' => 'trang an, du lich',
+                            'description' => 'Danh mục các sản phẩm, dịch vụ tại Tràng An'
+                        ],
+                        'en' => [
+                            'title' => 'Trang An',
+                            'keyword' => 'trang an, travel',
+                            'description' => 'Category of products and services at Trang An'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => $cateRoot3,
+                    'alias' => 'van-hoa',
+                    'image' => 'https://picsum.photos/400/300?random=3', 
+                    'parent' => '0',
+                    'top' => 1,
+                    'sort' => 0,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Văn hóa',
+                            'keyword' => 'van hoa, van nghe',
+                            'description' => 'Danh mục các sản phẩm văn hóa'
+                        ],
+                        'en' => [
+                            'title' => 'Culture',
+                            'keyword' => 'culture, art',
+                            'description' => 'Culture and art category'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'gom-bat-trang',
+                    'image' => 'https://picsum.photos/400/300?random=31',
+                    'parent' => $cateRoot3,
+                    'top' => 0,
+                    'sort' => 1,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Gốm Bát Tràng',
+                            'keyword' => 'gom bat trang, gom su',
+                            'description' => 'Danh mục các sản phẩm gốm Bát Tràng'
+                        ],
+                        'en' => [
+                            'title' => 'Bat Trang Pottery',
+                            'keyword' => 'bat trang pottery, ceramics',
+                            'description' => 'Category of Bat Trang pottery products'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'tranh-dong-ho',
+                    'image' => 'https://picsum.photos/400/300?random=32',
+                    'parent' => $cateRoot3,
+                    'top' => 0,
+                    'sort' => 2,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Tranh Đông Hồ',
+                            'keyword' => 'tranh dong ho, tranh dan gian',
+                            'description' => 'Danh mục các sản phẩm tranh Đông Hồ'
+                        ],
+                        'en' => [
+                            'title' => 'Dong Ho Paintings',
+                            'keyword' => 'dong ho paintings, folk paintings',
+                            'description' => 'Category of Dong Ho folk paintings'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'chieu-coi-nga-son',
+                    'image' => 'https://picsum.photos/400/300?random=33',
+                    'parent' => $cateRoot3,
+                    'top' => 0,
+                    'sort' => 3,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Chiếu cói Nga Sơn',
+                            'keyword' => 'chieu coi nga son, chieu coi',
+                            'description' => 'Danh mục các sản phẩm chiếu cói Nga Sơn'
+                        ],
+                        'en' => [
+                            'title' => 'Nga Son Rush Mats',
+                            'keyword' => 'nga son rush mats, rush mats',
+                            'description' => 'Category of Nga Son rush mat products'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => $cateRoot4,
                     'alias' => 'trai-cay',
-                    'image' => 'https://picsum.photos/400/300?random=3',
+                    'image' => 'https://picsum.photos/400/300?random=4',
                     'parent' => '0', 
                     'top' => 1,
                     'sort' => 0,
@@ -117,6 +332,69 @@ class ShopSample extends Command
                             'description' => 'Fresh fruits category'
                         ]
                     ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'trai-cay-nam-bo',
+                    'image' => 'https://picsum.photos/400/300?random=41',
+                    'parent' => $cateRoot4,
+                    'top' => 0,
+                    'sort' => 1,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Trái Cây Nam Bộ',
+                            'keyword' => 'trai cay nam bo, hoa qua nam bo',
+                            'description' => 'Danh mục các loại trái cây đặc sản Nam Bộ'
+                        ],
+                        'en' => [
+                            'title' => 'Southern Fruits',
+                            'keyword' => 'southern fruits, vietnamese fruits',
+                            'description' => 'Category of Southern Vietnam specialty fruits'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'vai-thieu',
+                    'image' => 'https://picsum.photos/400/300?random=42',
+                    'parent' => $cateRoot4,
+                    'top' => 0,
+                    'sort' => 2,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Vải Thiều',
+                            'keyword' => 'vai thieu, vai thieu bac giang',
+                            'description' => 'Danh mục các sản phẩm vải thiều'
+                        ],
+                        'en' => [
+                            'title' => 'Lychee',
+                            'keyword' => 'lychee, bac giang lychee',
+                            'description' => 'Category of lychee products'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => gp247_generate_id(),
+                    'alias' => 'nhan-long',
+                    'image' => 'https://picsum.photos/400/300?random=43',
+                    'parent' => $cateRoot4,
+                    'top' => 0,
+                    'sort' => 3,
+                    'status' => 1,
+                    'descriptions' => [
+                        'vi' => [
+                            'title' => 'Nhãn Lồng',
+                            'keyword' => 'nhan long, nhan long hung yen',
+                            'description' => 'Danh mục các sản phẩm nhãn lồng Hưng Yên'
+                        ],
+                        'en' => [
+                            'title' => 'Longan',
+                            'keyword' => 'longan, hung yen longan',
+                            'description' => 'Category of Hung Yen longan products'
+                        ]
+                    ]
                 ]
             ];
 
@@ -127,8 +405,9 @@ class ShopSample extends Command
                     // Create category
                     $categoryData = collect($category)->except('descriptions')->toArray();
                     $cat = ShopCategory::create($categoryData);
-                    $categoryIds[] = $cat->id;
-
+                    if ($category['parent'] != '0') {
+                        $categoryIds[] = $cat->id;
+                    }
                     // Create descriptions
                     foreach ($category['descriptions'] as $lang => $description) {
                         ShopCategoryDescription::create([
@@ -247,13 +526,21 @@ class ShopSample extends Command
                     $productId = gp247_generate_id();
                     $productNumber = $categoryKey * 3 + $i;
                     
+                    // Randomly assign brand_id as null or one of the $brands ids
+                    $brandIds = array_column($brands, 'id');
+                    $randomBrand = rand(0, count($brandIds)); // Có thể là null (nếu bằng count)
+                    if ($randomBrand === count($brandIds)) {
+                        $brandId = null;
+                    } else {
+                        $brandId = $brandIds[$randomBrand];
+                    }
                     // Basic product data
                     $productData = [
                         'id' => $productId,
                         'sku' => 'SAMPLE-' . $categoryKey . '-' . $i,
                         'alias' => 'sample-product-' . $productNumber,
                         'image' => 'https://picsum.photos/500/500?random=' . $productNumber,
-                        'brand_id' => null,
+                        'brand_id' => $brandId,
                         'supplier_id' => null,
                         'price' => rand(100, 500), // Random price between 100 and 500
                         'cost' => 0,
