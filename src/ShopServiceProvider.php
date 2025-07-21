@@ -210,6 +210,8 @@ class ShopServiceProvider extends ServiceProvider
     {
         view()->share('modelProduct', (new \GP247\Shop\Models\ShopProduct));
         view()->share('modelOrder', (new \GP247\Shop\Models\ShopOrder));
+        view()->share('modelCategory', (new \GP247\Shop\Models\ShopCategory));
+        view()->share('modelBrand', (new \GP247\Shop\Models\ShopBrand));
     }
 
     /**
