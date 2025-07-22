@@ -1407,6 +1407,8 @@ class DataShopInitializeSeeder extends Seeder
                 ['code' => 'front.brands','text' => 'Brands','position' => 'front','location' => 'en'],
                 ['code' => 'front.categories','text' => 'Danh mục','position' => 'front','location' => 'vi'],
                 ['code' => 'front.categories','text' => 'Categries','position' => 'front','location' => 'en'],
+                ['code' => 'front.sub_categories','text' => 'Danh mục con','position' => 'front','location' => 'vi'],
+                ['code' => 'front.sub_categories','text' => 'Sub categories','position' => 'front','location' => 'en'],
                 ['code' => 'front.shop','text' => 'Cửa hàng','position' => 'front','location' => 'vi'],
                 ['code' => 'front.shop','text' => 'Shop','position' => 'front','location' => 'en'],
 
