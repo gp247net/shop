@@ -734,7 +734,7 @@ class DataShopInitializeSeeder extends Seeder
                 ['code' => 'product.category_store','text' => 'Category store','position' => 'product','location' => 'en'],
                 ['code' => 'product.category_store','text' => 'Danh mục riêng','position' => 'product','location' => 'vi'],
                 ['code' => 'product.brand','text' => 'Brand','position' => 'product','location' => 'en'],
-                ['code' => 'product.brand','text' => 'Thẻ hàng','position' => 'product','location' => 'vi'],
+                ['code' => 'product.brand','text' => 'Thương hiệu','position' => 'product','location' => 'vi'],
                 ['code' => 'product.supplier','text' => 'Supplier','position' => 'product','location' => 'en'],
                 ['code' => 'product.supplier','text' => 'Nhà cung cấp','position' => 'product','location' => 'vi'],
                 ['code' => 'product.kind_group','text' => 'Group','position' => 'product','location' => 'en'],

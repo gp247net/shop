@@ -922,7 +922,7 @@ class ShopProduct extends Model
     public function displayVendor()
     {
         if ((gp247_store_check_multi_partner_installed()) && config('app.storeId') == GP247_STORE_ID_ROOT) {
-            $subPath = 'shop_vendor.display_vendor';
+            $subPath = 'common.shop_display_store';
             $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'), $subPath);
             gp247_check_view($view);
             $vendorCode = $this->stores()->first()->code;
