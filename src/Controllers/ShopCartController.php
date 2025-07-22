@@ -816,11 +816,11 @@ class ShopCartController extends RootFrontController
             default:
                 //Wishlist or Compare...
                 ${'arrID' . $instance} = array_keys($cart->content()->groupBy('id')->toArray());
-                if (!in_array($id, ${'arrID' . $instance})) {
+                if (!in_array($productId, ${'arrID' . $instance})) {
                     try {
                         $cart->add(
                             array(
-                                'id'      => $id,
+                                'id'      => $productId,
                                 'name'    => $product->name,
                                 'qty'     => 1,
                                 'storeId' => $storeId,
