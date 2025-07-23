@@ -77,7 +77,7 @@ class DataShopDefaultSeeder extends Seeder
                 'id'       => (string)\Illuminate\Support\Str::orderedUuid(),
                 'name'     => 'Product Last View (Shop Package)',
                 'position' => 'left',
-                'page'     => 'shop_product_detail,shop_product_list,shop_home,shop_search',
+                'page'     => 'shop_product_detail,shop_product_list,shop_search',
                 'text'     => 'shop_product_last_view',
                 'type'     => 'view',
                 'sort'     => 20,

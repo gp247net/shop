@@ -194,7 +194,6 @@ class ShopServiceProvider extends ServiceProvider
         $layoutPage['shop_item_list'] = 'shop_item_list';
         $layoutPage['shop_product_detail'] = 'shop_product_detail';
         $layoutPage['shop_product_list'] = 'shop_product_list';
-        $layoutPage['shop_home'] = 'shop_home';
         $layoutPage['shop_profile'] = 'shop_profile';
         $layoutPage['shop_cart'] = 'shop_cart';
         $layoutPage['shop_checkout'] = 'shop_checkout';
