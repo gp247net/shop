@@ -154,7 +154,7 @@ class ShopProductController extends RootFrontController
                     'og_image'        => gp247_file($product->getImage()),
                     'layout_page'     => 'shop_product_detail',
                     'breadcrumbs'     => [
-                        ['url'        => gp247_route_front('shop'), 'title' => gp247_language_render('front.shop')],
+                        ['url'        => gp247_route_front('product.all'), 'title' => gp247_language_render('front.all_product')],
                         $dataCategoryFirst,
                         ['url'        => '', 'title' => $product->name],
                     ],
