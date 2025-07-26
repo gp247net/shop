@@ -819,6 +819,8 @@ class DataShopInitializeSeeder extends Seeder
                 ['code' => 'product.config_manager.product_use_button_compare','text' => 'Use compare button','position' => 'product.admin','location' => 'en'],
                 ['code' => 'product.config_manager.product_display_out_of_stock','text' => 'Hiện sản phẩm hết hàng','position' => 'product.admin','location' => 'vi'],
                 ['code' => 'product.config_manager.product_display_out_of_stock','text' => 'Display product out of stock','position' => 'product.admin','location' => 'en'],
+                ['code' => 'product.dont_allow_sale','text' => 'Sản phẩm không được bán','position' => 'product.admin','location' => 'vi'],
+                ['code' => 'product.dont_allow_sale','text' => 'Product not for sale','position' => 'product.admin','location' => 'en'],
 
                 ['code' => 'admin.config_layout.link_home_page','text' => 'Hiển thị link trang chủ','position' => 'admin.config_layout','location' => 'vi'],
                 ['code' => 'admin.config_layout.link_home_page','text' => 'Display link homepage','position' => 'admin.config_layout','location' => 'en'],

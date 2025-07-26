@@ -714,6 +714,16 @@ class ShopCartController extends RootFrontController
 
 
         if ($product->allowSale()) {
+
+            if ($product->attributes->count() && !$formAttr) {
+                // Product have attributes but not select attribute
+                return redirect()->back()
+                    ->with(
+                        ['error' => gp247_language_render('product.please_select_attribute')]
+                    );
+            }
+
+
             $options = $formAttr;
             $dataCart = array(
                 'id'      => $productId,
@@ -765,6 +775,7 @@ class ShopCartController extends RootFrontController
                     ]
                 );
             }
+            // If multivendor and store id is root, store id is first store
             $storeId = $product->stores()->first()->id; 
         } else {
             $storeId = config('app.storeId');
