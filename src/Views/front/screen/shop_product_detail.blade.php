@@ -94,7 +94,7 @@ $layout_page = shop_product_detail
                 {{--// Button add to cart --}}
 
                 {{-- Show attribute --}}
-                @if (gp247_config('product_tag'))
+                @if (gp247_config('product_attribute'))
                 <div id="product-detail-attr">
                     @if ($product->attributes())
                     {!! $product->renderAttributeDetails() !!}
