@@ -3,7 +3,7 @@ namespace GP247\Shop\Controllers;
 
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopProduct;
-
+use GP247\Shop\Models\ShopBrand;
 class ShopProductController extends RootFrontController
 {
     public function __construct()
@@ -43,6 +43,13 @@ class ShopProductController extends RootFrontController
             'id_desc' => ['id', 'desc'],
             'id_asc' => ['id', 'asc'],
         ];
+        $filter_price = request('price');
+        $filter_brand = request('brand');
+        $arr_brand_id = [];
+        if ($filter_brand) {
+            $arr_brand = explode(',', $filter_brand);
+            $arr_brand_id = ShopBrand::whereIn('alias', $arr_brand)->pluck('id')->toArray();
+        }
         if (array_key_exists($filter_sort, $filterArr)) {
             $sortBy = $filterArr[$filter_sort][0];
             $sortOrder = $filterArr[$filter_sort][1];
@@ -51,12 +58,18 @@ class ShopProductController extends RootFrontController
         $products = (new ShopProduct)
             ->setLimit(gp247_config('product_list'))
             ->setPaginate()
-            ->setSort([$sortBy, $sortOrder])
-            ->getData();
+            ->setSort([$sortBy, $sortOrder]);
+            if ($filter_price) {
+                $products->setRangePrice($filter_price);
+            }
+            if ($arr_brand_id) {
+                $products->getProductToBrand($arr_brand_id);
+            }
+            $products = $products->getData();
 
-            $subPath = 'screen.shop_product_list';
-            $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
-            gp247_check_view($view);
+        $subPath = 'screen.shop_product_list';
+        $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+        gp247_check_view($view);
         return view(
             $view,
             array(

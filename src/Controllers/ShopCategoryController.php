@@ -34,23 +34,8 @@ class ShopCategoryController extends RootFrontController
      */
     private function _allCategories()
     {
-        $sortBy = 'sort';
-        $sortOrder = 'asc';
-        $filter_sort = request('filter_sort');
-        $filterArr = [
-            'sort_desc' => ['sort', 'desc'],
-            'sort_asc' => ['sort', 'asc'],
-            'id_desc' => ['id', 'desc'],
-            'id_asc' => ['id', 'asc'],
-        ];
-        if (array_key_exists($filter_sort, $filterArr)) {
-            $sortBy = $filterArr[$filter_sort][0];
-            $sortOrder = $filterArr[$filter_sort][1];
-        }
-
         $itemsList = (new ShopCategory)
             ->getCategoryRoot()
-            ->setSort([$sortBy, $sortOrder])
             ->setPaginate()
             ->setLimit(gp247_config('item_list'))
             ->getData();
@@ -66,7 +51,6 @@ class ShopCategoryController extends RootFrontController
                 'keyword'     => '',
                 'description' => '',
                 'layout_page' => 'shop_item_list',
-                'filter_sort' => $filter_sort,
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('front.categories')],
                 ],
@@ -117,19 +101,15 @@ class ShopCategoryController extends RootFrontController
             $sortOrder = $filterArr[$filter_sort][1];
         }
 
-        $keyword = request('keyword');
-        $bid = request('bid');
-        $price = request('price');
-        $brand = request('brand');
-
-        if ($bid) {
-            $arrBrandId = explode(',', $bid);
-        } else {
-            if ($brand) {
-                $arrAliasBrand = explode(',', $brand);
-                $arrBrandId = ShopBrand::whereIn('alias', $arrAliasBrand)->pluck('id')->toArray();
-            }
+        $filter_price = request('price');
+        $filter_brand = request('brand');
+        $arr_brand_id = [];
+        if ($filter_brand) {
+            $arr_brand = explode(',', $filter_brand);
+            $arr_brand_id = ShopBrand::whereIn('alias', $arr_brand)->pluck('id')->toArray();
         }
+
+        $keyword = request('keyword');
 
         $category = (new ShopCategory)->getDetail($alias, $type = 'alias');
 
@@ -145,12 +125,12 @@ class ShopCategoryController extends RootFrontController
             $products = $products->getProductToCategory($arrCate);
 
             //filter brand
-            if ($arrBrandId) {
-                $products = $products->getProductToBrand($arrBrandId);
+            if ($arr_brand_id) {
+                $products = $products->getProductToBrand($arr_brand_id);
             }
             //Filter price
-            if ($price) {
-                $products = $products->setRangePrice($price);
+            if ($filter_price) {
+                $products = $products->setRangePrice($filter_price);
             }
 
             $products = $products

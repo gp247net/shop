@@ -33,24 +33,7 @@ class ShopBrandController extends RootFrontController
      */
     private function _allBrands()
     {
-        $sortBy = 'sort';
-        $sortOrder = 'asc';
-        $filter_sort = request('filter_sort');
-        $filterArr = [
-            'name_desc' => ['name', 'desc'],
-            'name_asc'  => ['name', 'asc'],
-            'sort_desc' => ['sort', 'desc'],
-            'sort_asc'  => ['sort', 'asc'],
-            'id_desc'   => ['id', 'desc'],
-            'id_asc'    => ['id', 'asc'],
-        ];
-        if (array_key_exists($filter_sort, $filterArr)) {
-            $sortBy = $filterArr[$filter_sort][0];
-            $sortOrder = $filterArr[$filter_sort][1];
-        }
-
         $itemsList = (new ShopBrand)
-            ->setSort([$sortBy, $sortOrder])
             ->setPaginate()
             ->setLimit(gp247_config('item_list'))
             ->getData();
@@ -66,7 +49,6 @@ class ShopBrandController extends RootFrontController
                 'keyword'     => '',
                 'description' => '',
                 'layout_page' => 'shop_item_list',
-                'filter_sort' => $filter_sort,
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('front.brands')],
                 ],
@@ -110,6 +92,7 @@ class ShopBrandController extends RootFrontController
             'id_desc'    => ['id', 'desc'],
             'id_asc'     => ['id', 'asc'],
         ];
+        $filter_price = request('price');
         if (array_key_exists($filter_sort, $filterArr)) {
             $sortBy = $filterArr[$filter_sort][0];
             $sortOrder = $filterArr[$filter_sort][1];
@@ -121,8 +104,11 @@ class ShopBrandController extends RootFrontController
             ->getProductToBrand($brand->id)
             ->setPaginate()
             ->setLimit(gp247_config('product_list'))
-            ->setSort([$sortBy, $sortOrder])
-            ->getData();
+            ->setSort([$sortBy, $sortOrder]);
+            if ($filter_price) {
+                $products->setRangePrice($filter_price);
+            }
+            $products = $products->getData();
 
             $subPath = 'screen.shop_product_list';
             $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
