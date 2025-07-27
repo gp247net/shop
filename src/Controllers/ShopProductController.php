@@ -110,10 +110,13 @@ class ShopProductController extends RootFrontController
             //End last viewed
 
             //Product last view
-            $arrlastView = empty(\Cookie::get('productsLastView')) ? array() : json_decode(\Cookie::get('productsLastView'), true);
-            $arrlastView[$product->id] = gp247_time_now();
-            arsort($arrlastView);
-            \Cookie::queue('productsLastView', json_encode($arrlastView), (86400 * config('gp247-config.shop.cart_expire.lastview')));
+            $productsLastView = \Illuminate\Support\Facades\Cookie::get('productsLastView');
+            $arrlastView = empty($productsLastView) ? array() : json_decode($productsLastView, true);
+            if (is_array($arrlastView)) {
+                $arrlastView[$product->id] = gp247_time_now();
+                arsort($arrlastView);
+                \Cookie::queue('productsLastView', json_encode($arrlastView), (1440 * config('gp247-config.shop.cart_expire.lastview')));
+            }
             //End product last view
 
             $categories = $product->categories->keyBy('id')->toArray();
