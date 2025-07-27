@@ -13,6 +13,8 @@ use GP247\Shop\Models\ShopProductDescription;
 use GP247\Shop\Models\ShopProductStore;
 use GP247\Shop\Models\ShopProductPromotion;
 use GP247\Shop\Models\ShopProductCategory;
+use GP247\Shop\Models\ShopProductGroup;
+use GP247\Shop\Models\ShopProductBuild;
 use Carbon\Carbon;
 
 class ShopSample extends Command
@@ -38,7 +40,6 @@ class ShopSample extends Command
      */
     public function handle()
     {
-        try {
             // Clear existing data
             $this->info('Clearing existing data...');
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category_description')->truncate();
@@ -51,6 +52,9 @@ class ShopSample extends Command
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_store')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_category')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_promotion')->truncate();
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_attribute_group')->truncate();
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_attribute')->truncate();
+
             
             // Create sample categories
             $this->info('Creating sample categories...');
@@ -400,32 +404,30 @@ class ShopSample extends Command
 
             $categoryIds = [];
 
-            DB::connection(GP247_DB_CONNECTION)->transaction(function () use ($categories, &$categoryIds) {
-                foreach ($categories as $category) {
-                    // Create category
-                    $categoryData = collect($category)->except('descriptions')->toArray();
-                    $cat = ShopCategory::create($categoryData);
-                    if ($category['parent'] != '0') {
-                        $categoryIds[] = $cat->id;
-                    }
-                    // Create descriptions
-                    foreach ($category['descriptions'] as $lang => $description) {
-                        ShopCategoryDescription::create([
-                            'category_id' => $cat->id,
-                            'lang' => $lang,
-                            'title' => $description['title'],
-                            'keyword' => $description['keyword'],
-                            'description' => $description['description']
-                        ]);
-                    }
-
-                    // Link to store
-                    DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category_store')->insert([
+            foreach ($categories as $category) {
+                // Create category
+                $categoryData = collect($category)->except('descriptions')->toArray();
+                $cat = ShopCategory::create($categoryData);
+                if ($category['parent'] != '0') {
+                    $categoryIds[] = $cat->id;
+                }
+                // Create descriptions
+                foreach ($category['descriptions'] as $lang => $description) {
+                    ShopCategoryDescription::create([
                         'category_id' => $cat->id,
-                        'store_id' => GP247_STORE_ID_ROOT
+                        'lang' => $lang,
+                        'title' => $description['title'],
+                        'keyword' => $description['keyword'],
+                        'description' => $description['description']
                     ]);
                 }
-            });
+
+                // Link to store
+                DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category_store')->insert([
+                    'category_id' => $cat->id,
+                    'store_id' => GP247_STORE_ID_ROOT
+                ]);
+            }
 
             // Create sample brands
             $this->info('Creating sample brands...');
@@ -459,12 +461,10 @@ class ShopSample extends Command
                 ]
             ];
 
-            DB::connection(GP247_DB_CONNECTION)->transaction(function () use ($brands) {
-                foreach ($brands as $brand) {
-                    // Create brand
-                    DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand')->insert($brand);
-                }
-            });
+            foreach ($brands as $brand) {
+                // Create brand
+                DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand')->insert($brand);
+            }
 
             // Create sample suppliers
             $this->info('Creating sample suppliers...');
@@ -510,20 +510,28 @@ class ShopSample extends Command
                 ]
             ];
 
-            DB::connection(GP247_DB_CONNECTION)->transaction(function () use ($suppliers) {
-                foreach ($suppliers as $supplier) {
-                    DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_supplier')->insert($supplier);
-                }
-            });
+            foreach ($suppliers as $supplier) {
+                DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_supplier')->insert($supplier);
+            }
+
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_attribute_group')->insert([
+                'name' => 'Color',
+                'status' => 1,
+                'sort' => 0,
+                'type' => 'radio',
+                'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_at' => Carbon::now()->format('Y-m-d H:i:s'),
+            ]);
 
             // Create sample products for each category
             $this->info('Creating sample products...');
-
+            
+            $arrProductSingleIds = [];
             foreach ($categoryIds as $categoryKey => $categoryId) {
                 // Create 3 products per category
                 for ($i = 1; $i <= 3; $i++) {
                     $hasPromotion = ($i <= 2) ? true : false; // First 2 products have promotion
-                    $productId = gp247_generate_id();
+                    $arrProductSingleIds[] = $productId = gp247_generate_id();
                     $productNumber = $categoryKey * 3 + $i;
                     
                     // Randomly assign brand_id as null or one of the $brands ids
@@ -560,8 +568,8 @@ class ShopSample extends Command
                         'sort' => 0,
                         'view' => 0,
                         'date_available' => Carbon::now()->format('Y-m-d H:i:s'),
-                        'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
-                        'updated_at' => Carbon::now()->format('Y-m-d H:i:s'),
+                        'created_at' => Carbon::now()->format('Y-m-d 00:00:00'),
+                        'updated_at' => Carbon::now()->format('Y-m-d 00:00:00'),
                     ];
 
                     // Product descriptions
@@ -584,52 +592,240 @@ class ShopSample extends Command
                         ]
                     ];
 
-                    DB::connection(GP247_DB_CONNECTION)->transaction(function () use (
-                        $productData, 
-                        $productDescriptions, 
-                        $categoryId, 
-                        $hasPromotion, 
-                        $productId
-                    ) {
-                        // Create product
-                        ShopProduct::create($productData);
+                    // Create product
+                    ShopProduct::create($productData);
 
-                        // Create descriptions
-                        foreach ($productDescriptions as $description) {
-                            ShopProductDescription::create($description);
-                        }
+                    // Create descriptions
+                    foreach ($productDescriptions as $description) {
+                        ShopProductDescription::create($description);
+                    }
 
-                        // Link to category
-                        ShopProductCategory::create([
+                    // Link to category
+                    ShopProductCategory::create([
+                        'product_id' => $productId,
+                        'category_id' => $categoryId
+                    ]);
+
+                    // Link to store
+                    ShopProductStore::create([
+                        'product_id' => $productId,
+                        'store_id' => GP247_STORE_ID_ROOT
+                    ]);
+
+                    // Create promotion if needed
+                    if ($hasPromotion) {
+                        $promotionPrice = floor($productData['price'] * 0.8); // 20% discount, rounded down to ensure integer
+                        ShopProductPromotion::create([
                             'product_id' => $productId,
-                            'category_id' => $categoryId
+                            'price_promotion' => $promotionPrice,
+                            'date_start' => Carbon::now()->format('Y-m-d H:i:s'),
+                            'date_end' => Carbon::now()->addMonths(2)->format('Y-m-d H:i:s')
                         ]);
-
-                        // Link to store
-                        ShopProductStore::create([
-                            'product_id' => $productId,
-                            'store_id' => GP247_STORE_ID_ROOT
-                        ]);
-
-                        // Create promotion if needed
-                        if ($hasPromotion) {
-                            $promotionPrice = floor($productData['price'] * 0.8); // 20% discount, rounded down to ensure integer
-                            ShopProductPromotion::create([
-                                'product_id' => $productId,
-                                'price_promotion' => $promotionPrice,
-                                'date_start' => Carbon::now()->format('Y-m-d H:i:s'),
-                                'date_end' => Carbon::now()->addMonths(2)->format('Y-m-d H:i:s')
-                            ]);
-                        }
-                    });
+                    }
                 }
             }
 
+            // Create product bundles and groups within the same transaction
+            $this->createProductBundle($arrProductSingleIds, $categoryIds);
+            $this->createProductGroup($arrProductSingleIds, $categoryIds);
+            
             $this->info('Created sample data successfully!');
+    }
 
-        } catch (Throwable $e) {
-            $this->error('Error: ' . $e->getMessage());
-            throw $e;
+
+    /**
+     * Create product bundle
+     */
+    private function createProductBundle($productSingleIds, $categoryIds)
+    {
+        $this->info('Creating product bundles...');
+        for ($i = 1; $i <= 3; $i++) {
+            $productId = gp247_generate_id();
+            // Basic product data
+            $productData = [
+                'id' => $productId,
+                'sku' => 'SAMPLE-BUNDLE-' . $i,
+                'alias' => 'sample-bundle-' . $i,
+                'image' => 'https://picsum.photos/500/500?random=2' . $i,
+                'brand_id' => null,
+                'supplier_id' => null,
+                'price' => rand(500, 1000), // Random price between 100 and 500
+                'cost' => 0,
+                'stock' => 100,
+                'sold' => 0,
+                'minimum' => 1,
+                'weight_class' => 'kg',
+                'weight' => 1,
+                'length_class' => 'cm',
+                'length' => 10,
+                'width' => 10,
+                'height' => 10,
+                'kind' => GP247_PRODUCT_BUILD,
+                'tag' => 0, // Physical product
+                'tax_id' => 0,
+                'status' => 1,
+                'sort' => 0,
+                'view' => 0,
+                'date_available' => Carbon::now()->format('Y-m-d H:i:s'),
+                'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_at' => Carbon::now()->format('Y-m-d H:i:s'),
+            ];
+            // Product descriptions
+            $productDescriptions = [
+                'vi' => [
+                    'product_id' => $productId,
+                    'lang' => 'vi',
+                    'name' => 'Sản phẩm bộ ' . $i . ' - Tiếng Việt',
+                    'keyword' => 'sample, product',
+                    'description' => 'Mô tả ngắn cho sản phẩm mẫu ' . $i,
+                    'content' => '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>'
+                ],
+                'en' => [
+                    'product_id' => $productId,
+                    'lang' => 'en',
+                    'name' => 'Product bundle ' . $i . ' - English',
+                    'keyword' => 'sample, product',
+                    'description' => 'Short description for sample product ' . $i,
+                    'content' => '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>'
+                ]
+            ];
+            // Create product
+            $product = ShopProduct::create($productData);
+
+            // Create descriptions
+            foreach ($productDescriptions as $description) {
+                ShopProductDescription::create($description);
+            }
+
+            // Link to category
+            ShopProductCategory::create([
+                'product_id' => $productId,
+                'category_id' => $categoryIds[array_rand($categoryIds)]
+            ]);
+
+            // Link to store
+            ShopProductStore::create([
+                'product_id' => $productId,
+                'store_id' => GP247_STORE_ID_ROOT
+            ]);
+
+            // Random 2 product from $productSingleIds
+            $randomProductIds = [];
+            if (is_array($productSingleIds) && count($productSingleIds) >= 2) {
+                // Shuffle array and get first 2 elements
+                $shuffled = $productSingleIds;
+                shuffle($shuffled);
+                $randomProductIds = array_slice($shuffled, 0, 2);
+            }
+
+            if (count($randomProductIds) > 0) {
+                $arrDataBuild = [];
+                foreach ($randomProductIds as $key => $pID) {
+                    if ($pID) {
+                        $arrDataBuild[$pID] = new ShopProductBuild(['product_id' => $pID, 'quantity' => 1]);
+                    }
+                }
+                $product->builds()->saveMany($arrDataBuild);
+            }
         }
     }
+
+
+    /**
+     * Create product group
+     */
+    private function createProductGroup($productSingleIds, $categoryIds)
+    {
+        $this->info('Creating product groups...');
+        for ($i = 1; $i <= 3; $i++) {
+            $productId = gp247_generate_id();
+            // Basic product data
+            $productData = [
+                'id' => $productId,
+                'sku' => 'SAMPLE-GROUP-' . $i,
+                'alias' => 'sample-group-' . $i,
+                'image' => 'https://picsum.photos/500/500?random=3' . $i,
+                'brand_id' => null,
+                'supplier_id' => null,
+                'price' => 0,
+                'cost' => 0,
+                'stock' => 100,
+                'sold' => 0,
+                'minimum' => 1,
+                'weight_class' => 'kg',
+                'weight' => 1,
+                'length_class' => 'cm',
+                'length' => 10,
+                'width' => 10,
+                'height' => 10,
+                'kind' => GP247_PRODUCT_GROUP,
+                'tag' => 0, // Physical product
+                'tax_id' => 0,
+                'status' => 1,
+                'sort' => 0,
+                'view' => 0,
+                'date_available' => Carbon::now()->format('Y-m-d H:i:s'),
+                'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_at' => Carbon::now()->format('Y-m-d H:i:s'),
+            ];
+            // Product descriptions
+            $productDescriptions = [
+                'vi' => [
+                    'product_id' => $productId,
+                    'lang' => 'vi',
+                    'name' => 'Sản phẩm nhóm ' . $i . ' - Tiếng Việt',
+                    'keyword' => 'sample, product',
+                    'description' => 'Mô tả ngắn cho sản phẩm mẫu ' . $i,
+                    'content' => '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>'
+                ],
+                'en' => [
+                    'product_id' => $productId,
+                    'lang' => 'en',
+                    'name' => 'Product group ' . $i . ' - English',
+                    'keyword' => 'sample, product',
+                    'description' => 'Short description for sample product ' . $i,
+                    'content' => '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>'
+                ]
+            ];
+            // Create product
+            $product = ShopProduct::create($productData);
+
+            // Create descriptions
+            foreach ($productDescriptions as $description) {
+                ShopProductDescription::create($description);
+            }
+
+            // Link to category
+            ShopProductCategory::create([
+                'product_id' => $productId,
+                'category_id' => $categoryIds[array_rand($categoryIds)]
+            ]);
+
+            // Link to store
+            ShopProductStore::create([
+                'product_id' => $productId,
+                'store_id' => GP247_STORE_ID_ROOT
+            ]);
+
+            // Random 2 product from $productSingleIds
+            $randomProductIds = [];
+            if (is_array($productSingleIds) && count($productSingleIds) >= 2) {
+                // Shuffle array and get first 2 elements
+                $shuffled = $productSingleIds;
+                shuffle($shuffled);
+                $randomProductIds = array_slice($shuffled, 0, 2);
+            }
+
+            if (count($randomProductIds) > 0) {
+                $arrDataGroup = [];
+                foreach ($randomProductIds as $key => $pID) {
+                    if ($pID) {
+                        $arrDataGroup[$pID] = new ShopProductGroup(['product_id' => $pID]);
+                    }
+                }
+                $product->groups()->saveMany($arrDataGroup);
+            }
+        }
+    }
+
 }
