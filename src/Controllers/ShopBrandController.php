@@ -4,7 +4,7 @@ namespace GP247\Shop\Controllers;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopBrand;
 use GP247\Shop\Models\ShopProduct;
-
+use GP247\Shop\Controllers\ShopProductController;
 class ShopBrandController extends RootFrontController
 {
     public function __construct()
@@ -81,34 +81,21 @@ class ShopBrandController extends RootFrontController
      */
     private function _brandDetail($alias)
     {
-        $sortBy = 'sort';
-        $sortOrder = 'asc';
-        $filter_sort = request('filter_sort');
-        $filterArr = [
-            'price_desc' => ['price', 'desc'],
-            'price_asc'  => ['price', 'asc'],
-            'sort_desc'  => ['sort', 'desc'],
-            'sort_asc'   => ['sort', 'asc'],
-            'id_desc'    => ['id', 'desc'],
-            'id_asc'     => ['id', 'asc'],
-        ];
-        $filter_price = request('price');
-        if (array_key_exists($filter_sort, $filterArr)) {
-            $sortBy = $filterArr[$filter_sort][0];
-            $sortOrder = $filterArr[$filter_sort][1];
-        }
-
         $brand = (new ShopBrand)->getDetail($alias, $type = 'alias');
         if ($brand) {
-            $products = (new ShopProduct)
-            ->getProductToBrand($brand->id)
+            $dataSearch = (new ShopProductController)->processFilter(['sort', 'price']);
+            
+            $products = (new ShopProduct);
+            if (!empty($dataSearch['sort'])) {
+                $products->setSort($dataSearch['sort']);
+            }
+            if (!empty($dataSearch['price'])) {
+                $products->setRangePrice($dataSearch['price']);
+            }
+            $products = $products->getProductToBrand($brand->id)
             ->setPaginate()
             ->setLimit(gp247_config('product_list'))
-            ->setSort([$sortBy, $sortOrder]);
-            if ($filter_price) {
-                $products->setRangePrice($filter_price);
-            }
-            $products = $products->getData();
+            ->getData();
 
             $subPath = 'screen.shop_product_list';
             $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
@@ -123,7 +110,7 @@ class ShopBrandController extends RootFrontController
                     'products'    => $products,
                     'brand'       => $brand,
                     'og_image'    => gp247_file($brand->getImage()),
-                    'filter_sort' => $filter_sort,
+                    'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
                     'layout_page' => 'shop_product_list',
                     'breadcrumbs' => [
                         ['url'    => gp247_route_front('brand.all'), 'title' => gp247_language_render('front.brands')],

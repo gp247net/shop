@@ -5,6 +5,7 @@ use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopBrand;
 use GP247\Shop\Models\ShopProduct;
+use GP247\Shop\Controllers\ShopProductController;
 
 class ShopCategoryController extends RootFrontController
 {
@@ -84,59 +85,30 @@ class ShopCategoryController extends RootFrontController
      */
     private function _categoryDetail($alias)
     {
-        $sortBy = 'sort';
-        $sortOrder = 'asc';
-        $arrBrandId = [];
-        $filter_sort = request('filter_sort');
-        $filterArr = [
-            'price_desc' => ['price', 'desc'],
-            'price_asc' => ['price', 'asc'],
-            'sort_desc' => ['sort', 'desc'],
-            'sort_asc' => ['sort', 'asc'],
-            'id_desc' => ['id', 'desc'],
-            'id_asc' => ['id', 'asc'],
-        ];
-        if (array_key_exists($filter_sort, $filterArr)) {
-            $sortBy = $filterArr[$filter_sort][0];
-            $sortOrder = $filterArr[$filter_sort][1];
-        }
-
-        $filter_price = request('price');
-        $filter_brand = request('brand');
-        $arr_brand_id = [];
-        if ($filter_brand) {
-            $arr_brand = explode(',', $filter_brand);
-            $arr_brand_id = ShopBrand::whereIn('alias', $arr_brand)->pluck('id')->toArray();
-        }
-
-        $keyword = request('keyword');
 
         $category = (new ShopCategory)->getDetail($alias, $type = 'alias');
 
         if ($category) {
-            
+            $dataSearch = (new ShopProductController)->processFilter(['sort', 'price', 'brand']);
             $products = (new ShopProduct);
 
-            if ($keyword) {
-                $products = $products->setKeyword($keyword);
-            }
             //Filter category
             $arrCate = (new ShopCategory)->getListSub($category->id);
             $products = $products->getProductToCategory($arrCate);
 
-            //filter brand
-            if ($arr_brand_id) {
-                $products = $products->getProductToBrand($arr_brand_id);
+            if (!empty($dataSearch['sort'])) {
+                $products->setSort($dataSearch['sort']);
             }
-            //Filter price
-            if ($filter_price) {
-                $products = $products->setRangePrice($filter_price);
+            if (!empty($dataSearch['price'])) {
+                $products->setRangePrice($dataSearch['price']);
+            }
+            if (!empty($dataSearch['brand'])) {
+                $products->getProductToBrand($dataSearch['brand']);
             }
 
             $products = $products
             ->setLimit(gp247_config('product_list'))
             ->setPaginate()
-            ->setSort([$sortBy, $sortOrder])
             ->getData();
 
             $subCategory = (new ShopCategory)
@@ -161,7 +133,7 @@ class ShopCategoryController extends RootFrontController
                     'subCategory' => $subCategory,
                     'layout_page' => 'shop_product_list',
                     'og_image'    => gp247_file($category->getImage()),
-                    'filter_sort' => $filter_sort,
+                    'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
                     'breadcrumbs' => [
                         ['url'    => gp247_route_front('category.all'), 'title' => gp247_language_render('front.categories')],
                         ['url'    => '', 'title' => $category->title],

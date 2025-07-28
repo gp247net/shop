@@ -4,6 +4,7 @@ namespace GP247\Shop\Controllers;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopProduct;
 use GP247\Shop\Models\ShopBrand;
+use GP247\Shop\Models\ShopCategory;
 class ShopProductController extends RootFrontController
 {
     public function __construct()
@@ -32,40 +33,24 @@ class ShopProductController extends RootFrontController
      */
     private function _allProducts()
     {
-        $sortBy = 'sort';
-        $sortOrder = 'desc';
-        $filter_sort = request('filter_sort');
-        $filterArr = [
-            'price_desc' => ['price', 'desc'],
-            'price_asc' => ['price', 'asc'],
-            'sort_desc' => ['sort', 'desc'],
-            'sort_asc' => ['sort', 'asc'],
-            'id_desc' => ['id', 'desc'],
-            'id_asc' => ['id', 'asc'],
-        ];
-        $filter_price = request('price');
-        $filter_brand = request('brand');
-        $arr_brand_id = [];
-        if ($filter_brand) {
-            $arr_brand = explode(',', $filter_brand);
-            $arr_brand_id = ShopBrand::whereIn('alias', $arr_brand)->pluck('id')->toArray();
-        }
-        if (array_key_exists($filter_sort, $filterArr)) {
-            $sortBy = $filterArr[$filter_sort][0];
-            $sortOrder = $filterArr[$filter_sort][1];
-        }
+        $dataSearch = $this->processFilter(['sort', 'price', 'brand', 'category']);
 
         $products = (new ShopProduct)
             ->setLimit(gp247_config('product_list'))
-            ->setPaginate()
-            ->setSort([$sortBy, $sortOrder]);
-            if ($filter_price) {
-                $products->setRangePrice($filter_price);
-            }
-            if ($arr_brand_id) {
-                $products->getProductToBrand($arr_brand_id);
-            }
-            $products = $products->getData();
+            ->setPaginate();
+        if (!empty($dataSearch['sort'])) {
+            $products->setSort($dataSearch['sort']);
+        }
+        if (!empty($dataSearch['price'])) {
+            $products->setRangePrice($dataSearch['price']);
+        }
+        if (!empty($dataSearch['brand'])) {
+            $products->getProductToBrand($dataSearch['brand']);
+        }
+        if (!empty($dataSearch['category'])) {
+            $products->getProductToCategory($dataSearch['category']);
+        }
+        $products = $products->getData();
 
         $subPath = 'screen.shop_product_list';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
@@ -78,7 +63,7 @@ class ShopProductController extends RootFrontController
                 'description' => '',
                 'products'    => $products,
                 'layout_page' => 'shop_product_list',
-                'filter_sort' => $filter_sort,
+                'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('front.all_product')],
                 ],
@@ -179,5 +164,103 @@ class ShopProductController extends RootFrontController
         } else {
             return $this->itemNotFound();
         }
+    }
+    
+    /**
+     * Process filter
+     *
+     * @param array $arrFilter
+     * @return array
+     */
+    public function processFilter(array $arrFilter) {
+        $dataSearch = [];
+
+        //Keywork
+        if (in_array('keyword', $arrFilter)) {
+            $keyword = request('keyword');
+            $keyword = gp247_clean(data: $keyword, hight: true);
+            $dataSearch['keyword'] = $keyword;
+        }
+
+        if (in_array('sort', $arrFilter)) {
+            $sortBy = 'sort';
+            $sortOrder = 'desc';
+            $filter_sort = request('filter_sort');
+            $filter_sort = gp247_clean(data: $filter_sort, hight: true);
+            $filterArr = [
+                'price_desc' => ['price', 'desc'],
+                'price_asc' => ['price', 'asc'],
+                'sort_desc' => ['sort', 'desc'],
+                'sort_asc' => ['sort', 'asc'],
+                'id_desc' => ['id', 'desc'],
+                'id_asc' => ['id', 'asc'],
+            ];
+            if (array_key_exists($filter_sort, $filterArr)) {
+                $sortBy = $filterArr[$filter_sort][0];
+                $sortOrder = $filterArr[$filter_sort][1];
+                $dataSearch['sort'] = [$sortBy, $sortOrder];
+            }
+        }
+
+        if (in_array('price', $arrFilter)) {
+            $filter_price = request('price');
+            $filter_price = gp247_clean(data: $filter_price, hight: true);
+            $dataSearch['price'] = $filter_price;
+        }
+
+        if (in_array('brand', $arrFilter)) {
+            $filter_brand = request('brand');
+            $filter_brand = gp247_clean(data: $filter_brand, hight: true);
+            if ($filter_brand) {
+                $arr_brand = explode(',', $filter_brand);
+                $arr_brand_id = ShopBrand::whereIn('alias', $arr_brand)->pluck('id')->toArray();
+                $dataSearch['brand'] = $arr_brand_id;
+            }
+        }
+
+        if (in_array('category', $arrFilter)) {
+            $filter_category = request('category');
+            $filter_category = gp247_clean(data: $filter_category, hight: true);
+            if ($filter_category) { 
+                $arr_category = explode(',', $filter_category);
+                $arr_category_id = ShopCategory::whereIn('alias', $arr_category)->pluck('id')->toArray();
+                //Sub category
+                $arrayMid = ShopCategory::where('parent', $arr_category_id)->pluck('id')->toArray();
+                $arraySmall = ShopCategory::whereIn('parent', $arrayMid)->pluck('id')->toArray();
+
+                $arr_category_id = array_merge($arr_category_id, $arrayMid, $arraySmall);
+                $dataSearch['category'] = $arr_category_id;
+            }
+        }
+
+        return $dataSearch;
+    }
+
+    /**
+     * Get data filter
+     *
+     * @return array
+     */
+    public function dataFilter() {
+        $dataSearch = $this->processFilter(['sort', 'price', 'brand', 'category', 'keyword']);
+        $products = (new ShopProduct);
+        if (!empty($dataSearch['sort'])) {
+            $products->setSort($dataSearch['sort']);
+        }
+        if (!empty($dataSearch['price'])) {
+            $products->setRangePrice($dataSearch['price']);
+        }
+        if (!empty($dataSearch['brand'])) {
+            $products->getProductToBrand($dataSearch['brand']);
+        }
+        if (!empty($dataSearch['category'])) {
+            $products->getProductToCategory($dataSearch['category']);
+        }
+        if (!empty($dataSearch['keyword'])) {
+            $products->setKeyword($dataSearch['keyword']);
+        }
+        $products->setLimit(gp247_config('product_list'))
+        ->setPaginate();
+        return $products->getData();
     }
 }
