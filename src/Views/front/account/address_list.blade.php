@@ -84,7 +84,7 @@ $layout_page = shop_profile
     }
     var id = $(this).data('id');
     $.ajax({
-            url:'{{ gp247_route_front("member.delete_address") }}',
+            url:'{{ gp247_route_front("customer.delete_address") }}',
             type:'POST',
             dataType:'json',
             data:{id:id,"_token": "{{ csrf_token() }}"},
