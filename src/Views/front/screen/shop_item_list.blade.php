@@ -20,13 +20,6 @@ Use paginate: $itemsList->appends(request()->except(['page','_token']))->links()
       <!-- Render pagination result -->
       @include($GP247TemplatePath.'.common.pagination_result', ['items' => $itemsList])
       <!--// Render pagination result -->
-      
-      <!-- Render include filter sort -->
-      @php
-          $view = gp247_shop_process_view($GP247TemplatePath, 'common.shop_product_filter_sort');
-      @endphp
-      @include($view, ['filterSort' => $filter_sort])
-      <!--// Render include filter sort -->
     </div>
     <!-- Item list -->
     <div class="row row-30 row-lg-50">
