@@ -27,7 +27,7 @@ Use paginate: $itemsList->appends(request()->except(['page','_token']))->links()
       <div class="col-sm-6 col-md-4 col-lg-6 col-xl-4">
           <!-- Render item single -->
           @php
-              $view = gp247_shop_process_view($GP247TemplatePath, 'common.shop_item_single');
+              $view = gp247_shop_process_view($GP247TemplatePath, 'common.item_single');
           @endphp
           @include($view, ['item' => $item])
           <!-- //Render item single -->
