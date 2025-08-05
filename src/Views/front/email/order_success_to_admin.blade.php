@@ -14,7 +14,7 @@
     </div>
 
     <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h3 style="color: #2c3e50; margin-top: 0; text-align: center;">{{gp247_language_render('order.order_details')}}</h3>
+        <h3 style="color: #2c3e50; margin-top: 0; text-align: center;">{{gp247_language_render('order.order_detail')}}</h3>
         <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
             <tbody>
                 <tr>
