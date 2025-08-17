@@ -1,5 +1,5 @@
 <?php
-#GP247\Shop\Modelss/ShopCustomerAddress.php
+#GP247/Shop/Models/ShopCustomerAddress.php
 namespace GP247\Shop\Models;
 
 use Illuminate\Database\Eloquent\Model;

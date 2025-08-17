@@ -1,5 +1,5 @@
 <?php
-#GP247\Shop\Modelss/ShopOrder.php
+#GP247/Shop/Models/ShopOrder.php
 namespace GP247\Shop\Models;
 
 use GP247\Shop\Models\ShopOrderDetail;

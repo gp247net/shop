@@ -1,5 +1,5 @@
 <?php
-#GP247\Shop\Modelss/ShopCustomerPasswordReset.php
+#GP247/Shop/Models/ShopCustomerPasswordReset.php
 namespace GP247\Shop\Models;
 
 use Illuminate\Database\Eloquent\Model;
