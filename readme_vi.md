@@ -1,9 +1,10 @@
 <p align="center">
     <a href="https://gp247.net"><img src="https://static.gp247.net/logo/logo.png" height="100"></a>
-    <a href="https://s-cart.org"><img src="https://s-cart.org/logo.png" height="100"><a/>
 </p>
+
 <p align="center">Hệ thống website thương mại điện tử miễn phí cho doanh nghiệp<br>
-    <code><b>composer require GP247/Shop</b></code></p>
+    <code><b>composer require GP247/Shop</b></code>
+</p>
 
 <p align="center">
 <a href="https://packagist.org/packages/GP247/Shop"><img src="https://poser.pugx.org/GP247/Shop/d/total.svg" alt="Tổng số lượt tải"></a>
@@ -66,41 +67,43 @@ GP247/Shop là một trong những gói chính của hệ sinh thái GP247, bi�
 
 ### Lựa chọn 1: Cài đặt mới với GP247 CMS
 1. Cài đặt gp247/cms (Đã bao gồm Laravel, GP247/Core, GP247/Front)
-```bash
-composer create-project gp247/cms
-```
+
+>`composer create-project gp247/cms`
 
 2. Cài đặt gói gp247/shop
-```bash
-composer require gp247/shop
-```
+
+>`composer require gp247/shop`
 
 3. Đăng ký service provider trong `bootstrap/providers.php` (thêm vào sau cùng của mảng)
+
 ```php
-GP247\Shop\ShopServiceProvider::class,
+return [
+    // ... các providers hiện có
+    GP247\Shop\ShopServiceProvider::class,
+];
 ```
+
 
 4. Cài đặt và tạo dữ liệu mẫu
-```bash
-php artisan gp247:shop-install
-php artisan gp247:shop-sample
-```
+
+>`php artisan gp247:shop-install`
+>`php artisan gp247:shop-sample`
+
+
 
 ### Lựa chọn 2: Sử dụng mã nguồn S-Cart
-S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có thể xem đầy đủ tại [link GitHub của S-Cart](https://github.com/s-cart/s-cart).
+S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có thể xem đầy đủ tại [link GitHub của S-Cart](https://github.com/gp247/s-cart).
 
 1. Cài đặt gói
-```bash
-composer create-project s-cart/s-cart
-```
+
+>`composer create-project gp247/s-cart`
 
 2. Cài đặt dữ liệu
-```bash
-php artisan sc:install
-php artisan sc:sample
-```
 
-<img src="https://static.s-cart.org/guide/info/s-cart-content.jpg">
+>`php artisan sc:install`
+>`php artisan sc:sample`
+
+
 <img src="https://static.s-cart.org/guide/use/common/shop.jpg">
 <img src="https://static.s-cart.org/guide/use/common/dashboard.jpg">
 
@@ -108,23 +111,22 @@ php artisan sc:sample
 
 ### Tùy chỉnh giao diện Admin
 Để tùy chỉnh giao diện admin, chạy lệnh sau:
-```bash
-php artisan vendor:publish --tag=gp247:view-shop-admin
-```
+
+>`php artisan vendor:publish --tag=gp247:view-shop-admin`
+
 Các view sẽ được lưu trữ tại `resources/views/vendor/gp247-shop-admin`
 
 ### Tùy chỉnh giao diện Front
 Để tùy chỉnh và cập nhật giao diện front, chạy lệnh:
-```bash
-php artisan vendor:publish --tag=gp247:view-shop-admin
-```
+
+>`php artisan vendor:publish --tag=gp247:view-shop-admin`
+
 Các view sẽ được lưu trữ tại `app/GP247/Templates/Default`
 
 Trường hợp bạn không sử dụng template `Default`, vui lòng copy thủ công các view từ `vendor/gp247/shop/Views/front` tới view mới.
 
 ## Tài liệu
-- Để xem tài liệu đầy đủ về hệ thống GP247, truy cập [https://gp247.net](https://gp247.net)
-- Để xem tài liệu chi tiết về các tính năng thương mại điện tử, truy cập [https://s-cart.org](https://s-cart.org)
+- Để xem tài liệu đầy đủ về hệ thống GP247, truy cập [TÀI LIỆU](https://gp247.net/vi/docs)
 
 ## Giấy phép
 GP247/Shop là phần mềm mã nguồn mở được cấp phép theo [giấy phép MIT](https://opensource.org/licenses/MIT). 
