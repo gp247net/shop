@@ -194,7 +194,7 @@ class ShopCategory extends Model
      */
     public function getCategoryRoot()
     {
-        $this->setParent(0);
+        $this->setParent(null);
         return $this;
     }
 
@@ -239,8 +239,14 @@ class ShopCategory extends Model
 
         $query = $query->where($this->getTable().'.status', 1);
 
-        if ($this->gp247_parent !== '') {
-            $query = $query->where($this->getTable().'.parent', $this->gp247_parent);
+        if (empty($this->gp247_parent)) {
+            // Parent is root with parent is null or empty
+            $query = $query->where(function ($sql) {
+                $sql->where('parent', "")
+                    ->orWhereNull('parent');
+            });
+        } else {
+            $query = $query->where('parent', $this->gp247_parent);
         }
 
         if ($this->gp247_top !== 'all') {

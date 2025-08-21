@@ -187,7 +187,6 @@ class AdminCategoryController extends RootAdminController
         $data['alias'] = gp247_word_format_url($data['alias']);
         $data['alias'] = gp247_word_limit($data['alias'], 100);
         $arrValidation = [
-            'parent'                 => 'required',
             'sort'                   => 'numeric|min:0',
             'alias'                  => 'required|unique:"'.AdminCategory::class.'",alias|string|max:100',
             'descriptions.*.title'   => 'required|string|max:200',
@@ -219,7 +218,7 @@ class AdminCategoryController extends RootAdminController
         $dataCreate = [
             'image'    => $data['image'],
             'alias'    => $data['alias'],
-            'parent'   => $data['parent'],
+            'parent'   => $data['parent'] ?? null,
             'top'      => !empty($data['top']) ? 1 : 0,
             'status'   => !empty($data['status']) ? 1 : 0,
             'sort'     => (int) $data['sort'],
@@ -300,7 +299,6 @@ class AdminCategoryController extends RootAdminController
         $data['alias'] = gp247_word_format_url($data['alias']);
         $data['alias'] = gp247_word_limit($data['alias'], 100);
         $arrValidation = [
-            'parent'                 => 'required',
             'sort'                   => 'numeric|min:0',
             'alias'                  => 'required|string|max:100|unique:"'.AdminCategory::class.'",alias,' . $id . '',
             'descriptions.*.title'   => 'required|string|max:200',
@@ -333,7 +331,7 @@ class AdminCategoryController extends RootAdminController
         $dataUpdate = [
             'image'    => $data['image'],
             'alias'    => $data['alias'],
-            'parent'   => $data['parent'],
+            'parent'   => $data['parent'] ?? null,
             'sort'     => (int)$data['sort'],
             'top'      => empty($data['top']) ? 0 : 1,
             'status'   => empty($data['status']) ? 0 : 1,

@@ -140,7 +140,7 @@ class AdminCategory extends ShopCategory
     public static function getListCategoryGroupByParentAdmin()
     {
         if (self::$getListCategoryGroupByParentAdmin === null) {
-            self::$getListCategoryGroupByParentAdmin = self::select('id', 'parent')
+            self::$getListCategoryGroupByParentAdmin = self::selectRaw('id, COALESCE(NULLIF(parent, ""), NULLIF(parent, 0), 0) as parent')
             ->get()
             ->groupBy('parent')
             ->toArray();

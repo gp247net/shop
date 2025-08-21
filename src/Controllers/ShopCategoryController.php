@@ -117,6 +117,20 @@ class ShopCategoryController extends RootFrontController
                 ->setPaginate()
                 ->getData();
 
+            // Get parent category
+            $parentCategory = (new ShopCategory)
+                ->getDetail($category->parent, 'id');
+            $breadcrumbs = [];
+            $breadcrumbs[] = ['url'    => gp247_route_front('category.all'), 'title' => gp247_language_render('front.categories')];
+            if ($parentCategory) {
+                $breadcrumbs[] = [
+                    'url'    => $parentCategory->getUrl(),
+                    'title' => $parentCategory->title,
+                ];
+            }
+            $breadcrumbs[] = ['url'    => '', 'title' => $category->title];
+            /** End get parent category */
+
             $subPath = 'screen.shop_product_list';
             $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
             gp247_check_view($view);
@@ -134,10 +148,7 @@ class ShopCategoryController extends RootFrontController
                     'layout_page' => 'shop_product_list',
                     'og_image'    => gp247_file($category->getImage()),
                     'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
-                    'breadcrumbs' => [
-                        ['url'    => gp247_route_front('category.all'), 'title' => gp247_language_render('front.categories')],
-                        ['url'    => '', 'title' => $category->title],
-                    ],
+                    'breadcrumbs' => $breadcrumbs,
                 )
             );
         } else {

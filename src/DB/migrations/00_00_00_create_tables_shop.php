@@ -37,7 +37,7 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->string('image', 255)->nullable();
                 $table->string('alias', 120)->index();
-                $table->uuid('parent')->default(0);
+                $table->uuid('parent')->default(null)->nullable();
                 $table->integer('top')->nullable()->default(0);
                 $table->tinyInteger('status')->default(0);
                 $table->integer('sort')->default(0);
