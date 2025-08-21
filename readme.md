@@ -82,6 +82,7 @@ return [
 4. Install and create sample data
 
 >`php artisan gp247:shop-install`
+
 >`php artisan gp247:shop-sample`
 
 ### Option 2: Use S-Cart source code
@@ -94,6 +95,7 @@ S-Cart already includes all the necessary components. See the full details at th
 2. Install sample data
 
 >`php artisan sc:install`
+
 >`php artisan sc:sample`
 
 

@@ -87,6 +87,7 @@ return [
 4. Cài đặt và tạo dữ liệu mẫu
 
 >`php artisan gp247:shop-install`
+
 >`php artisan gp247:shop-sample`
 
 
@@ -101,6 +102,7 @@ S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có t
 2. Cài đặt dữ liệu
 
 >`php artisan sc:install`
+
 >`php artisan sc:sample`
 
 
