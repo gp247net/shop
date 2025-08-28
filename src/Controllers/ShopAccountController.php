@@ -223,7 +223,7 @@ class ShopAccountController extends RootFrontController
                 [
                 'title'       => gp247_language_render('customer.order_history'),
                 'statusOrder' => $statusOrder,
-                'orders'      => (new ShopOrder)->profile()->getData(),
+                'orders'      => (new ShopOrder)->setCustomerId($customer->id)->getData(),
                 'customer'    => $customer,
                 'layout_page' => 'shop_profile',
                 'breadcrumbs' => [

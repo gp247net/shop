@@ -19,8 +19,8 @@ class ShopOrder extends Model
     protected $guarded = [];
     protected $connection = GP247_DB_CONNECTION;
 
-    protected $gp247_order_profile = 0; // 0: all, 1: only user's order
-    public $gp247_status = 1;
+    protected $gp247_customer_id = null;
+    public $gp247_status = null;
     
     public function details()
     {
@@ -247,13 +247,9 @@ class ShopOrder extends Model
      */
     public function start()
     {
-        if ($this->gp247_order_profile) {
-            $obj = (new ShopOrder);
-            $obj->gp247_order_profile = 1;
-            return $obj;
-        } else {
-            return new ShopOrder;
-        }
+
+        return new ShopOrder;
+
     }
 
     /**
@@ -277,21 +273,14 @@ class ShopOrder extends Model
         }
     }
 
-    /**
-     * Disable only user's order mode
-     */
-    public function setOrderProfile()
+
+    public function setCustomerId($customerId)
     {
-        $this->gp247_order_profile = 1;
-        $this->gp247_status = 'all' ;
+        $this->gp247_customer_id = $customerId;
         return $this;
     }
 
-    public function profile()
-    {
-        $this->setOrderProfile();
-        return $this;
-    }
+
 
     /**
      * Get list order new
@@ -348,22 +337,26 @@ class ShopOrder extends Model
     }
 
     /**
+     * Get list order refunded
+     */
+    public function getOrderRefunded()
+    {
+        $this->gp247_status = 7;
+        return $this;
+    }
+
+    /**
      * build Query
      */
     public function buildQuery()
     {
-        $customer = customer()->user();
-        if ($this->gp247_order_profile == 1) {
-            if (!$customer) {
-                return null;
-            }
-            $uID = $customer->id;
-            $query = $this->with('orderTotal')->where('customer_id', $uID);
+        if ($this->gp247_customer_id != null) {
+            $query = $this->with('orderTotal')->where('customer_id', $this->gp247_customer_id);
         } else {
             $query = $this->with('orderTotal')->with('details');
         }
 
-        if ($this->gp247_status !== 'all') {
+        if ($this->gp247_status != null) {
             $query = $query->where('status', $this->gp247_status);
         }
 
