@@ -6,7 +6,7 @@ use GP247\Front\Controllers\RootFrontController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-use GP247\Shop\Models\ShopCustomer;
+use GP247\Shop\Models\ShopOrder;
 use Illuminate\Support\Facades\Validator;
 use GP247\Shop\Controllers\Auth\AuthTrait;
 
@@ -101,5 +101,41 @@ class MemberAuthController extends RootFrontController
     protected function guard()
     {
         return Auth::guard('customer');
+    }
+
+    public function getOrderList(Request $request)
+    {
+        $customer = $request->user();
+        if ($customer) {
+            $orders = (new ShopOrder)
+            ->with('details')
+            ->with('orderTotal')
+            ->where('customer_id', $customer->id)
+            ->orderBy('created_at', 'desc')
+            ->jsonPaginate();
+            return response()->json($orders, 200);
+        }
+        return response()->json([
+            'error' => 1,
+            'msg' => 'User not found'
+        ], 401);
+    }
+
+    public function getOrderDetail(Request $request, $id)
+    {
+        $customer = $request->user();
+        if ($customer) {
+            $order = (new ShopOrder)
+            ->with('details')
+            ->with('orderTotal')
+            ->where('customer_id', $customer->id)
+            ->where('id', $id)
+            ->first();
+            return response()->json($order, 200);
+        }
+        return response()->json([
+            'error' => 1,
+            'msg' => 'User not found'
+        ], 401);
     }
 }

@@ -27,6 +27,14 @@ Route::group([
         //Logout
         Route::get('logout', $nameSpaceMemberAuth.'\MemberAuthController@logout');
         Route::get('info', $nameSpaceMemberAuth.'\MemberAuthController@getInfo');
+
+        
+        Route::group([
+            'prefix' => 'member',
+        ], function () use($nameSpaceMemberAuth) {
+            Route::get('order/list', $nameSpaceMemberAuth.'\MemberAuthController@getOrderList');
+            Route::get('order/detail/{id}', $nameSpaceMemberAuth.'\MemberAuthController@getOrderDetail');
+        });
     });
 
 });
