@@ -355,16 +355,6 @@
                                 </div>
                             </div>
                             
-                            @if ($customer['provider'])
-                            <div class="form-group  row">
-                                <label for="status" class="col-sm-2  col-form-label">{{ gp247_language_render('admin.customer.provider') }}</label>
-                                <div class="col-sm-8">
-                                    {{ $customer['provider'] }}
-                                </div>
-                            </div>
-                            @endif
-
-
                             <div class="form-group  row">
                                 <label for="status" class="col-sm-2  col-form-label">{{ gp247_language_render('customer.status') }}</label>
                                 <div class="col-sm-8">

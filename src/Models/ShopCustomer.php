@@ -13,9 +13,10 @@ class ShopCustomer extends Authenticatable
 {
     use \GP247\Core\Models\ModelTrait;
     use \GP247\Core\Models\UuidTrait;
-    
+    use \GP247\Core\Models\SocialAccountTrait;
     use Notifiable, HasApiTokens;
 
+    
     /**
      * The attributes that are mass assignable.
      *

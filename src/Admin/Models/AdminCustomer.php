@@ -112,9 +112,16 @@ class AdminCustomer extends ShopCustomer
      */
     public static function getTopCustomer()
     {
-        return self::orderBy('created_at', 'desc')
+        if (class_exists(\App\GP247\Plugins\LoginSocial\Models\SocialAccount::class)) {
+            return \GP247\Shop\Models\ShopCustomer::with('socialAccount')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+        } else {
+            return self::orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
+        }
     }
 
 

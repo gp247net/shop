@@ -30,22 +30,6 @@
                     @endif
             
                 </div>
-                @if (!empty(gp247_config('LoginSocialite')))
-                    <ul>
-                    <li class="rd-dropdown-item">
-                      <a class="rd-dropdown-link" href="{{ gp247_route_front('login_socialite.index', ['provider' => 'facebook']) }}"><i class="fab fa-facebook"></i>
-                         {{ gp247_language_render('front.login') }} facebook</a>
-                    </li>
-                    <li class="rd-dropdown-item">
-                      <a class="rd-dropdown-link" href="{{ gp247_route_front('login_socialite.index', ['provider' => 'google']) }}"><i class="fab fa-google-plus"></i>
-                         {{ gp247_language_render('front.login') }} google</a>
-                    </li>
-                    <li class="rd-dropdown-item">
-                      <a class="rd-dropdown-link" href="{{ gp247_route_front('login_socialite.index', ['provider' => 'github']) }}"><i class="fab fa-github"></i>
-                         {{ gp247_language_render('front.login') }} github</a>
-                    </li>
-                    </ul>
-                @endif
                 <p class="lost_password form-group">
                     <a class="btn btn-link" href="{{ gp247_route_front('customer.forgot') }}">
                         {{ gp247_language_render('customer.password_forgot') }}
@@ -56,6 +40,16 @@
                     </a>
                 </p>
                 <button class="button button-secondary" type="submit" id="">{{ gp247_language_render('front.login') }}</button>
+
+                
+                @if(gp247_extension_check_active('Plugins', 'LoginSocial'))
+                    @include('Plugins/LoginSocial::render', [
+                        'guard' => 'customer',
+                        'title' => true,
+                        'description' => true
+                    ])
+                @endif
+
             </form>
         </div>
     </div>

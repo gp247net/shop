@@ -343,10 +343,7 @@ return new class extends Migration
                 $table->tinyInteger('group')->default(1);
                 $table->timestamp('email_verified_at', $precision = 0)->nullable();
                 $table->timestamps();
-                //Login social
-                $table->string('provider', 50)->nullable();
-                $table->string('provider_id', 50)->nullable();
-                $table->unique(['email', 'provider', 'provider_id']);
+                $table->unique(['email']);
             }
         );
 

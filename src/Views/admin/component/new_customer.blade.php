@@ -21,7 +21,9 @@
         <tr>
           <th>{{ gp247_language_render('customer.email') }}</th>
           <th>{{ gp247_language_render('customer.name') }}</th>
+          @if (class_exists(\App\GP247\Plugins\LoginSocial\Models\SocialAccount::class))
           <th>{{ gp247_language_render('customer.provider') }}</th>
+          @endif
           <th>{{ gp247_language_render('admin.created_at') }}</th>
         </tr>
         <tbody>
@@ -30,7 +32,9 @@
             <tr>
               <td><a href="{{ gp247_route_admin('admin_customer.edit',['id'=>$customer->id]) }}">{{ $customer->email }}</a></td>
               <td>{{ $customer->name }}</td>
-              <td>{{ $customer->provider }}</td>
+              @if (class_exists(\App\GP247\Plugins\LoginSocial\Models\SocialAccount::class))
+              <td>{{ $customer->socialAccount->provider ?? '-' }}</td>
+              @endif
               <td>{{ $customer->created_at }}</td>
             </tr>
           @endforeach
