@@ -13,7 +13,6 @@ class ShopCustomer extends Authenticatable
 {
     use \GP247\Core\Models\ModelTrait;
     use \GP247\Core\Models\UuidTrait;
-    use \GP247\Core\Models\SocialAccountTrait;
     use Notifiable, HasApiTokens;
 
     
@@ -168,7 +167,7 @@ class ShopCustomer extends Authenticatable
      */
     public function isVerified()
     {
-        return ! is_null($this->email_verified_at)  || $this->provider_id ;
+        return ! is_null($this->email_verified_at);
     }
 
     /**

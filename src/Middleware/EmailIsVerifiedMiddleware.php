@@ -21,6 +21,7 @@ class EmailIsVerifiedMiddleware
                 'customer.verify',
                 'customer.verify_resend',
                 'customer.verify_process',
+                'customer.logout',
             ];
             if (customer()->user() && customer()->user()->hasVerifiedEmail()) {
                 if (!in_array($request->route()->getName(), $arrExclude)) {
