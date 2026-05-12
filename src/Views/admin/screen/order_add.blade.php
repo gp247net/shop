@@ -302,6 +302,7 @@
                                 </div>
                             </div>
 
+                        @if (gp247_config('use_payment'))
                             <div class="form-group row  {{ $errors->has('payment_method') ? ' text-red' : '' }}">
                                 <label for="payment_method" class="col-sm-2 col-form-label">{{ gp247_language_render('order.payment_method') }}</label>
                                 <div class="col-sm-8">
@@ -317,7 +318,9 @@
                                         @endif
                                 </div>
                             </div>
+                        @endif
 
+                        @if (gp247_config('use_shipping'))
                             <div class="form-group row  {{ $errors->has('shipping_method') ? ' text-red' : '' }}">
                                 <label for="shipping_method" class="col-sm-2 col-form-label">{{ gp247_language_render('order.shipping_method') }}</label>
                                 <div class="col-sm-8">
@@ -333,6 +336,7 @@
                                         @endif
                                 </div>
                             </div>
+                        @endif
 
                             <div class="form-group row  {{ $errors->has('status') ? ' text-red' : '' }}">
                                 <label for="status" class="col-sm-2 col-form-label">{{ gp247_language_render('order.status') }}</label>

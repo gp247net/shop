@@ -298,9 +298,13 @@ class AdminOrderController extends RootAdminController
             'exchange_rate'   => 'required',
             'currency'        => 'required',
             'status'          => 'required',
-            'payment_method'  => 'required',
-            'shipping_method' => 'required',
         ];
+        if (gp247_config('use_payment')) {
+            $validate['payment_method'] = 'required';
+        }
+        if (gp247_config('use_shipping')) {
+            $validate['shipping_method'] = 'required';
+        }
         if (gp247_config_admin('customer_lastname')) {
             $validate['last_name'] = 'required|max:100';
         }
@@ -373,8 +377,8 @@ class AdminOrderController extends RootAdminController
             'company'         => $data['company'] ?? '',
             'postcode'        => $data['postcode'] ?? '',
             'phone'           => $data['phone'] ?? '',
-            'payment_method'  => $data['payment_method'],
-            'shipping_method' => $data['shipping_method'],
+            'payment_method'  => $data['payment_method'] ?? null,
+            'shipping_method' => $data['shipping_method'] ?? null,
             'exchange_rate'   => $data['exchange_rate'],
             'email'           => $data['email'],
             'comment'         => $data['comment'],
