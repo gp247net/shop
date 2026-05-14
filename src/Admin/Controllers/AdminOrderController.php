@@ -273,7 +273,9 @@ class AdminOrderController extends RootAdminController
         $countries              = $this->country;
         $currenciesRate         = json_encode(ShopCurrency::getListRate());
         $users                  = AdminCustomer::getListAll();
+        $products               = (new AdminProduct)->getProductSelectAdmin(['kind' => [GP247_PRODUCT_SINGLE, GP247_PRODUCT_BUILD]]);
         $data['users']          = $users;
+        $data['products']       = $products;
         $data['currencies']     = $currencies;
         $data['countries']      = $countries;
         $data['orderStatus']    = $orderStatus;
@@ -385,14 +387,68 @@ class AdminOrderController extends RootAdminController
         ];
         $dataCreate = gp247_clean($dataCreate, [], true);
         $order = AdminOrder::create($dataCreate);
+        
+        // Process products if any
+        $subtotal = 0;
+        $taxTotal = 0;
+        if (!empty($data['products']) && is_array($data['products'])) {
+            foreach ($data['products'] as $item) {
+                if (!empty($item['product_id'])) {
+                    $product = (new AdminProduct)->getDetail($item['product_id']);
+                    if ($product) {
+                        $qty = (int)($item['qty'] ?? 1);
+                        $price = (float)($item['price'] ?? 0);
+                        $tax = (float)($item['tax'] ?? 0);
+                        
+                        $itemSubtotal = $qty * $price;
+                        $itemTax = $itemSubtotal * $tax / 100;
+                        $totalPrice = $itemSubtotal + $itemTax;
+                        
+                        $subtotal += $itemSubtotal;
+                        $taxTotal += $itemTax;
+                        
+                        // Create order detail
+                        ShopOrderDetail::create([
+                            'order_id' => $order->id,
+                            'product_id' => $item['product_id'],
+                            'name' => $item['name'] ?? $product->name,
+                            'sku' => $product->sku,
+                            'price' => $price,
+                            'qty' => $qty,
+                            'total_price' => $totalPrice,
+                            'tax' => $tax,
+                            'attribute' => null,
+                            'currency' => $data['currency'],
+                            'exchange_rate' => $data['exchange_rate'],
+                        ]);
+                    }
+                }
+            }
+        }
+        
+        // Get shipping and discount from form
+        $shipping = (float)($data['shipping'] ?? 0);
+        $discount = (float)($data['discount'] ?? 0);
+        $total = $subtotal + $taxTotal + $shipping - $discount;
+        
+        // Insert order totals with calculated values
         AdminOrder::insertOrderTotal([
-            ['id' => gp247_uuid(),'code' => 'subtotal', 'value' => 0, 'title' => gp247_language_render('order.totals.sub_total'), 'sort' => ShopOrderTotal::POSITION_SUBTOTAL, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'tax', 'value' => 0, 'title' => gp247_language_render('order.totals.tax'), 'sort' => ShopOrderTotal::POSITION_TAX, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'shipping', 'value' => 0, 'title' => gp247_language_render('order.totals.shipping'), 'sort' => ShopOrderTotal::POSITION_SHIPPING_METHOD, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'discount', 'value' => 0, 'title' => gp247_language_render('order.totals.discount'), 'sort' => ShopOrderTotal::POSITION_TOTAL_METHOD, 'order_id' => $order->id],
+            ['id' => gp247_uuid(),'code' => 'subtotal', 'value' => $subtotal, 'title' => gp247_language_render('order.totals.sub_total'), 'sort' => ShopOrderTotal::POSITION_SUBTOTAL, 'order_id' => $order->id],
+            ['id' => gp247_uuid(),'code' => 'tax', 'value' => $taxTotal, 'title' => gp247_language_render('order.totals.tax'), 'sort' => ShopOrderTotal::POSITION_TAX, 'order_id' => $order->id],
+            ['id' => gp247_uuid(),'code' => 'shipping', 'value' => $shipping, 'title' => gp247_language_render('order.totals.shipping'), 'sort' => ShopOrderTotal::POSITION_SHIPPING_METHOD, 'order_id' => $order->id],
+            ['id' => gp247_uuid(),'code' => 'discount', 'value' => $discount, 'title' => gp247_language_render('order.totals.discount'), 'sort' => ShopOrderTotal::POSITION_TOTAL_METHOD, 'order_id' => $order->id],
             ['id' => gp247_uuid(),'code' => 'other_fee', 'value' => 0, 'title' => gp247_language_render('order.totals.other_fee'), 'sort' => ShopOrderTotal::POSITION_OTHER_FEE, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'total', 'value' => 0, 'title' => gp247_language_render('order.totals.total'), 'sort' => ShopOrderTotal::POSITION_TOTAL, 'order_id' => $order->id],
+            ['id' => gp247_uuid(),'code' => 'total', 'value' => $total, 'title' => gp247_language_render('order.totals.total'), 'sort' => ShopOrderTotal::POSITION_TOTAL, 'order_id' => $order->id],
             ['id' => gp247_uuid(),'code' => 'received', 'value' => 0, 'title' => gp247_language_render('order.totals.received'), 'sort' => ShopOrderTotal::POSITION_RECEIVED, 'order_id' => $order->id],
+        ]);
+        
+        // Update order total
+        $order->update([
+            'subtotal' => $subtotal,
+            'shipping' => $shipping,
+            'discount' => $discount,
+            'tax' => $taxTotal,
+            'total' => $total,
         ]);
         //
         return redirect()->route('admin_order.index')->with('success', gp247_language_render('action.create_success'));
