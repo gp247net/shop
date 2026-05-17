@@ -43,15 +43,31 @@ class AdminCustomerController extends RootAdminController
         $listTh = [
             'email'      => gp247_language_render('customer.email'),
             'name'       => gp247_language_render('customer.name'),
-            'phone'      => gp247_language_render('customer.phone'),
             'address1'   => gp247_language_render('customer.address1'),
-            'address2'   => gp247_language_render('customer.address2'),
-            'address3'   => gp247_language_render('customer.address3'),
-            'country'    => gp247_language_render('customer.country'),
-            'status'     => gp247_language_render('customer.status'),
-            'created_at' => gp247_language_render('admin.created_at'),
-            'action'     => gp247_language_render('action.title'),
         ];
+        
+        
+        if (gp247_config_admin('customer_address2')) {
+            $listTh['address2'] = gp247_language_render('customer.address2');
+        }
+
+        if (gp247_config_admin('customer_address3')) {
+            $listTh['address3'] = gp247_language_render('customer.address3');
+        }
+
+        if (gp247_config_admin('customer_phone')) {
+            $listTh['phone'] = gp247_language_render('customer.phone');
+        }
+
+        if (gp247_config_admin('customer_country')) {
+            $listTh['country'] = gp247_language_render('customer.country');
+        }
+
+
+        $listTh['status'] = gp247_language_render('customer.status');
+        $listTh['created_at'] = gp247_language_render('admin.created_at');
+        $listTh['action'] = gp247_language_render('action.title');
+
         $sort_order = gp247_clean(request('sort_order') ?? 'id_desc');
         $keyword    = gp247_clean(request('keyword') ?? '');
         $arrSort = [
@@ -76,14 +92,22 @@ class AdminCustomerController extends RootAdminController
             $dataTr[$row['id']] = [
                 'email' => $row['email'],
                 'name' => $row['name'],
-                'phone' => $row['phone'],
                 'address1' => $row['address1'],
-                'address2' => $row['address2'],
-                'address3' => $row['address3'],
-                'country' => $this->countries[$row['country']]->name ?? '',
-                'status' => $row['status'] ? '<span class="badge badge-success">ON</span>' : '<span class="badge badge-danger">OFF</span>',
-                'created_at' => $row['created_at'],
             ];
+            if (gp247_config_admin('customer_address2')) {
+                $dataTr[$row['id']]['address2'] = $row['address2'];
+            }
+            if (gp247_config_admin('customer_address3')) {
+                $dataTr[$row['id']]['address3'] = $row['address3'];
+            }
+            if (gp247_config_admin('customer_phone')) {
+                $dataTr[$row['id']]['phone'] = $row['phone'];
+            }
+            if (gp247_config_admin('customer_country')) {
+                $dataTr[$row['id']]['country'] = $this->countries[$row['country']]->name ?? '';
+            }
+            $dataTr[$row['id']]['status'] = $row['status'] ? '<span class="badge badge-success">ON</span>' : '<span class="badge badge-danger">OFF</span>';
+            $dataTr[$row['id']]['created_at'] = $row['created_at'];
 
             $arrAction = [
                 '<a href="' . gp247_route_admin('admin_customer.edit', ['id' => $row['id'] ? $row['id'] : 'not-found-id']) . '"  class="dropdown-item"><i class="fa fa-edit"></i> '.gp247_language_render('action.edit').'</a>',
@@ -91,8 +115,6 @@ class AdminCustomerController extends RootAdminController
             $arrAction[] = '<a href="#" onclick="deleteItem(\'' . $row['id'] . '\');"  title="' . gp247_language_render('action.delete') . '" class="dropdown-item"><i class="fas fa-trash-alt"></i> '.gp247_language_render('action.remove').'</a>';
             $action = $this->procesListAction($arrAction);
             $dataTr[$row['id']]['action'] = $action;
-
-
         }
 
         $data['listTh'] = $listTh;
@@ -300,7 +322,6 @@ class AdminCustomerController extends RootAdminController
         $address =  AdminCustomer::getAddress($id);
         $dataUpdate = [
             'first_name' => $data['first_name'],
-            'address1' => $data['address1'],
         ];
         $validate = [
             'first_name' => 'required|string|max:100',
@@ -314,15 +335,14 @@ class AdminCustomerController extends RootAdminController
             }
             $dataUpdate['last_name'] = $data['last_name']??'';
         }
-
-        if (gp247_config_admin('customer_address1')) {
+        // if (gp247_config_admin('customer_address1')) {
             if (gp247_config_admin('customer_address1_required')) {
                 $validate['address1'] = 'required|string|max:100';
             } else {
                 $validate['address1'] = 'nullable|string|max:100';
             }
             $dataUpdate['address1'] = $data['address1']??'';
-        }
+        // }
 
         if (gp247_config_admin('customer_address2')) {
             if (gp247_config_admin('customer_address2_required')) {
@@ -332,7 +352,6 @@ class AdminCustomerController extends RootAdminController
             }
             $dataUpdate['address2'] = $data['address2']??'';
         }
-
         if (gp247_config_admin('customer_address3')) {
             if (gp247_config_admin('customer_address3_required')) {
                 $validate['address3'] = 'required|string|max:100';

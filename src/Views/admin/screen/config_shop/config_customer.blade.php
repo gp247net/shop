@@ -41,7 +41,11 @@
         @foreach ($customerConfigsAttribute as $key => $customerConfig)
           <tr>
             <td>{{ gp247_language_render($customerConfig['detail']) }}</td>
+            @if ($customerConfig['key'] == 'customer_address1')
+            <td><input class="check-data-config-global" data-store="{{ $storeId }}" type="checkbox" name="{{ $customerConfig['key'] }}"  checked="checked" disabled></td>
+            @else
             <td><input class="check-data-config-global" data-store="{{ $storeId }}" type="checkbox" name="{{ $customerConfig['key'] }}"  {{ $customerConfig['value']?"checked":"" }}></td>
+            @endif
             <td>
               @if (!empty($customerConfigsAttributeRequired[$key.'_required']))
               <input class="check-data-config-global" data-store="{{ $storeId }}" type="checkbox" name="{{ $customerConfigsAttributeRequired[$key.'_required']['key'] }}"  {{ $customerConfigsAttributeRequired[$key.'_required']['value']?"checked":"" }}>

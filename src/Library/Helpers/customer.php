@@ -191,7 +191,7 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
 
         $validate = [
             'first_name' => config('validation.customer.first_name', 'required|string|max:100'),
-            'email' => config('validation.customer.email', 'required|string|email|max:255').'|unique:"'.ShopCustomer::class.'",email',
+            'email' => config('validation.customer.email', 'nullable|string|email|max:255').'|unique:"'.ShopCustomer::class.'",email',
             'password' => gp247_customer_validate_password()['password_confirm'],
         ];
 
@@ -220,7 +220,7 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             }
         }
 
-        if (gp247_config('customer_address1')) {
+        // if (gp247_config('customer_address1')) {
             if (gp247_config('customer_address1_required')) {
                 $validate['address1'] = config('validation.customer.address1_required', 'required|string|max:100');
             } else {
@@ -229,7 +229,7 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             if (!empty($dataRaw['address1'])) {
                 $dataInsert['address1'] = $dataRaw['address1'];
             }
-        }
+        // }
 
         if (gp247_config('customer_address2')) {
             if (gp247_config('customer_address2_required')) {
@@ -447,7 +447,8 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
                 $dataUpdate['last_name'] = $dataRaw['last_name'];
             }
         }
-        if (gp247_config('customer_address1')) {
+
+        // if (gp247_config('customer_address1')) {
             if (gp247_config('customer_address1_required')) {
                 $validate['address1'] = config('validation.customer.address1_required', 'required|string|max:100');
             } else {
@@ -456,7 +457,7 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
             if (!empty($dataRaw['address1'])) {
                 $dataUpdate['address1'] = $dataRaw['address1'];
             }
-        }
+        // }
 
         if (gp247_config('customer_address2')) {
             if (gp247_config('customer_address2_required')) {
@@ -663,7 +664,7 @@ if (!function_exists('gp247_customer_validate_password') && !in_array('gp247_cus
         }
         return [
             'password'          => ['required','string', $passwordValidate, 'max: '.gp247_config('customer_password_max', null, 16)],
-            'password_confirm'  => ['required','string', $passwordValidate, 'max: '.gp247_config('customer_password_max', null, 16), 'confirmed'],
+            'password_confirm'  => ['nullable','string', $passwordValidate, 'max: '.gp247_config('customer_password_max', null, 16), 'confirmed'],
             'password_nullable' => ['nullable','string', $passwordValidate, 'max: '.gp247_config('customer_password_max', null, 16)],
         ];
     }
