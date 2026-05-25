@@ -134,10 +134,10 @@
                                     </td>
                                     <td>{{ $item->sku }}</td>
                                     <td class="text-right">
-                                        <a href="#" class="edit-item-detail" data-value="{{ $item->price }}" data-name="price" data-type="text" min="0" data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin('admin_order.post_edit_item') }}" data-title="{{ gp247_language_render('product.price') }}">{{ number_format($item->price, 0, ',', '.') }}</a>
+                                        <a href="#" class="edit-item-detail" data-value="{{ $item->price }}" data-name="price" data-type="text" min="0" data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin('admin_order.post_edit_item') }}" data-title="{{ gp247_language_render('product.price') }}">{{ rtrim(rtrim(number_format($item->price, 4, ',', '.'), '0'), ',') }}</a>
                                     </td>
                                     <td class="text-center">
-                                        <a href="#" class="edit-item-detail" data-value="{{ $item->qty }}" data-name="qty" data-type="number" min="0" data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin('admin_order.post_edit_item') }}" data-title="{{ gp247_language_render('order.qty') }}">{{ $item->qty }}</a>
+                                        <a href="#" class="edit-item-detail" data-value="{{ $item->qty }}" data-name="qty" data-type="text" min="0" data-pk="{{ $item->id }}" data-url="{{ gp247_route_admin('admin_order.post_edit_item') }}" data-title="{{ gp247_language_render('order.qty') }}">{{ rtrim(rtrim(number_format($item->qty, 4, ',', '.'), '0'), ',') }}</a>
                                     </td>
                                     <td class="text-right item_id_{{ $item->id }}">{{ gp247_currency_render_symbol($item->total_price, $order->currency) }}</td>
                                     <td class="text-center">
@@ -166,9 +166,7 @@
                 <div class="card-header font-weight-bold">{{ gp247_language_render('order.order_note') }}</div>
                 <div class="card-body">
                     <p>
-                        <a href="#" class="updateInfo" data-name="comment" data-type="textarea" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin('admin_order.post_update') }}" data-title="{{ gp247_language_render('order.order_note') }}">
-                            {{ $order->comment ?: gp247_language_render('admin.no_data') }}
-                        </a>
+                        <a href="#" class="updateInfo" data-name="comment" data-type="textarea" data-pk="{{ $order->id }}" data-url="{{ gp247_route_admin('admin_order.post_update') }}" data-title="{{ gp247_language_render('order.order_note') }}">{{ $order->comment ?: '' }}</a>
                     </p>
                 </div>
             </div>
@@ -274,7 +272,7 @@
                         </div>
                         @endforeach
                     @else
-                    <p class="text-muted small text-center">{{ gp247_language_render('admin.no_data') }}</p>
+                    <p class="text-muted small text-center"></p>
                     @endif
                     
                     <hr>

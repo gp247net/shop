@@ -345,7 +345,7 @@ console.log('PRODUCTS loaded:', PRODUCTS);
 let productIndex = 0;
 
 function formatNumber(n) {
-    return new Intl.NumberFormat('vi-VN').format(Math.round(n));
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
 }
 
 function recalculate() {
@@ -399,7 +399,7 @@ function addProductRow() {
         <td class="product-sku text-muted small align-middle">-</td>
         <td><input type="number" name="products[${idx}][qty]" class="form-control form-control-sm product-qty" value="1" min="1" required></td>
         <td><input type="number" name="products[${idx}][price]" class="form-control form-control-sm product-price" value="0" min="0" step="0.01" required></td>
-        <td><input type="number" name="products[${idx}][tax]" class="form-control form-control-sm product-tax" value="0" min="0" max="100" step="0.1" style="width:70px"></td>
+        <td><div class="input-group input-group-sm" style="width:85px"><input type="number" name="products[${idx}][tax]" class="form-control form-control-sm product-tax" value="0" min="0" max="100" step="0.1"><div class="input-group-append"><span class="input-group-text">%</span></div></div></td>
         <td class="item-total text-right align-middle">0</td>
         <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
     </tr>`;
