@@ -42,7 +42,7 @@
                       <div class="cart-qty">
                           <input style="width: 150px; margin: 0 auto" type="number" data-id="{{ $dataProcess['process_product_id'] }}"
                               data-rowid="{{$dataProcess['process_cart_id']}}" data-store_id="{{$dataProcess['process_store_id']}}" 
-                              class="item-qty form-control" name="qty-{{$dataProcess['process_cart_id']}}" value="{{$dataProcess['process_qty']}}">
+                              class="item-qty form-control" name="qty-{{$dataProcess['process_cart_id']}}" value="{{$dataProcess['process_qty']}}" step="0.01" min="0.01">
                       </div>
                       <span class="text-danger item-qty-{{$dataProcess['process_product_id']}}" style="display: none;"></span>
                       @if (session('arrErrorQty')[$dataProcess['process_product_id']] ?? 0)
@@ -107,10 +107,11 @@
     function buttonQty(obj, action){
         var parent = obj.parent();
         var input = parent.find(".item-qty");
+        var current = parseFloat(input.val()) || 0;
         if(action === 'reduce'){
-            input.val(parseInt(input.val()) - 1);
+            input.val(Math.max(0.01, parseFloat((current - 1).toFixed(2))));
         }else{
-            input.val(parseInt(input.val()) + 1);
+            input.val(parseFloat((current + 1).toFixed(2)));
         }
         updateCart(input)
     }

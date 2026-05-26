@@ -397,7 +397,7 @@ function addProductRow() {
             <input type="hidden" name="products[${idx}][name]" class="product-name">
         </td>
         <td class="product-sku text-muted small align-middle">-</td>
-        <td><input type="number" name="products[${idx}][qty]" class="form-control form-control-sm product-qty" value="1" min="1" required></td>
+        <td><input type="number" name="products[${idx}][qty]" class="form-control form-control-sm product-qty" value="1" min="0.01" step="0.01" required></td>
         <td><input type="number" name="products[${idx}][price]" class="form-control form-control-sm product-price" value="0" min="0" step="0.01" required></td>
         <td><div class="input-group input-group-sm" style="width:85px"><input type="number" name="products[${idx}][tax]" class="form-control form-control-sm product-tax" value="0" min="0" max="100" step="0.1"><div class="input-group-append"><span class="input-group-text">%</span></div></div></td>
         <td class="item-total text-right align-middle">0</td>

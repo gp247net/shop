@@ -544,7 +544,7 @@ class AdminProductController extends RootAdminController
             'status'         => (!empty($data['status']) ? 1 : 0),
             'approve'        => (!empty($data['approve']) ? 1 : 0),
             'sort'           => (int) $data['sort'],
-            'minimum'        => (int) ($data['minimum'] ?? 0),
+            'minimum'        => round((float) ($data['minimum'] ?? 0), 2),
         ];
 
         if (!empty($data['date_available'])) {
@@ -870,7 +870,7 @@ class AdminProductController extends RootAdminController
             'status'       => (!empty($data['status']) ? 1 : 0),
             'approve'       => (!empty($data['approve']) ? 1 : 0),
             'sort'         => (int) $data['sort'],
-            'minimum'      => (int) ($data['minimum'] ?? 0)
+            'minimum'      => round((float) ($data['minimum'] ?? 0), 2)
         ];
         if (!empty($data['date_available'])) {
             $dataUpdate['date_available'] = $data['date_available'];

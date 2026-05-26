@@ -107,7 +107,7 @@ class ShopCartController extends RootFrontController
         $cart = $cartGroup[$storeId];
         foreach ($cart as $key => $row) {
             //Qty get from input
-            $qtyUpdate = (int)$data['qty-'.$row->rowId];
+            $qtyUpdate = round((float)($data['qty-'.$row->rowId] ?? 0), 2);
             //Update cart
             (new Cart)->update($row->rowId, $qtyUpdate);
 

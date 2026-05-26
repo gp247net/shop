@@ -131,7 +131,7 @@ $layout_page = shop_profile
                             </td>
                             <td>{{ $item->sku }}</td>
                             <td class="product_price">{{ $item->price }}</td>
-                            <td class="product_qty">x  {{ $item->qty }}</td>
+                            <td class="product_qty">x  {{ rtrim(rtrim(number_format($item->qty, 2, '.', ''), '0'), '.') }}</td>
                             <td class="product_total item_id_{{ $item->id }}">{{ gp247_currency_render_symbol($item->total_price,$order->currency)}}</td>
                             <td class="product_tax">{{ $item->tax }}</td>
                           </tr>

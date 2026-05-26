@@ -84,7 +84,7 @@ $layout_page = shop_product_detail
                 @if ($product->kind != GP247_PRODUCT_GROUP && $product->allowSale() && gp247_config('product_use_button_add_to_cart'))
                 <div class="group-xs group-middle">
                     <div class="product-stepper">
-                      <input class="form-input" name="qty" type="number" data-zeros="true" value="1" min="1" max="100">
+                      <input class="form-input" name="qty" type="number" data-zeros="true" value="1" min="0.01" max="9999" step="0.01">
                     </div>
                     <div>
                       <button class="button button-secondary" type="submit" id="gp247-button-process">{{ gp247_language_render('action.add_to_cart') }}</button>

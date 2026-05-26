@@ -35,7 +35,7 @@
                             @endif
                         </td>
                         <td>{{ $item['price'] }}</td>
-                        <td>{{ $item['qty'] }}</td>
+                        <td>{{ rtrim(rtrim(number_format($item['qty'], 2, '.', ''), '0'), '.') }}</td>
                         <td  align="right">{{ $item['total'] }}</td>
                     </tr>
                 @endforeach

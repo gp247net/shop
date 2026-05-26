@@ -396,7 +396,7 @@ class AdminOrderController extends RootAdminController
                 if (!empty($item['product_id'])) {
                     $product = (new AdminProduct)->getDetail($item['product_id']);
                     if ($product) {
-                        $qty = (int)($item['qty'] ?? 1);
+                        $qty = round((float)($item['qty'] ?? 1), 2);
                         $price = (float)($item['price'] ?? 0);
                         $tax = (float)($item['tax'] ?? 0);
                         

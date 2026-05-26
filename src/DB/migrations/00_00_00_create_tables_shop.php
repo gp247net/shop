@@ -125,7 +125,7 @@ return new class extends Migration
                 $table->uuid('product_id');
                 $table->string('name', 255);
                 $table->decimal('price',15,2)->default(0);
-                $table->integer('qty')->default(0);
+                $table->decimal('qty',15,2)->default(0);
                 $table->uuid('store_id')->default(1);
                 $table->decimal('total_price',15,2)->default(0);
                 $table->decimal('tax',15,2)->default(0);
@@ -197,9 +197,9 @@ return new class extends Migration
                 $table->uuid('supplier_id')->nullable()->default(0)->index();
                 $table->decimal('price',15,2)->nullable()->default(0);
                 $table->decimal('cost',15,2)->nullable()->nullable()->default(0);
-                $table->integer('stock')->nullable()->default(0);
-                $table->integer('sold')->nullable()->default(0);
-                $table->integer('minimum')->nullable()->default(0);
+                $table->decimal('stock',15,2)->nullable()->default(0);
+                $table->decimal('sold',15,2)->nullable()->default(0);
+                $table->decimal('minimum',15,2)->nullable()->default(0);
                 $table->string('weight_class')->nullable();
                 $table->decimal('weight',15,2)->nullable()->default(0);
                 $table->string('length_class')->nullable();
@@ -247,7 +247,7 @@ return new class extends Migration
             function (Blueprint $table) {
                 $table->uuid('build_id');
                 $table->uuid('product_id');
-                $table->integer('quantity');
+                $table->decimal('quantity',15,2)->default(0);
                 $table->primary(['build_id', 'product_id']);
             }
         );
