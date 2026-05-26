@@ -116,8 +116,9 @@
                         </div>
                         @endif
 
+                        @if (gp247_config_admin('customer_address1'))
                         <div class="form-group row {{ $errors->has('address1') ? 'text-red' : '' }}">
-                            <label for="address1" class="col-sm-3 col-form-label">{{ gp247_language_render('order.address1') }}</label>
+                            <label for="address1" class="col-sm-3 col-form-label">{{ gp247_language_render('order.address1') }} @if(gp247_config_admin('customer_address1_required'))<span class="text-danger">*</span>@endif</label>
                             <div class="col-sm-9">
                                 <input type="text" name="address1" value="{{ old('address1') }}" class="form-control address1">
                                 @if ($errors->has('address1'))
@@ -125,10 +126,11 @@
                                 @endif
                             </div>
                         </div>
+                        @endif
 
                         @if (gp247_config_admin('customer_country'))
                         <div class="form-group row {{ $errors->has('country') ? 'text-red' : '' }}">
-                            <label for="country" class="col-sm-3 col-form-label">{{ gp247_language_render('order.country') }} <span class="text-danger">*</span></label>
+                            <label for="country" class="col-sm-3 col-form-label">{{ gp247_language_render('order.country') }} @if(gp247_config_admin('customer_country_required'))<span class="text-danger">*</span>@endif</label>
                             <div class="col-sm-9">
                                 <select class="form-control country select2" style="width: 100%;" name="country">
                                     <option value=""></option>

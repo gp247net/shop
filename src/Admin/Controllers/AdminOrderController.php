@@ -295,8 +295,8 @@ class AdminOrderController extends RootAdminController
     {
         $data = request()->all();
         $validate = [
-            'first_name'      => 'required|max:100',
-            'address1'        => 'required|max:100',
+            'first_name'      => config('validation.customer.first_name', 'required|string|max:100'),
+            'email'           => config('validation.customer.email', 'required|string|email|max:255'),
             'exchange_rate'   => 'required',
             'currency'        => 'required',
             'status'          => 'required',
@@ -308,25 +308,60 @@ class AdminOrderController extends RootAdminController
             $validate['shipping_method'] = 'required';
         }
         if (gp247_config_admin('customer_lastname')) {
-            $validate['last_name'] = 'required|max:100';
+            if (gp247_config_admin('customer_lastname_required')) {
+                $validate['last_name'] = config('validation.customer.last_name_required', 'required|string|max:100');
+            } else {
+                $validate['last_name'] = config('validation.customer.last_name_null', 'nullable|string|max:100');
+            }
+        }
+        if (gp247_config_admin('customer_address1')) {
+            if (gp247_config_admin('customer_address1_required')) {
+                $validate['address1'] = config('validation.customer.address1_required', 'required|string|max:100');
+            } else {
+                $validate['address1'] = config('validation.customer.address1_null', 'nullable|string|max:100');
+            }
         }
         if (gp247_config_admin('customer_address2')) {
-            $validate['address2'] = 'required|max:100';
+            if (gp247_config_admin('customer_address2_required')) {
+                $validate['address2'] = config('validation.customer.address2_required', 'required|string|max:100');
+            } else {
+                $validate['address2'] = config('validation.customer.address2_null', 'nullable|string|max:100');
+            }
         }
         if (gp247_config_admin('customer_address3')) {
-            $validate['address3'] = 'required|max:100';
+            if (gp247_config_admin('customer_address3_required')) {
+                $validate['address3'] = config('validation.customer.address3_required', 'required|string|max:100');
+            } else {
+                $validate['address3'] = config('validation.customer.address3_null', 'nullable|string|max:100');
+            }
         }
         if (gp247_config_admin('customer_phone')) {
-            $validate['phone'] = config('validation.customer.phone_required', 'required|regex:/^0[^0][0-9\-]{6,12}$/');
+            if (gp247_config_admin('customer_phone_required')) {
+                $validate['phone'] = config('validation.customer.phone_required', 'required|regex:/^0[^0][0-9\-]{6,12}$/');
+            } else {
+                $validate['phone'] = config('validation.customer.phone_null', 'nullable|regex:/^0[^0][0-9\-]{6,12}$/');
+            }
         }
         if (gp247_config_admin('customer_country')) {
-            $validate['country'] = 'required|min:2';
+            if (gp247_config_admin('customer_country_required')) {
+                $validate['country'] = config('validation.customer.country_required', 'required|string|min:2');
+            } else {
+                $validate['country'] = config('validation.customer.country_null', 'nullable|string|min:2');
+            }
         }
         if (gp247_config_admin('customer_postcode')) {
-            $validate['postcode'] = 'required|min:5';
+            if (gp247_config_admin('customer_postcode_required')) {
+                $validate['postcode'] = config('validation.customer.postcode_required', 'required|min:5');
+            } else {
+                $validate['postcode'] = config('validation.customer.postcode_null', 'nullable|min:5');
+            }
         }
         if (gp247_config_admin('customer_company')) {
-            $validate['company'] = 'required|min:3';
+            if (gp247_config_admin('customer_company_required')) {
+                $validate['company'] = config('validation.customer.company_required', 'required|string|max:100');
+            } else {
+                $validate['company'] = config('validation.customer.company_null', 'nullable|string|max:100');
+            }
         }
         $messages = [
             'last_name.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.last_name')]),
