@@ -16,7 +16,7 @@
            @if ($config['key'] == 'product_tax')
            <tr>
             <td>{{ gp247_language_render('product.config_manager.tax') }}</td>
-            <td><a href="#" class="editable-required" data-name="product_tax" data-type="select" data-pk="" data-source="{{ json_encode($taxs) }}" data-url="{{ $urlUpdateConfig }}" data-title="{{ gp247_language_render('product.config_manager.tax') }}" data-value="{{ gp247_config('product_tax', $storeId) }}" data-original-title="" title="" data-placement="left"></a></td>
+            <td><a href="#" class="editable-required" data-name="product_tax" data-type="select" data-pk="" data-source="{{ json_encode($taxs) }}" data-url="{{ $urlUpdateConfigGlobal }}" data-title="{{ gp247_language_render('product.config_manager.tax') }}" data-value="{{ gp247_config('product_tax', $storeId) }}" data-original-title="" title="" data-placement="left"></a></td>
           </tr>
            @else
            <tr>
