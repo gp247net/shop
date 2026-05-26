@@ -407,7 +407,7 @@ class AdminOrderController extends RootAdminController
             'last_name'       => $data['last_name'] ?? '',
             'status'          => $data['status'],
             'currency'        => $data['currency'],
-            'address1'        => $data['address1'],
+            'address1'        => $data['address1'] ?? '',
             'address2'        => $data['address2'] ?? '',
             'address3'        => $data['address3'] ?? '',
             'country'         => $data['country'] ?? '',
@@ -418,7 +418,7 @@ class AdminOrderController extends RootAdminController
             'shipping_method' => $data['shipping_method'] ?? null,
             'exchange_rate'   => $data['exchange_rate'],
             'email'           => $data['email'],
-            'comment'         => $data['comment'],
+            'comment'         => $data['comment'] ?? '',
         ];
         $dataCreate = gp247_clean($dataCreate, [], true);
         $order = AdminOrder::create($dataCreate);
