@@ -264,7 +264,7 @@
                 </div>
                 <div class="card-body p-2" style="max-height:600px; overflow-y:auto">
                     @if (count($order->history))
-                        @foreach ($order->history->sortKeysDesc()->all() as $history)
+                        @foreach ($order->history->sortByDesc('add_date')->all() as $history)
                         <div class="border-left border-primary pl-3 mb-3">
                             <small class="text-muted d-block">{{ $history['add_date'] }}</small>
                             <small class="text-info d-block">{{ \GP247\Core\Models\AdminUser::find($history['admin_id'])->name ?? gp247_language_render('admin.system') }}</small>
