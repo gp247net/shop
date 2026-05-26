@@ -484,6 +484,7 @@ class AdminOrderController extends RootAdminController
             'discount' => $discount,
             'tax' => $taxTotal,
             'total' => $total,
+            'balance' => $total,
         ]);
         //
         return redirect()->route('admin_order.index')->with('success', gp247_language_render('action.create_success'));
