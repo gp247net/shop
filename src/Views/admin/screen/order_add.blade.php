@@ -288,9 +288,18 @@
                             <input type="number" name="discount" id="discount-input" class="form-control form-control-sm" value="0" step="0.01" style="width:100px; display:inline-block;">
                         </div>
                         <hr>
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between mb-2">
                             <span class="font-weight-bold">{{ gp247_language_render('order.totals.total') }}:</span>
                             <strong id="grand-total" class="text-primary">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{{ gp247_language_render('order.totals.received') }} (-):</span>
+                            <input type="number" name="received" id="received-input" class="form-control form-control-sm" value="0" step="0.01" style="width:100px; display:inline-block;">
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span class="font-weight-bold">{{ gp247_language_render('order.totals.balance') }}:</span>
+                            <strong id="balance-total">0</strong>
                         </div>
                     </div>
                     <div class="card-footer">
@@ -370,11 +379,14 @@ function recalculate() {
     
     const shipping = parseFloat($('#shipping-input').val()) || 0;
     const discount = parseFloat($('#discount-input').val()) || 0;
+    const received = parseFloat($('#received-input').val()) || 0;
     const grandTotal = subtotal + taxTotal + shipping - discount;
+    const balance = grandTotal + received;
     
     $('#total-subtotal').text(formatNumber(subtotal));
     $('#total-tax').text(formatNumber(taxTotal));
     $('#grand-total').text(formatNumber(grandTotal));
+    $('#balance-total').text(formatNumber(balance));
 }
 
 function buildProductOptions() {
@@ -438,7 +450,7 @@ $(document).on('click', '.remove-row', function() {
     recalculate();
 });
 
-$(document).on('input', '.product-qty, .product-price, .product-tax, #shipping-input, #discount-input', recalculate);
+$(document).on('input', '.product-qty, .product-price, .product-tax, #shipping-input, #discount-input, #received-input', recalculate);
 
 $('[name="customer_id"]').change(function() {
     const id = $(this).val();

@@ -461,10 +461,12 @@ class AdminOrderController extends RootAdminController
             }
         }
         
-        // Get shipping and discount from form
+        // Get shipping, discount and received from form
         $shipping = (float)($data['shipping'] ?? 0);
         $discount = (float)($data['discount'] ?? 0);
+        $received = (float)($data['received'] ?? 0);
         $total = $subtotal + $taxTotal + $shipping - $discount;
+        $balance = $total + $received;
         
         // Insert order totals with calculated values
         AdminOrder::insertOrderTotal([
@@ -474,7 +476,7 @@ class AdminOrderController extends RootAdminController
             ['id' => gp247_uuid(),'code' => 'discount', 'value' => $discount, 'title' => gp247_language_render('order.totals.discount'), 'sort' => ShopOrderTotal::POSITION_TOTAL_METHOD, 'order_id' => $order->id],
             ['id' => gp247_uuid(),'code' => 'other_fee', 'value' => 0, 'title' => gp247_language_render('order.totals.other_fee'), 'sort' => ShopOrderTotal::POSITION_OTHER_FEE, 'order_id' => $order->id],
             ['id' => gp247_uuid(),'code' => 'total', 'value' => $total, 'title' => gp247_language_render('order.totals.total'), 'sort' => ShopOrderTotal::POSITION_TOTAL, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'received', 'value' => 0, 'title' => gp247_language_render('order.totals.received'), 'sort' => ShopOrderTotal::POSITION_RECEIVED, 'order_id' => $order->id],
+            ['id' => gp247_uuid(),'code' => 'received', 'value' => $received, 'title' => gp247_language_render('order.totals.received'), 'sort' => ShopOrderTotal::POSITION_RECEIVED, 'order_id' => $order->id],
         ]);
         
         // Update order total
@@ -484,7 +486,8 @@ class AdminOrderController extends RootAdminController
             'discount' => $discount,
             'tax' => $taxTotal,
             'total' => $total,
-            'balance' => $total,
+            'received' => $received,
+            'balance' => $balance,
         ]);
         //
         return redirect()->route('admin_order.index')->with('success', gp247_language_render('action.create_success'));
