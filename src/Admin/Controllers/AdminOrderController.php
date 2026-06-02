@@ -62,13 +62,14 @@ class AdminOrderController extends RootAdminController
         $data['blockBottom']  = gp247_config_group('blockBottom', \Request::route()->getName());
 
         $listTh = [
-            'email'          => '<i class="fas fa-envelope" aria-hidden="true" title="'.gp247_language_render('order.email').'"></i>',
-            'subtotal'       => '<i class="fa fa-shopping-cart" aria-hidden="true" title="'.gp247_language_render('order.subtotal').'"></i>',
-            'shipping'       => '<i class="fa fa-truck" aria-hidden="true" title="'.gp247_language_render('order.shipping').'"></i>',
-            'discount'       => '<i class="fa fa-tags" aria-hidden="true" title="'.gp247_language_render('order.discount').'"></i>',
+            'email'          => gp247_language_render('order.email'),
+            'first_name'     => gp247_language_render('order.first_name'),
+            'subtotal'       => gp247_language_render('order.subtotal'),
+            'shipping'       => gp247_language_render('order.shipping'),
+            'discount'       => gp247_language_render('order.discount'),
             'tax'            => gp247_language_render('order.tax'),
-            'total'          => '<i class="fas fa-coins" aria-hidden="true" title="'.gp247_language_render('order.total').'"></i>',
-            'payment_method' => '<i class="fa fa-credit-card" aria-hidden="true" title="'.gp247_language_render('admin.order.payment_method_short').'"></i>',
+            'total'          => gp247_language_render('order.total'),
+            'payment_method' => gp247_language_render('admin.order.payment_method_short'),
             'payment_status' => gp247_language_render('order.payment_status'),
             'shipping_status'=> gp247_language_render('order.shipping_status'),
             'status'         => gp247_language_render('order.status'),
@@ -80,27 +81,14 @@ class AdminOrderController extends RootAdminController
         $listTh['created_at'] = gp247_language_render('admin.created_at');
         $listTh['action'] = gp247_language_render('action.title');
 
-        $sort_order   = gp247_clean(request('sort_order') ?? 'id_desc');
         $keyword      = gp247_clean(request('keyword') ?? '');
-        $email        = gp247_clean(request('email') ?? '');
         $from_to      = gp247_clean(request('from_to') ?? '');
         $end_to       = gp247_clean(request('end_to') ?? '');
         $order_status = gp247_clean(request('order_status') ?? '');
-        $arrSort = [
-            'id__desc'         => gp247_language_render('filter_sort.id_desc'),
-            'id__asc'          => gp247_language_render('filter_sort.id_asc'),
-            'email__desc'      => gp247_language_render('filter_sort.alpha_desc', ['alpha' => 'Email']),
-            'email__asc'       => gp247_language_render('filter_sort.alpha_asc', ['alpha' => 'Email']),
-            'created_at__desc' => gp247_language_render('filter_sort.value_desc', ['value' => 'Date']),
-            'created_at__asc'  => gp247_language_render('filter_sort.value_asc', ['value' => 'Date']),
-        ];
         $dataSearch = [
             'keyword'      => $keyword,
-            'email'        => $email,
             'from_to'      => $from_to,
             'end_to'       => $end_to,
-            'sort_order'   => $sort_order,
-            'arrSort'      => $arrSort,
             'order_status' => $order_status,
         ];
         $dataTmp = (new AdminOrder)->getOrderListAdmin($dataSearch);
@@ -122,6 +110,7 @@ class AdminOrderController extends RootAdminController
         foreach ($dataTmp as $key => $row) {
             $dataMap = [
                 'email'          => $row['email'] ?? 'N/A',
+                'first_name'     => $row['first_name'] ?? 'N/A',
                 'subtotal'       => gp247_currency_render_symbol($row['subtotal'] ?? 0, $row['currency']),
                 'shipping'       => gp247_currency_render_symbol($row['shipping'] ?? 0, $row['currency']),
                 'discount'       => gp247_currency_render_symbol($row['discount'] ?? 0, $row['currency']),
@@ -171,13 +160,6 @@ class AdminOrderController extends RootAdminController
                            </a>';
         //=menuRight
 
-        //menuSort
-        $optionSort = '';
-        foreach ($arrSort as $key => $sort) {
-            $optionSort .= '<option  ' . (($sort_order == $key) ? "selected" : "") . ' value="' . $key . '">' . $sort . '</option>';
-        }
-        //=menuSort
-
         //menuSearch
         $optionStatus = '';
         foreach ($this->statusOrder as $key => $status) {
@@ -186,18 +168,6 @@ class AdminOrderController extends RootAdminController
         $data['topMenuRight'][] = '
                 <form action="' . gp247_route_admin('admin_order.index') . '" id="button_search">
                     <div class="input-group float-left">
-
-                        <div style="width:130px">
-                            <div class="form-group">
-                                <label>'.gp247_language_render('action.sort').':</label>
-                                <div class="input-group">
-                                    <select class="form-control rounded-0 select2" name="sort_order" id="sort_order">
-                                    '.$optionSort.'
-                                    </select>
-                                </div>
-                            </div>
-                        </div> &nbsp;
-
 
                         <div style="width:130px">
                             <div class="form-group">
@@ -226,11 +196,11 @@ class AdminOrderController extends RootAdminController
                                 </div>
                             </div>
                         </div> &nbsp;
-                        <div style="width:150px">
+                        <div style="width:200px">
                             <div class="form-group">
-                                <label>'.gp247_language_render('admin.order.search_email').':</label>
+                                <label>'.gp247_language_render('search.placeholder').':</label>
                                 <div class="input-group">
-                                    <input type="text" name="email" class="form-control rounded-0 float-right" placeholder="' . gp247_language_render('admin.order.search_email') . '" value="' . $email . '">
+                                    <input type="text" name="keyword" class="form-control rounded-0 float-right" placeholder="' . gp247_language_render('search.placeholder') . '" value="' . $keyword . '">
                                     <div class="input-group-append">
                                         <button type="submit" class="btn btn-primary  btn-flat"><i class="fas fa-search"></i></button>
                                     </div>

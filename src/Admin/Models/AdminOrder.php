@@ -63,7 +63,10 @@ class AdminOrder extends ShopOrder
         }
         if ($keyword) {
             $orderList = $orderList->where(function ($sql) use ($keyword) {
-                $sql->Where('id', $keyword);
+                $sql->Where('id', 'like', '%'.$keyword.'%')
+                    ->orWhere('email', 'like', '%'.$keyword.'%')
+                    ->orWhere('first_name', 'like', '%'.$keyword.'%')
+                    ->orWhere('last_name', 'like', '%'.$keyword.'%');
             });
         }
 
