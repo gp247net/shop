@@ -1,19 +1,18 @@
 <?php
+
+use GP247\Shop\Controllers\ShopAccountController;
+
 $suffix = GP247_SUFFIX_URL;
 
 $prefixCustomer = config('gp247-config.shop.route.GP247_PREFIX_MEMBER') ?? 'customer';
-if (file_exists(app_path('GP247/Shop/Controllers/ShopAccountController.php'))) {
-    $nameSpaceFrontCustomer = 'App\GP247\Shop\Controllers';
-} else {
-    $nameSpaceFrontCustomer = 'GP247\Shop\Controllers';
-}
+$customerController = gp247_namespace(ShopAccountController::class);
 
 Route::group(
     [
         'prefix' => $prefixCustomer,
         'middleware' => ['customer']
     ],
-    function ($router) use ($suffix, $nameSpaceFrontCustomer) {
+    function ($router) use ($suffix, $customerController) {
         $prefixCustomerOrderList    = config('gp247.cart.route.GP247_PREFIX_MEMBER_ORDER_LIST')??'order-list';
         $prefixCustomerOrderDetail  = config('gp247.cart.route.GP247_PREFIX_MEMBER_ORDER_DETAIL')??'order-detail';
         $prefixCustomerAddresList   = config('gp247.cart.route.GP247_PREFIX_MEMBER_ADDRESS_LIST')??'address-list';
@@ -23,38 +22,38 @@ Route::group(
         $prefixCustomerChangeInfo   = config('gp247.cart.route.GP247_PREFIX_MEMBER_CHANGE_INFO')??'change-infomation';
 
 
-        $router->get('/', $nameSpaceFrontCustomer.'\ShopAccountController@index')
+        $router->get('/', $customerController.'@index')
             ->name('customer.index');
-        $router->get('/'.$prefixCustomerOrderList.$suffix, $nameSpaceFrontCustomer.'\ShopAccountController@orderList')
+        $router->get('/'.$prefixCustomerOrderList.$suffix, $customerController.'@orderList')
             ->name('customer.order_list');
-        $router->get('/'.$prefixCustomerOrderDetail.'/{id}', $nameSpaceFrontCustomer.'\ShopAccountController@orderDetail')
+        $router->get('/'.$prefixCustomerOrderDetail.'/{id}', $customerController.'@orderDetail')
             ->name('customer.order_detail');
-        $router->get('/'.$prefixCustomerAddresList.$suffix, $nameSpaceFrontCustomer.'\ShopAccountController@addressList')
+        $router->get('/'.$prefixCustomerAddresList.$suffix, $customerController.'@addressList')
             ->name('customer.address_list');
-        $router->get('/'.$prefixCustomerUpdateAddres.'/{id}', $nameSpaceFrontCustomer.'\ShopAccountController@updateAddress')
+        $router->get('/'.$prefixCustomerUpdateAddres.'/{id}', $customerController.'@updateAddress')
             ->name('customer.update_address');
-        $router->post('/'.$prefixCustomerUpdateAddres.'/{id}', $nameSpaceFrontCustomer.'\ShopAccountController@postUpdateAddress')
+        $router->post('/'.$prefixCustomerUpdateAddres.'/{id}', $customerController.'@postUpdateAddress')
             ->name('customer.post_update_address');
-        $router->post('/'.$prefixCustomerDeleteAddres, $nameSpaceFrontCustomer.'\ShopAccountController@deleteAddress')
+        $router->post('/'.$prefixCustomerDeleteAddres, $customerController.'@deleteAddress')
             ->name('customer.delete_address');
-        $router->get('/'.$prefixCustomerChangePwd.$suffix, $nameSpaceFrontCustomer.'\ShopAccountController@changePassword')
+        $router->get('/'.$prefixCustomerChangePwd.$suffix, $customerController.'@changePassword')
             ->name('customer.change_password');
-        $router->post('/change_password', $nameSpaceFrontCustomer.'\ShopAccountController@postChangePassword')
+        $router->post('/change_password', $customerController.'@postChangePassword')
             ->name('customer.post_change_password');
-        $router->get('/'.$prefixCustomerChangeInfo.$suffix, $nameSpaceFrontCustomer.'\ShopAccountController@changeInfomation')
+        $router->get('/'.$prefixCustomerChangeInfo.$suffix, $customerController.'@changeInfomation')
             ->name('customer.change_infomation');
-        $router->post('/change_infomation', $nameSpaceFrontCustomer.'\ShopAccountController@postChangeInfomation')
+        $router->post('/change_infomation', $customerController.'@postChangeInfomation')
             ->name('customer.post_change_infomation');
-        $router->get('/address_detail', $nameSpaceFrontCustomer.'\ShopAccountController@getAddress')
+        $router->get('/address_detail', $customerController.'@getAddress')
             ->name('customer.address_detail');
 
         // The Email Verification Notice
-        $router->get('/email/verify', $nameSpaceFrontCustomer.'\ShopAccountController@verification')
+        $router->get('/email/verify', $customerController.'@verification')
             ->name('customer.verify');
-        $router->post('/email/verify', $nameSpaceFrontCustomer.'\ShopAccountController@resendVerification')
+        $router->post('/email/verify', $customerController.'@resendVerification')
             ->name('customer.verify_resend');
 
-        $router->get('/email/verify/{id}/{token}', $nameSpaceFrontCustomer.'\ShopAccountController@verificationProcessData')
+        $router->get('/email/verify/{id}/{token}', $customerController.'@verificationProcessData')
         ->name('customer.verify_process');
     }
 );

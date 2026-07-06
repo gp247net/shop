@@ -1,6 +1,13 @@
 <?php
+
+use GP247\Shop\Api\Admin\AdminBrandController;
+use GP247\Shop\Api\Admin\AdminCategoryController;
+use GP247\Shop\Api\Admin\AdminCustomerController;
+use GP247\Shop\Api\Admin\AdminOrderController;
+use GP247\Shop\Api\Admin\AdminProductController;
+use GP247\Shop\Api\Admin\AdminSupplierController;
 use Illuminate\Support\Facades\Route;
-    
+
 $listAbility = [
     config('gp247-config.api.auth.api_scope_admin'),
     config('gp247-config.api.auth.api_scope_admin_supper')
@@ -9,87 +16,63 @@ $listAbility = [
 
 Route::group([
     'middleware' => [
-        'auth:admin-api', 
+        'auth:admin-api',
         'ability:'.implode(',', $listAbility)
     ],
     'prefix' => GP247_API_CORE_PREFIX,
 ], function (){
     // Customer
-        if (file_exists(app_path('GP247/Shop/Api/Admin/AdminCustomerController.php'))) {
-            $nameSpaceAdminCustomer = 'App\GP247\Shop\Api\Admin';
-        } else {
-            $nameSpaceAdminCustomer = 'GP247\Shop\Api\Admin';
-        }
+        $customerController = gp247_namespace(AdminCustomerController::class);
         Route::group([
             'prefix' => 'customer',
-        ], function () use($nameSpaceAdminCustomer) {
-            Route::get('list', $nameSpaceAdminCustomer.'\AdminCustomerController@getCustomerList');
-            Route::get('detail/{id}', $nameSpaceAdminCustomer.'\AdminCustomerController@getCustomerDetail');
+        ], function () use($customerController) {
+            Route::get('list', $customerController.'@getCustomerList');
+            Route::get('detail/{id}', $customerController.'@getCustomerDetail');
         });
 
     // Order
-        if (file_exists(app_path('GP247/Shop/Api/Admin/AdminOrderController.php'))) {
-            $nameSpaceAdminOrder = 'App\GP247\Shop\Api\Admin';
-        } else {
-            $nameSpaceAdminOrder = 'GP247\Shop\Api\Admin';
-        }
+        $orderController = gp247_namespace(AdminOrderController::class);
         Route::group([
             'prefix' => 'order',
-        ], function () use($nameSpaceAdminOrder) {
-            Route::get('list', $nameSpaceAdminOrder.'\AdminOrderController@getOrderList');
-            Route::get('detail/{id}', $nameSpaceAdminOrder.'\AdminOrderController@getOrderDetail');
+        ], function () use($orderController) {
+            Route::get('list', $orderController.'@getOrderList');
+            Route::get('detail/{id}', $orderController.'@getOrderDetail');
         });
 
     // Category
-        if (file_exists(app_path('GP247/Shop/Api/Admin/AdminCategoryController.php'))) {
-            $nameSpaceAdminCategory = 'App\GP247\Shop\Api\Admin';
-        } else {
-            $nameSpaceAdminCategory = 'GP247\Shop\Api\Admin';
-        }
+        $categoryController = gp247_namespace(AdminCategoryController::class);
         Route::group([
             'prefix' => 'category',
-        ], function () use($nameSpaceAdminCategory) {
-            Route::get('list', $nameSpaceAdminCategory.'\AdminCategoryController@getCategoryList');
-            Route::get('detail/{id}', $nameSpaceAdminCategory.'\AdminCategoryController@getCategoryDetail');
+        ], function () use($categoryController) {
+            Route::get('list', $categoryController.'@getCategoryList');
+            Route::get('detail/{id}', $categoryController.'@getCategoryDetail');
         });
 
     // Product
-        if (file_exists(app_path('GP247/Shop/Api/Admin/AdminProductController.php'))) {
-            $nameSpaceAdminProduct = 'App\GP247\Shop\Api\Admin';
-        } else {
-            $nameSpaceAdminProduct = 'GP247\Shop\Api\Admin';
-        }
+        $productController = gp247_namespace(AdminProductController::class);
         Route::group([
             'prefix' => 'product',
-        ], function () use($nameSpaceAdminProduct) {
-            Route::get('list', $nameSpaceAdminProduct.'\AdminProductController@getProductList');
-            Route::get('detail/{id}', $nameSpaceAdminProduct.'\AdminProductController@getProductDetail');
+        ], function () use($productController) {
+            Route::get('list', $productController.'@getProductList');
+            Route::get('detail/{id}', $productController.'@getProductDetail');
         });
 
     // Brand
-        if (file_exists(app_path('GP247/Shop/Api/Admin/AdminBrandController.php'))) {
-            $nameSpaceAdminBrand = 'App\GP247\Shop\Api\Admin';
-        } else {
-            $nameSpaceAdminBrand = 'GP247\Shop\Api\Admin';
-        }
+        $brandController = gp247_namespace(AdminBrandController::class);
         Route::group([
             'prefix' => 'brand',
-        ], function () use($nameSpaceAdminBrand) {
-            Route::get('list', $nameSpaceAdminBrand.'\AdminBrandController@getBrandList');
-            Route::get('detail/{id}', $nameSpaceAdminBrand.'\AdminBrandController@getBrandDetail');
+        ], function () use($brandController) {
+            Route::get('list', $brandController.'@getBrandList');
+            Route::get('detail/{id}', $brandController.'@getBrandDetail');
         });
 
     // Supplier
-        if (file_exists(app_path('GP247/Shop/Api/Admin/AdminSupplierController.php'))) {
-            $nameSpaceAdminSupplier = 'App\GP247\Shop\Api\Admin';
-        } else {
-            $nameSpaceAdminSupplier = 'GP247\Shop\Api\Admin';
-        }
+        $supplierController = gp247_namespace(AdminSupplierController::class);
         Route::group([
             'prefix' => 'supplier',
-        ], function () use($nameSpaceAdminSupplier) {
-            Route::get('list', $nameSpaceAdminSupplier.'\AdminSupplierController@getSupplierList');
-            Route::get('detail/{id}', $nameSpaceAdminSupplier.'\AdminSupplierController@getSupplierDetail');
+        ], function () use($supplierController) {
+            Route::get('list', $supplierController.'@getSupplierList');
+            Route::get('detail/{id}', $supplierController.'@getSupplierDetail');
         });
 
 });

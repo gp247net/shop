@@ -1,80 +1,65 @@
 <?php
+
+use GP247\Shop\Controllers\Auth\ForgotPasswordController;
+use GP247\Shop\Controllers\Auth\LoginController;
+use GP247\Shop\Controllers\Auth\RegisterController;
+use GP247\Shop\Controllers\Auth\ResetPasswordController;
+
 $prefixCustomer = config('gp247-config.shop.route.GP247_PREFIX_MEMBER') ?? 'customer';
 $langUrl = GP247_SEO_LANG ?'{lang?}/' : '';
 $suffix = GP247_SUFFIX_URL;
-//Process namespace
-if (file_exists(app_path('GP247/Shop/Controllers/Auth/LoginController.php'))) {
-    $nameSpaceFrontLogin = 'App\GP247\Shop\Controllers';
-} else {
-    $nameSpaceFrontLogin = 'GP247\Shop\Controllers';
-}
-if (file_exists(app_path('GP247/Shop/Controllers/Auth/RegisterController.php'))) {
-    $nameSpaceFrontRegister = 'App\GP247\Shop\Controllers';
-} else {
-    $nameSpaceFrontRegister = 'GP247\Shop\Controllers';
-}
-if (file_exists(app_path('GP247/Shop/Controllers/Auth/ForgotPasswordController.php'))) {
-    $nameSpaceFrontForgot = 'App\GP247\Shop\Controllers';
-} else {
-    $nameSpaceFrontForgot = 'GP247\Shop\Controllers';
-}
-if (file_exists(app_path('GP247/Shop/Controllers/Auth/ResetPasswordController.php'))) {
-    $nameSpaceFrontReset = 'App\GP247\Shop\Controllers';
-} else {
-    $nameSpaceFrontReset = 'GP247\Shop\Controllers';
-}
 
 //--Auth
+$loginController = gp247_namespace(LoginController::class);
 Route::group(
     [
-        'namespace' => $nameSpaceFrontLogin.'\Auth',
         'prefix' => $langUrl.$prefixCustomer,
     ],
-    function ($router) use ($suffix) {
-        $router->get('/login'.$suffix, 'LoginController@showLoginFormProcessFront')
+    function ($router) use ($suffix, $loginController) {
+        $router->get('/login'.$suffix, $loginController.'@showLoginFormProcessFront')
             ->name('customer.login');
-        $router->post('/login'.$suffix, 'LoginController@login')
+        $router->post('/login'.$suffix, $loginController.'@login')
             ->name('customer.postLogin');
-        $router->any('/logout', 'LoginController@logout')
+        $router->any('/logout', $loginController.'@logout')
             ->name('customer.logout');
     }
 );
 
+$registerController = gp247_namespace(RegisterController::class);
 Route::group(
     [
-        'namespace' => $nameSpaceFrontRegister.'\Auth',
         'prefix' => $langUrl.$prefixCustomer,
     ],
-    function ($router) use ($suffix) {
-        $router->get('/register'.$suffix, 'RegisterController@showRegisterFormProcessFront')
+    function ($router) use ($suffix, $registerController) {
+        $router->get('/register'.$suffix, $registerController.'@showRegisterFormProcessFront')
             ->name('customer.register');
-        $router->post('/register'.$suffix, 'RegisterController@register')
+        $router->post('/register'.$suffix, $registerController.'@register')
             ->name('customer.postRegister');
     }
 );
 
+$forgotController = gp247_namespace(ForgotPasswordController::class);
 Route::group(
     [
-        'namespace' => $nameSpaceFrontForgot.'\Auth',
         'prefix' => $langUrl.$prefixCustomer,
     ],
-    function ($router) use ($suffix) {
-        $router->get('/forgot'.$suffix, 'ForgotPasswordController@showLinkRequestFormProcessFront')
+    function ($router) use ($suffix, $forgotController) {
+        $router->get('/forgot'.$suffix, $forgotController.'@showLinkRequestFormProcessFront')
             ->name('customer.forgot');
-        $router->post('/password/email', 'ForgotPasswordController@sendResetLinkEmail')
+        $router->post('/password/email', $forgotController.'@sendResetLinkEmail')
             ->name('customer.password_email');
     }
 );
 
+$resetController = gp247_namespace(ResetPasswordController::class);
 Route::group(
     [
-        'namespace' => $nameSpaceFrontReset.'\Auth',
         'prefix' => $langUrl.$prefixCustomer,
     ],
-    function ($router) {
-        $router->get('/password/reset/{token}', 'ResetPasswordController@showResetFormProcessFront')
+    function ($router) use ($resetController) {
+        $router->get('/password/reset/{token}', $resetController.'@showResetFormProcessFront')
             ->name('customer.password_reset');
-        $router->post('/password/reset', 'ResetPasswordController@reset')
+        $router->post('/password/reset', $resetController.'@reset')
             ->name('customer.password_request');
     }
 );

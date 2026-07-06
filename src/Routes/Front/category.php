@@ -1,22 +1,21 @@
 <?php
+
+use GP247\Shop\Controllers\ShopCategoryController;
+
 $langUrl = GP247_SEO_LANG ?'{lang?}/' : '';
 $suffix = GP247_SUFFIX_URL;
 $prefixCategory = config('gp247-config.shop.route.GP247_PREFIX_CATEGORY') ?? 'category';
 
-if (file_exists(app_path('GP247/Shop/Controllers/ShopCategoryController.php'))) {
-    $nameSpaceFrontCategory = 'App\GP247\Shop\Controllers';
-} else {
-    $nameSpaceFrontCategory = 'GP247\Shop\Controllers';
-}
+$categoryController = gp247_namespace(ShopCategoryController::class);
 
 Route::group(
     [
         'prefix' => $langUrl.$prefixCategory,
     ],
-    function ($router) use ($suffix, $nameSpaceFrontCategory) {
-        $router->get('/', $nameSpaceFrontCategory.'\ShopCategoryController@allCategoriesProcessFront')
+    function ($router) use ($suffix, $categoryController) {
+        $router->get('/', $categoryController.'@allCategoriesProcessFront')
             ->name('category.all');
-        $router->get('/{alias}'.$suffix, $nameSpaceFrontCategory.'\ShopCategoryController@categoryDetailProcessFront')
+        $router->get('/{alias}'.$suffix, $categoryController.'@categoryDetailProcessFront')
             ->name('category.detail');
     }
 );
