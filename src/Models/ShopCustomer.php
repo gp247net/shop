@@ -178,6 +178,9 @@ class ShopCustomer extends Authenticatable
      */
     public function hasVerifiedEmail()
     {
+        if (empty($this->email)) {
+            return false;
+        }
         return !$this->isVerified() && gp247_config('customer_verify');
     }
     /**

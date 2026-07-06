@@ -107,14 +107,14 @@ S-Cart already includes all the necessary components. See the full details at th
 
 ### Customize Admin Views
 To customize admin views, run:
->`php artisan vendor:publish --tag=gp247:view-shop-admin`
+>`php artisan vendor:publish --tag=gp247:shop-view-admin`
 
 The views will be published to `resources/views/vendor/gp247-shop-admin`.
 
 ### Customize Front Views
 To customize and update front views, run:
 
->`php artisan vendor:publish --tag=gp247:view-shop-admin`
+>`php artisan vendor:publish --tag=gp247:shop-view-admin`
 
 The views will be stored in `app/GP247/Templates/Default`.
 

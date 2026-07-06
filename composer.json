@@ -16,8 +16,8 @@
       }
   ],
   "require": {
-    "php": "^8.2",
-    "gp247/core": "~1.2"
+    "gp247/core": "~2.0",
+    "gp247/front": "~2.0"
   },
 
   "autoload": {

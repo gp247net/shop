@@ -73,12 +73,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Ẩm thực',
+                            'name' => 'Ẩm thực',
                             'keyword' => 'am thuc, mon ngon',
                             'description' => 'Danh mục các món ăn ngon'
                         ],
                         'en' => [
-                            'title' => 'Food',
+                            'name' => 'Food',
                             'keyword' => 'food, cuisine',
                             'description' => 'Food and cuisine category'
                         ]
@@ -95,12 +95,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Phở Nam Định',
+                            'name' => 'Phở Nam Định',
                             'keyword' => 'pho nam dinh, am thuc',
                             'description' => 'Danh mục các sản phẩm Phở Nam Định'
                         ],
                         'en' => [
-                            'title' => 'Pho Nam Dinh',
+                            'name' => 'Pho Nam Dinh',
                             'keyword' => 'pho nam dinh, food',
                             'description' => 'Category of Pho Nam Dinh products'
                         ]
@@ -116,12 +116,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Nem chua Thanh Hóa',
+                            'name' => 'Nem chua Thanh Hóa',
                             'keyword' => 'nem chua thanh hoa, am thuc',
                             'description' => 'Danh mục các sản phẩm Nem chua Thanh Hóa'
                         ],
                         'en' => [
-                            'title' => 'Nem Chua Thanh Hoa',
+                            'name' => 'Nem Chua Thanh Hoa',
                             'keyword' => 'nem chua thanh hoa, food',
                             'description' => 'Category of Nem Chua Thanh Hoa products'
                         ]
@@ -137,12 +137,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Bún Chả Hà Nội',
+                            'name' => 'Bún Chả Hà Nội',
                             'keyword' => 'bun cha ha noi, am thuc',
                             'description' => 'Danh mục các sản phẩm Bún Chả Hà Nội'
                         ],
                         'en' => [
-                            'title' => 'Bun Cha Ha Noi',
+                            'name' => 'Bun Cha Ha Noi',
                             'keyword' => 'bun cha ha noi, food',
                             'description' => 'Category of Bun Cha Ha Noi products'
                         ]
@@ -158,12 +158,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Du lịch',
+                            'name' => 'Du lịch',
                             'keyword' => 'du lich, dia diem',
                             'description' => 'Danh mục các địa điểm du lịch'
                         ],
                         'en' => [
-                            'title' => 'Travel',
+                            'name' => 'Travel',
                             'keyword' => 'travel, destinations',
                             'description' => 'Travel and destinations category'
                         ]
@@ -179,12 +179,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Vịnh Hạ Long',
+                            'name' => 'Vịnh Hạ Long',
                             'keyword' => 'vinh ha long, du lich',
                             'description' => 'Danh mục các sản phẩm, dịch vụ tại Vịnh Hạ Long'
                         ],
                         'en' => [
-                            'title' => 'Ha Long Bay',
+                            'name' => 'Ha Long Bay',
                             'keyword' => 'ha long bay, travel',
                             'description' => 'Category of products and services at Ha Long Bay'
                         ]
@@ -200,12 +200,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Động Phong Nha',
+                            'name' => 'Động Phong Nha',
                             'keyword' => 'dong phong nha, du lich',
                             'description' => 'Danh mục các sản phẩm, dịch vụ tại Động Phong Nha'
                         ],
                         'en' => [
-                            'title' => 'Phong Nha Cave',
+                            'name' => 'Phong Nha Cave',
                             'keyword' => 'phong nha cave, travel',
                             'description' => 'Category of products and services at Phong Nha Cave'
                         ]
@@ -221,12 +221,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Tràng An',
+                            'name' => 'Tràng An',
                             'keyword' => 'trang an, du lich',
                             'description' => 'Danh mục các sản phẩm, dịch vụ tại Tràng An'
                         ],
                         'en' => [
-                            'title' => 'Trang An',
+                            'name' => 'Trang An',
                             'keyword' => 'trang an, travel',
                             'description' => 'Category of products and services at Trang An'
                         ]
@@ -242,12 +242,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Văn hóa',
+                            'name' => 'Văn hóa',
                             'keyword' => 'van hoa, van nghe',
                             'description' => 'Danh mục các sản phẩm văn hóa'
                         ],
                         'en' => [
-                            'title' => 'Culture',
+                            'name' => 'Culture',
                             'keyword' => 'culture, art',
                             'description' => 'Culture and art category'
                         ]
@@ -263,12 +263,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Gốm Bát Tràng',
+                            'name' => 'Gốm Bát Tràng',
                             'keyword' => 'gom bat trang, gom su',
                             'description' => 'Danh mục các sản phẩm gốm Bát Tràng'
                         ],
                         'en' => [
-                            'title' => 'Bat Trang Pottery',
+                            'name' => 'Bat Trang Pottery',
                             'keyword' => 'bat trang pottery, ceramics',
                             'description' => 'Category of Bat Trang pottery products'
                         ]
@@ -284,12 +284,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Tranh Đông Hồ',
+                            'name' => 'Tranh Đông Hồ',
                             'keyword' => 'tranh dong ho, tranh dan gian',
                             'description' => 'Danh mục các sản phẩm tranh Đông Hồ'
                         ],
                         'en' => [
-                            'title' => 'Dong Ho Paintings',
+                            'name' => 'Dong Ho Paintings',
                             'keyword' => 'dong ho paintings, folk paintings',
                             'description' => 'Category of Dong Ho folk paintings'
                         ]
@@ -305,12 +305,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Chiếu cói Nga Sơn',
+                            'name' => 'Chiếu cói Nga Sơn',
                             'keyword' => 'chieu coi nga son, chieu coi',
                             'description' => 'Danh mục các sản phẩm chiếu cói Nga Sơn'
                         ],
                         'en' => [
-                            'title' => 'Nga Son Rush Mats',
+                            'name' => 'Nga Son Rush Mats',
                             'keyword' => 'nga son rush mats, rush mats',
                             'description' => 'Category of Nga Son rush mat products'
                         ]
@@ -326,12 +326,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Trái cây',
+                            'name' => 'Trái cây',
                             'keyword' => 'trai cay, hoa qua',
                             'description' => 'Danh mục các loại trái cây'
                         ],
                         'en' => [
-                            'title' => 'Fruits',
+                            'name' => 'Fruits',
                             'keyword' => 'fruits, fresh fruits',
                             'description' => 'Fresh fruits category'
                         ]
@@ -347,12 +347,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Trái Cây Nam Bộ',
+                            'name' => 'Trái Cây Nam Bộ',
                             'keyword' => 'trai cay nam bo, hoa qua nam bo',
                             'description' => 'Danh mục các loại trái cây đặc sản Nam Bộ'
                         ],
                         'en' => [
-                            'title' => 'Southern Fruits',
+                            'name' => 'Southern Fruits',
                             'keyword' => 'southern fruits, vietnamese fruits',
                             'description' => 'Category of Southern Vietnam specialty fruits'
                         ]
@@ -368,12 +368,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Vải Thiều',
+                            'name' => 'Vải Thiều',
                             'keyword' => 'vai thieu, vai thieu bac giang',
                             'description' => 'Danh mục các sản phẩm vải thiều'
                         ],
                         'en' => [
-                            'title' => 'Lychee',
+                            'name' => 'Lychee',
                             'keyword' => 'lychee, bac giang lychee',
                             'description' => 'Category of lychee products'
                         ]
@@ -389,12 +389,12 @@ class ShopSample extends Command
                     'status' => 1,
                     'descriptions' => [
                         'vi' => [
-                            'title' => 'Nhãn Lồng',
+                            'name' => 'Nhãn Lồng',
                             'keyword' => 'nhan long, nhan long hung yen',
                             'description' => 'Danh mục các sản phẩm nhãn lồng Hưng Yên'
                         ],
                         'en' => [
-                            'title' => 'Longan',
+                            'name' => 'Longan',
                             'keyword' => 'longan, hung yen longan',
                             'description' => 'Category of Hung Yen longan products'
                         ]
@@ -416,7 +416,7 @@ class ShopSample extends Command
                     ShopCategoryDescription::create([
                         'category_id' => $cat->id,
                         'lang' => $lang,
-                        'title' => $description['title'],
+                        'name' => $description['name'],
                         'keyword' => $description['keyword'],
                         'description' => $description['description']
                     ]);

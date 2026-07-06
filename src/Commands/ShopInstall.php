@@ -36,17 +36,17 @@ class ShopInstall extends Command
         // Install gp247 shop
         \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '00_00_00_create_tables_shop')->delete();
 
-        $this->call('migrate', ['--path' => '/vendor/gp247/shop/src/DB/migrations/00_00_00_create_tables_shop.php']);
+        $this->call('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/00_00_00_create_tables_shop.php']);
         $this->info('---------------> Migrate schema Shop default done!');
 
-        $this->call('db:seed', ['--class' => '\GP247\Shop\DB\seeders\DataShopInitializeSeeder', '--force' => true]);
+        $this->call('db:seed', ['--class' => '\GP247\Shop\Admin\Database\Seeders\DataShopInitializeSeeder', '--force' => true]);
         $this->info('---------------> Seeding database Shop default done!');
 
-        $this->call('db:seed', ['--class' => '\GP247\Shop\DB\seeders\DataShopDefaultSeeder', '--force' => true]);
+        $this->call('db:seed', ['--class' => '\GP247\Shop\Admin\Database\Seeders\DataShopDefaultSeeder', '--force' => true]);
         $this->info('---------------> Seeding database for store root done!');
 
         // Copy template default
-        $this->call('vendor:publish', ['--tag' => 'gp247:view-shop-front']);
+        $this->call('vendor:publish', ['--tag' => 'gp247:shop-view-front']);
 
         $this->welcome();
     }

@@ -93,7 +93,7 @@ class RegisterController extends RootFrontController
 
     protected function registered(Request $request, $user)
     {
-        redirect()->route('front.home')->with(['message' => gp247_language_render('customer.register_success')]);
+        redirect(gp247_route_front('front.home'))->with(['message' => gp247_language_render('customer.register_success')]);
     }
 
 
@@ -121,10 +121,10 @@ class RegisterController extends RootFrontController
     private function _showRegisterForm()
     {
         if (session('customer')) {
-            return redirect()->route('front.home');
+            return redirect(gp247_route_front('front.home'));
         }
         $viewCaptcha = gp247_captcha_processview('register', gp247_language_render('customer.signup'));
-        $subPath = 'auth.register';
+        $subPath = 'auth.shop_register';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view(

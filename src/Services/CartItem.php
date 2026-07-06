@@ -90,6 +90,13 @@ class CartItem
             throw new \InvalidArgumentException('Please supply a valid quantity.');
         }
 
+        // WHY: reject a fractional qty when the site has not opted into decimal
+        // quantities (product_qty_decimal, modification 20260705T093328, ADR-016) —
+        // previously this silently accepted any numeric value.
+        if (function_exists('gp247_qty_decimal_enabled') && !gp247_qty_decimal_enabled() && (float) $qty != floor((float) $qty)) {
+            throw new \InvalidArgumentException('Please supply a whole-number quantity.');
+        }
+
         $this->qty = $qty;
     }
 

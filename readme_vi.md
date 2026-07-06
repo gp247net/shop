@@ -115,14 +115,14 @@ S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có t
 ### Tùy chỉnh giao diện Admin
 Để tùy chỉnh giao diện admin, chạy lệnh sau:
 
->`php artisan vendor:publish --tag=gp247:view-shop-admin`
+>`php artisan vendor:publish --tag=gp247:shop-view-admin`
 
 Các view sẽ được lưu trữ tại `resources/views/vendor/gp247-shop-admin`
 
 ### Tùy chỉnh giao diện Front
 Để tùy chỉnh và cập nhật giao diện front, chạy lệnh:
 
->`php artisan vendor:publish --tag=gp247:view-shop-admin`
+>`php artisan vendor:publish --tag=gp247:shop-view-admin`
 
 Các view sẽ được lưu trữ tại `app/GP247/Templates/Default`
 

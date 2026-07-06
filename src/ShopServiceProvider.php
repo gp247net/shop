@@ -108,14 +108,28 @@ class ShopServiceProvider extends ServiceProvider
             $this->loadViewsFrom(__DIR__.'/Views/admin', 'gp247-shop-admin');
             $this->loadViewsFrom(__DIR__.'/Views/front', 'gp247-shop-front');
 
+            // Storefront Livewire (storefront Unit, ADR-006): register the interactive
+            // cart/filter/checkout components for the front end. Additive: legacy ajax
+            // routes remain; these components are opt-in from blade templates (strangler).
+            try {
+                $this->registerStorefrontLivewire();
+            } catch (\Throwable $e) {
+                $msg = '#GP247-SHOP::storefront-livewire:: '.$e->getMessage().' - Line: '.$e->getLine().' - File: '.$e->getFile();
+                gp247_report($msg);
+            }
+
+            // Modern admin (shop-admin Unit, ADR-006/007): register the TailAdmin
+            // Livewire screens against the core admin shell via the shared core
+            // registrar. Additive + reversible (strangler) — legacy AdminLTE shop
+            // admin views untouched. shop inherits from core, not from front.
+            $this->registerAdminShell();
+
             //Add module to homepage admin
             gp247_add_module('homepage', 'gp247-shop-admin::component.order_month');
+            gp247_add_module('homepage', 'gp247-shop-admin::component.order_year');
             gp247_add_module('homepage', 'gp247-shop-admin::component.new_order');
             gp247_add_module('homepage', 'gp247-shop-admin::component.new_customer');
             gp247_add_module('homepage', 'gp247-shop-admin::component.top_info');
-
-            //Add module to header right admin (button shop)
-            gp247_add_module('module_header_right', 'gp247-shop-admin::component.shop_button');
 
             try {
                 $this->validationExtend();
@@ -205,6 +219,90 @@ class ShopServiceProvider extends ServiceProvider
 
     }
 
+    /**
+     * Register the modern (Livewire/TailAdmin) shop-admin shell: the component
+     * view namespace and the full-page routes inside the core admin group, via
+     * the shared core registrar (AdminShellResourceRegistrar). shop declares only
+     * its resources; the mechanism lives once in core (rule ui-tailadmin P3).
+     * Components reference Livewire classes by ::class and are routed only when
+     * the class exists, so screens light up as they ship (strangler).
+     *
+     * @return void
+     */
+    protected function registerAdminShell()
+    {
+        // No separate loadViewsFrom here: the modern Livewire screens' views live
+        // in the same Views/admin tree as the legacy views and resolve under the
+        // single `gp247-shop-admin::` namespace already registered above — avoids
+        // registering two Blade namespaces for one physical root.
+        \GP247\Core\AdminShell\Infrastructure\AdminShellResourceRegistrar::register(
+            'gp247-shop-admin',
+            'GP247\\Shop\\Admin\\Livewire',
+            'shop-admin',
+            [
+                // Two-column managers (form + list on one page, P1): single route each.
+                'brand' => [\GP247\Shop\Admin\Livewire\BrandManager::class],
+                // Bespoke product screen (multilingual + variants + composition…), US-SADM-001.
+                'product' => [\GP247\Shop\Admin\Livewire\ProductManager::class],
+                'supplier' => [\GP247\Shop\Admin\Livewire\SupplierManager::class],
+                'tax' => [\GP247\Shop\Admin\Livewire\TaxManager::class],
+                'currency' => [\GP247\Shop\Admin\Livewire\CurrencyManager::class],
+                'category' => [\GP247\Shop\Admin\Livewire\CategoryManager::class],
+                'subscribe' => [\GP247\Shop\Admin\Livewire\SubscribeManager::class],
+                'customer' => [\GP247\Shop\Admin\Livewire\CustomerManager::class],
+                'attribute_group' => [\GP247\Shop\Admin\Livewire\AttributeGroupManager::class],
+                // Bespoke order screen (list + detail + workflow + line-item), US-SADM-003.
+                'order' => [\GP247\Shop\Admin\Livewire\OrderManager::class],
+                'order_status' => [\GP247\Shop\Admin\Livewire\OrderStatusManager::class],
+                'payment_status' => [\GP247\Shop\Admin\Livewire\PaymentStatusManager::class],
+                'shipping_status' => [\GP247\Shop\Admin\Livewire\ShippingStatusManager::class],
+                // Read-only report dashboard (US-SADM-006).
+                'report' => [\GP247\Shop\Admin\Livewire\ReportManager::class],
+                // Single-page config screen.
+                'config' => [\GP247\Shop\Admin\Livewire\ShopConfigForm::class],
+            ],
+        );
+    }
+
+    /**
+     * Register the storefront Livewire components (CartManager, etc.).
+     *
+     * Uses addNamespace so components resolve under 'gp247-shop-front' without
+     * requiring Composer autoload at the host — consistent with the admin-shell
+     * and plugin scaffold patterns. Guarded by class_exists so sites without
+     * Livewire are unaffected (NFR-AVAIL-002, shared-host support).
+     *
+     * @return void
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-004
+     */
+    protected function registerStorefrontLivewire(): void
+    {
+        if (!class_exists(\Livewire\Livewire::class)) {
+            return;
+        }
+
+        \Livewire\Livewire::addNamespace(
+            'gp247-shop-front',
+            classNamespace: 'GP247\\Shop\\Front\\Livewire',
+        );
+
+        // Livewire's own `livewire/update` endpoint only runs the `web`
+        // middleware group (see HandleRequests::ensureListeningForUpdates),
+        // never the app's `front` group — so `check.currency` never re-runs
+        // there and ShopCurrency::$exchange_rate silently resets to its
+        // class default (1) for the whole AJAX request. Every price
+        // conversion done inside a Livewire action (ProductFilter::applyPrice,
+        // price rendering on re-render) would then use rate=1 instead of the
+        // shopper's actual session currency. Mirrors the persistent-middleware
+        // fix already applied to admin RBAC (see
+        // AdminShellServiceProvider::boot, ADR-001) for the same class of bug.
+        \Livewire\Livewire::addPersistentMiddleware([
+            CurrencyMiddleware::class,
+        ]);
+    }
+
     public function bootDefault()
     {
         view()->share('modelProduct', (new \GP247\Shop\Models\ShopProduct));
@@ -283,8 +381,10 @@ class ShopServiceProvider extends ServiceProvider
     protected function registerPublishing()
     {
         if ($this->app->runningInConsole()) {
-            $this->publishes([__DIR__.'/Views/admin' => resource_path('views/vendor/gp247-shop-admin')], 'gp247:view-shop-admin');
-            $this->publishes([__DIR__.'/Views/front' => app_path('GP247/Templates/Default')], 'gp247:view-shop-front');
+            $this->publishes([__DIR__.'/Views/admin' => resource_path('views/vendor/gp247-shop-admin')], 'gp247:shop-view-admin');
+            // WHY: 'Default' was removed entirely (modification 20260705T124936,
+            // ADR-014 Amend #1) — GP247Front is now the sole/default template.
+            $this->publishes([__DIR__.'/Views/front' => app_path('GP247/Templates/GP247Front')], 'gp247:shop-view-front');
         }
     }
 

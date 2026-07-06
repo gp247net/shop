@@ -40,7 +40,7 @@ class ShopCategory extends Model
     }
     public function getTitle()
     {
-        return $this->getText()->title ?? '';
+        return $this->getText()->name ?? '';
     }
     public function getDescription()
     {
@@ -222,7 +222,7 @@ class ShopCategory extends Model
         //search keyword
         if ($this->gp247_keyword !='') {
             $query = $query->where(function ($sql) use ($tableDescription) {
-                $sql->where($tableDescription . '.title', 'like', '%' . $this->gp247_keyword . '%')
+                $sql->where($tableDescription . '.name', 'like', '%' . $this->gp247_keyword . '%')
                 ->orWhere($tableDescription . '.keyword', 'like', '%' . $this->gp247_keyword . '%')
                 ->orWhere($tableDescription . '.description', 'like', '%' . $this->gp247_keyword . '%');
             });

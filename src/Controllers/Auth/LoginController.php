@@ -86,9 +86,9 @@ class LoginController extends RootFrontController
     private function _showLoginForm()
     {
         if (customer()->user()) {
-            return redirect()->route('front.home');
+            return redirect(gp247_route_front('front.home'));
         }
-        $subPath = 'auth.login';
+        $subPath = 'auth.shop_login';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view(

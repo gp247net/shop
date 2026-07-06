@@ -1,53 +1,42 @@
-@php
-    $topCustomer = \GP247\Shop\Admin\Models\AdminCustomer::getTopCustomer();
-@endphp
-<div class="card">
-  <div class="card-header border-transparent">
-    <h3 class="card-title">{{ gp247_language_render('admin.dashboard.top_customer_new') }}</h3>
+{{--
+    Dashboard "latest customers" block (ADR-005/007) — admin_home_layout view
+    "gp247-shop-admin::component.new_customer". Self-contained: queries its
+    own customer list here (guarded by gp247_shop_admin_model()) instead of
+    receiving a data slice from Dashboard::blocks() (vendor/gp247/core), which
+    now only renders whichever blocks are configured.
 
-    <div class="card-tools">
-      <button type="button" class="btn btn-tool" data-card-widget="collapse">
-        <i class="fas fa-minus"></i>
-      </button>
-      <button type="button" class="btn btn-tool" data-card-widget="remove">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  </div>
-  <!-- /.card-header -->
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table m-0">
-        <tr>
-          <th>{{ gp247_language_render('customer.email') }}</th>
-          <th>{{ gp247_language_render('customer.name') }}</th>
-          @if (class_exists(\App\GP247\Plugins\LoginSocial\Models\SocialAccount::class))
-          <th>{{ gp247_language_render('customer.provider') }}</th>
-          @endif
-          <th>{{ gp247_language_render('admin.created_at') }}</th>
-        </tr>
-        <tbody>
-          @if (count($topCustomer ?? []))
-          @foreach ($topCustomer as $customer)
+    @aidlc-unit admin-shell
+    @aidlc-story US-LW-001
+    @aidlc-adr ADR-005, ADR-007
+--}}
+@php
+    $adminCustomer = gp247_shop_admin_model('AdminCustomer');
+    $topCustomers = ($adminCustomer && method_exists($adminCustomer, 'getTopCustomer'))
+        ? $adminCustomer::getTopCustomer()
+        : collect();
+    $customerEditRoute = \Illuminate\Support\Facades\Route::has('admin_customer.edit') ? 'admin_customer.edit' : null;
+@endphp
+<x-gp247::card :title="gp247_language_render('admin.dashboard.top_customer_new')">
+    <x-gp247::table :empty="$topCustomers->isEmpty() ? gp247_language_render('admin.core.no_records') : null">
+        <x-slot:head>
             <tr>
-              <td><a href="{{ gp247_route_admin('admin_customer.edit',['id'=>$customer->id]) }}">{{ $customer->email }}</a></td>
-              <td>{{ $customer->name }}</td>
-              @if (class_exists(\App\GP247\Plugins\LoginSocial\Models\SocialAccount::class))
-              <td>{{ $customer->socialAccount->provider ?? '-' }}</td>
-              @endif
-              <td>{{ $customer->created_at }}</td>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.email') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.name') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.created_at') }}</th>
             </tr>
-          @endforeach
-        @endif
-        </tbody>
-      </table>
-    </div>
-    <!-- /.table-responsive -->
-  </div>
-  <!-- /.card-body -->
-  <div class="card-footer clearfix">
-    
-  </div>
-  <!-- /.card-footer -->
-</div>
-<!-- /.card -->
+        </x-slot:head>
+        @foreach ($topCustomers as $customer)
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50" wire:key="cus-{{ $customer->id }}">
+                <td class="px-4 py-3 text-sm font-medium">
+                    @if ($customerEditRoute)
+                        <a href="{{ gp247_route_admin($customerEditRoute, ['id' => $customer->id]) }}" class="text-blue-600 hover:underline dark:text-blue-400">{{ $customer->email }}</a>
+                    @else
+                        <span class="text-gray-700 dark:text-gray-200">{{ $customer->email }}</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $customer->name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $customer->created_at }}</td>
+            </tr>
+        @endforeach
+    </x-gp247::table>
+</x-gp247::card>

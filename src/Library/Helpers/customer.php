@@ -34,7 +34,7 @@ if (!function_exists('gp247_customer_sendmail_reset_notification') && !in_array(
                 'to' => $emailReset,
                 'subject' => gp247_language_render('email.forgot_password.reset_button'),
             ];
-            $subPath = 'email.forgot_password';
+            $subPath = 'email.shop_forgot_password';
             $view = gp247_shop_process_view('GP247TemplatePath::'.gp247_store_info('template'),$subPath);
             gp247_mail_send($view, $dataView, $config, []);
     }
@@ -71,7 +71,7 @@ if (!function_exists('gp247_customer_sendmail_verify') && !in_array('gp247_custo
             'subject' => gp247_language_render('customer.verify_email.button_verify'),
         ];
 
-        $subPath = 'email.customer_verify';
+        $subPath = 'email.shop_customer_verify';
         $view = gp247_shop_process_view('GP247TemplatePath::'.gp247_store_info('template'),$subPath);
         gp247_mail_send($view, $dataView, $config, $dataAtt = []);
         return true;
@@ -94,7 +94,7 @@ if (!function_exists('gp247_customer_sendmail_welcome') && !in_array('gp247_cust
                     'to' => $customer['email'],
                     'subject' => gp247_language_render('email.welcome_customer.title'),
                 ];
-                $subPath = 'email.welcome_customer';
+                $subPath = 'email.shop_welcome_customer';
                 $view = gp247_shop_process_view('GP247TemplatePath::'.gp247_store_info('template'),$subPath);
                 gp247_mail_send($view, $dataView, $config, $dataAtt = []);      
         }
@@ -185,14 +185,19 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
     {
         $dataInsert = [
             'first_name' => $dataRaw['first_name'] ?? '',
-            'email' => $dataRaw['email'],
-            'password' => bcrypt($dataRaw['password']),
+            'email'      => $dataRaw['email'] ?? '',
+            'password'   => bcrypt($dataRaw['password']),
         ];
 
+        $emailUnique = '|unique:"'.ShopCustomer::class.'",email';
         $validate = [
             'first_name' => config('validation.customer.first_name', 'required|string|max:100'),
-            'email' => config('validation.customer.email', 'nullable|string|email|max:255').'|unique:"'.ShopCustomer::class.'",email',
-            'password' => gp247_customer_validate_password()['password_confirm'],
+            'email'      => gp247_config_admin('customer_email')
+                ? (gp247_config_admin('customer_email_required')
+                    ? config('validation.customer.email', 'required|string|email|max:255').$emailUnique
+                    : config('validation.customer.email_null', 'nullable|string|email|max:255').$emailUnique)
+                : 'sometimes|nullable|string|email|max:255',
+            'password'   => gp247_customer_validate_password()['password_confirm'],
         ];
 
         if (isset($dataRaw['status'])) {
@@ -430,9 +435,16 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
         if (!empty($dataRaw['password'])) {
             $dataUpdate['password'] = bcrypt($dataRaw['password']);
         }
-        if (!empty($dataRaw['email'])) {
-            $dataUpdate['email'] = $dataRaw['email'];
-            $validate['email'] = config('validation.customer.email', 'required|string|email|max:255').'|unique:"'.ShopCustomer::class.'",email,'.$dataRaw['id'].',id';
+        if (gp247_config_admin('customer_email')) {
+            $emailUnique = '|unique:"'.ShopCustomer::class.'",email,'.$dataRaw['id'].',id';
+            if (gp247_config_admin('customer_email_required')) {
+                $validate['email'] = config('validation.customer.email', 'required|string|email|max:255').$emailUnique;
+            } else {
+                $validate['email'] = config('validation.customer.email_null', 'nullable|string|email|max:255').$emailUnique;
+            }
+            if (!empty($dataRaw['email'])) {
+                $dataUpdate['email'] = $dataRaw['email'];
+            }
         }
         //Dont update id
         unset($dataRaw['id']);

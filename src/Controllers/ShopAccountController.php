@@ -33,7 +33,7 @@ class ShopAccountController extends RootFrontController
     {
         $customer = customer()->user();
         
-        $subPath = 'account.index';
+        $subPath = 'account.shop_index';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view($view)
@@ -59,7 +59,7 @@ class ShopAccountController extends RootFrontController
     {
         $customer = customer()->user();
 
-        $subPath = 'account.change_password';
+        $subPath = 'account.shop_change_password';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view($view)
@@ -143,7 +143,7 @@ class ShopAccountController extends RootFrontController
     {
         $customer = customer()->user();
 
-        $subPath = 'account.change_infomation';
+        $subPath = 'account.shop_change_infomation';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view($view)
@@ -215,7 +215,7 @@ class ShopAccountController extends RootFrontController
     {
         $customer = customer()->user();
         $statusOrder = ShopOrderStatus::getIdAll();
-        $subPath = 'account.order_list';
+        $subPath = 'account.shop_order_list';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view($view)
@@ -251,7 +251,7 @@ class ShopAccountController extends RootFrontController
         } else {
             return $this->pageNotFound();
         }
-        $subPath = 'account.order_detail';
+        $subPath = 'account.shop_order_detail';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view($view)
@@ -281,7 +281,7 @@ class ShopAccountController extends RootFrontController
     public function addressList()
     {
         $customer = customer()->user();
-        $subPath = 'account.address_list';
+        $subPath = 'account.shop_address_list';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view($view)
@@ -315,7 +315,7 @@ class ShopAccountController extends RootFrontController
         } else {
             return $this->pageNotFound();
         }
-        $subPath = 'account.update_address';
+        $subPath = 'account.shop_update_address';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view($view)
@@ -417,7 +417,7 @@ class ShopAccountController extends RootFrontController
         if (!$customer->hasVerifiedEmail()) {
             return redirect(gp247_route_front('customer.index'));
         }
-        $subPath = 'account.verify';
+        $subPath = 'account.shop_verify';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view($view)

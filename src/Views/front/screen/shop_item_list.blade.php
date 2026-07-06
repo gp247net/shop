@@ -2,65 +2,54 @@
 /*
 $layout_page = shop_item_list
 **Variables:**
-- $subCategory: paginate
-Use paginate: $subCategory->appends(request()->except(['page','_token']))->links()
-- $itemsList: paginate
+- $itemsList: paginate (brand or category root listing — shared by
+  ShopBrandController::_allBrands() and ShopCategoryController::_allCategories())
 Use paginate: $itemsList->appends(request()->except(['page','_token']))->links()
-*/ 
+*/
 @endphp
 
+{{--
+    Brand / category root listing screen — Tailwind port of
+    vendor/gp247/shop/.../front_bk/screen/shop_item_list.blade.php (was left
+    on the Bootstrap row/col markup during the initial GP247Front port).
+    Reuses common/item_single.blade.php, the same $item['thumb']/['url']/['title']
+    contract already used by screen/front_search.blade.php, instead of
+    Bootstrap's col-lg-9/row row-30 classes.
+
+    Both ShopCategory (via the joined shop_category_description.name) and
+    ShopBrand (plain `name` column) now expose the same `name` attribute, so
+    this shared view no longer needs a `title`/`name` fallback.
+
+    @aidlc-unit frontend-template-dev
+    @aidlc-story US-TPL-009
+    @aidlc-adr ADR-014
+--}}
 @extends($GP247TemplatePath.'.layout')
 
-{{-- block_main_content_center --}}
 @section('block_main_content_center')
-<div class="col-lg-9 col-xl-9">
+<div class="lg:col-span-12 w-full">
+    @if ($itemsList->count())
+        @include($GP247TemplatePath.'.common.pagination_result', ['items' => $itemsList])
 
-  @if (count($itemsList))
-    <div class="product-top-panel group-md">
-      <!-- Render pagination result -->
-      @include($GP247TemplatePath.'.common.pagination_result', ['items' => $itemsList])
-      <!--// Render pagination result -->
-    </div>
-    <!-- Item list -->
-    <div class="row row-30 row-lg-50">
-      @foreach ($itemsList as $key => $item)
-      <div class="col-sm-6 col-md-3 col-lg-6 col-xl-3">
-          <!-- Render item single -->
-          @php
-              $view = gp247_shop_process_view($GP247TemplatePath, 'common.item_single');
-          @endphp
-          @php
-              $item['thumb'] = $item->getThumb();
-              $item['url'] = $item->getUrl();
-              $item['title'] = $item->title;
-          @endphp
-          @include($view, ['item' => $item])
-          <!-- //Render item single -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            @foreach ($itemsList as $item)
+                @php
+                    $item['thumb'] = $item->getThumb();
+                    $item['url'] = $item->getUrl();
+                    $item['title'] = $item->name;
+                @endphp
+                @include($GP247TemplatePath.'.common.item_single', ['item' => $item])
+            @endforeach
         </div>
-      @endforeach
-    </div>
-    <!-- //Item list -->
 
-    <!-- Render pagination -->
-    @include($GP247TemplatePath.'.common.pagination', ['items' => $itemsList])
-    <!--// Render pagination -->
-  @else
-  <div class="product-top-panel group-md">
-    <p style="text-align:center">{!! gp247_language_render('front.no_item') !!}</p>
-  </div>
-  @endif
+        @include($GP247TemplatePath.'.common.pagination', ['items' => $itemsList])
+    @else
+        <p class="text-center text-ink-400 py-12">{{ gp247_language_render('front.no_item') }}</p>
+    @endif
 </div>
 @endsection
-{{-- //block_main_content_center --}}
-
 
 @push('styles')
-      <!-- Render include css cart -->
-      @php
-          $view = gp247_shop_process_view($GP247TemplatePath, 'common.shop_css');
-      @endphp
-      @include($view)
-      <!--// Render include css cart -->
 @endpush
 
 @push('scripts')

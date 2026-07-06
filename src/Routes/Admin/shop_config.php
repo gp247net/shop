@@ -1,10 +1,9 @@
 <?php
+use GP247\Shop\Admin\Livewire\ShopConfigForm;
 use Illuminate\Support\Facades\Route;
-if (file_exists(app_path('GP247/Shop/Admin/Controllers/AdminShopConfigController.php'))) {
-    $nameSpaceAdminShopConfig = 'App\GP247\Shop\Admin\Controllers';
-} else {
-    $nameSpaceAdminShopConfig = 'GP247\Shop\Admin\Controllers';
-}
-Route::group(['prefix' => 'shop_config'], function () use ($nameSpaceAdminShopConfig) {
-    Route::get('/', $nameSpaceAdminShopConfig.'\AdminShopConfigController@index')->name('admin_shop_config.index');
+
+// ShopConfig — cutover (PA-1): legacy URL renders the modern Livewire ShopConfigForm.
+// RBAC slug unchanged.
+Route::group(['prefix' => 'shop_config'], function () {
+    Route::get('/', ShopConfigForm::class)->name('admin_shop_config.index');
 });

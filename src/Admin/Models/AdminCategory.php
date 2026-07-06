@@ -38,9 +38,9 @@ class AdminCategory extends ShopCategory
         $tableDescription = (new ShopCategoryDescription)->getTable();
         $tableCategory     = (new ShopCategory)->getTable();
         
-        $dataSelect = $tableCategory.'.*, 
-        '.$tableDescription.'.title, 
-        '.$tableDescription.'.keyword, 
+        $dataSelect = $tableCategory.'.*,
+        '.$tableDescription.'.name,
+        '.$tableDescription.'.keyword,
         '.$tableDescription.'.description';
 
 
@@ -50,7 +50,7 @@ class AdminCategory extends ShopCategory
             ->where($tableDescription . '.lang', gp247_get_locale());
         if ($keyword) {
             $categoryList = $categoryList->where(function ($sql) use ($tableDescription, $keyword) {
-                $sql->where($tableDescription . '.title', 'like', '%' . $keyword . '%');
+                $sql->where($tableDescription . '.name', 'like', '%' . $keyword . '%');
             });
         }
 
@@ -113,7 +113,7 @@ class AdminCategory extends ShopCategory
                 if (self::$getListTitleAdmin === null) {
                     self::$getListTitleAdmin = self::join($tableDescription, $tableDescription.'.category_id', $table.'.id')
                     ->where('lang', gp247_get_locale())
-                    ->pluck('title', 'id')
+                    ->pluck('name', 'id')
                     ->toArray();
                 }
                 gp247_cache_set($storeCache.'_cache_category_'.gp247_get_locale(), self::$getListTitleAdmin);
@@ -123,7 +123,7 @@ class AdminCategory extends ShopCategory
             if (self::$getListTitleAdmin === null) {
                 self::$getListTitleAdmin = self::join($tableDescription, $tableDescription.'.category_id', $table.'.id')
                 ->where('lang', gp247_get_locale())
-                ->pluck('title', 'id')
+                ->pluck('name', 'id')
                 ->toArray();
             }
             return self::$getListTitleAdmin;

@@ -49,7 +49,7 @@ if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_or
                         'to' => gp247_store_info('email'),
                         'subject' => gp247_language_render('email.order.email_subject_to_admin', ['order_id' => $orderID]),
                     ];
-                    $subPath = 'email.order_success_to_admin';
+                    $subPath = 'email.shop_order_success_to_admin';
                     $view = gp247_shop_process_view('GP247TemplatePath::'.gp247_store_info('template'),$subPath);
                     gp247_mail_send($view, $dataView, $config, []);
                 }
@@ -75,7 +75,7 @@ if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_or
                         'replyTo' => gp247_store_info('email'),
                         'subject' => gp247_language_render('email.order.email_subject_customer', ['order_id' => $orderID]),
                     ];
-                    $subPath = 'email.order_success_to_customer';
+                    $subPath = 'email.shop_order_success_to_customer';
                     $view = gp247_shop_process_view('GP247TemplatePath::'.gp247_store_info('template'),$subPath);
                     gp247_mail_send($view, $dataView, $config, []);
                 }

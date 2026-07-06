@@ -90,10 +90,10 @@ class ForgotPasswordController extends RootFrontController
     private function _showLinkRequestForm()
     {
         if (customer()->user()) {
-            return redirect()->route('front.home');
+            return redirect(gp247_route_front('front.home'));
         }
         $viewCaptcha = gp247_captcha_processview('forgot', gp247_language_render('action.submit'));
-        $subPath = 'auth.forgot';
+        $subPath = 'auth.shop_forgot';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
         return view(

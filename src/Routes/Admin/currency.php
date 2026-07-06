@@ -1,15 +1,10 @@
 <?php
+use GP247\Shop\Admin\Livewire\CurrencyManager;
 use Illuminate\Support\Facades\Route;
-if (file_exists(app_path('GP247/Shop/Admin/Controllers/AdminCurrencyController.php'))) {
-    $nameSpaceAdminCurrency = 'App\GP247\Shop\Admin\Controllers';
-} else {
-    $nameSpaceAdminCurrency = 'GP247\Shop\Admin\Controllers';
-}
-Route::group(['prefix' => 'currency'], function () use ($nameSpaceAdminCurrency) {
-    Route::get('/', $nameSpaceAdminCurrency.'\AdminCurrencyController@index')->name('admin_currency.index');
-    Route::get('/create', $nameSpaceAdminCurrency.'\AdminCurrencyController@create')->name('admin_currency.create');
-    Route::post('/create', $nameSpaceAdminCurrency.'\AdminCurrencyController@postCreate')->name('admin_currency.post_create');
-    Route::get('/edit/{id}', $nameSpaceAdminCurrency.'\AdminCurrencyController@edit')->name('admin_currency.edit');
-    Route::post('/edit/{id}', $nameSpaceAdminCurrency.'\AdminCurrencyController@postEdit')->name('admin_currency.post_edit');
-    Route::post('/delete', $nameSpaceAdminCurrency.'\AdminCurrencyController@deleteList')->name('admin_currency.delete');
+
+// Currency — cutover (PA-1): legacy URLs render the modern Livewire two-panel
+// manager in-place. POST create/edit/delete removed; RBAC slug unchanged.
+Route::group(['prefix' => 'currency'], function () {
+    Route::get('/', CurrencyManager::class)->name('admin_currency.index');
+    Route::get('/edit/{id}', CurrencyManager::class)->name('admin_currency.edit');
 });

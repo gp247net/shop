@@ -35,10 +35,6 @@ Route::group(
         $router->post('/cart_add', $nameSpaceFrontCart.'\ShopCartController@addToCart')
             ->name('cart.add');
 
-        //Add to cart ajax
-        $router->post('/add_to_cart_ajax', $nameSpaceFrontCart.'\ShopCartController@addToCartAjax')
-            ->name('cart.add_ajax');
-
         //Update cart
         $router->post('/update_to_cart', $nameSpaceFrontCart.'\ShopCartController@updateToCart')
             ->name('cart.update');

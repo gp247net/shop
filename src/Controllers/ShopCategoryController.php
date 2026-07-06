@@ -125,10 +125,10 @@ class ShopCategoryController extends RootFrontController
             if ($parentCategory) {
                 $breadcrumbs[] = [
                     'url'    => $parentCategory->getUrl(),
-                    'title' => $parentCategory->title,
+                    'title' => $parentCategory->name,
                 ];
             }
-            $breadcrumbs[] = ['url'    => '', 'title' => $category->title];
+            $breadcrumbs[] = ['url'    => '', 'title' => $category->name];
             /** End get parent category */
 
             $subPath = 'screen.shop_product_list';
@@ -138,7 +138,7 @@ class ShopCategoryController extends RootFrontController
             return view(
                 $view,
                 array(
-                    'title'       => $category->title,
+                    'title'       => $category->name,
                     'categoryId'  => $category->id,
                     'description' => $category->description,
                     'keyword'     => $category->keyword,

@@ -150,7 +150,7 @@ class AdminOrderController extends RootAdminController
 
         $data['listTh'] = $listTh;
         $data['dataTr'] = $dataTr;
-        $data['pagination'] = $dataTmp->appends(request()->except(['_token', '_pjax']))->links('gp247-core::component.pagination');
+        $data['pagination'] = $dataTmp->appends(request()->except(['_token']))->links('gp247-core::component.pagination');
         $data['resultItems'] = gp247_language_render('admin.result_item', ['item_from' => $dataTmp->firstItem(), 'item_to' => $dataTmp->lastItem(), 'total' =>  $dataTmp->total()]);
 
 
@@ -253,7 +253,7 @@ class AdminOrderController extends RootAdminController
         $data['paymentMethod']  = $paymentMethod;
         $data['shippingMethod'] = $shippingMethod;
 
-        return view('gp247-shop-admin::screen.order_add')
+        return view('gp247-shop-admin::order-create')
             ->with($data);
     }
 
@@ -266,7 +266,9 @@ class AdminOrderController extends RootAdminController
         $data = request()->all();
         $validate = [
             'first_name'      => config('validation.customer.first_name', 'required|string|max:100'),
-            'email'           => config('validation.customer.email', 'required|string|email|max:255'),
+            'email'           => gp247_config_admin('customer_email')
+                ? (gp247_config_admin('customer_email_required') ? 'required|string|email|max:255' : 'nullable|string|email|max:255')
+                : 'sometimes',
             'exchange_rate'   => 'required',
             'currency'        => 'required',
             'status'          => 'required',
@@ -387,7 +389,7 @@ class AdminOrderController extends RootAdminController
             'payment_method'  => $data['payment_method'] ?? null,
             'shipping_method' => $data['shipping_method'] ?? null,
             'exchange_rate'   => $data['exchange_rate'],
-            'email'           => $data['email'],
+            'email'           => $data['email'] ?? '',
             'comment'         => $data['comment'] ?? '',
         ];
         $dataCreate = gp247_clean($dataCreate, [], true);
@@ -401,7 +403,9 @@ class AdminOrderController extends RootAdminController
                 if (!empty($item['product_id'])) {
                     $product = (new AdminProduct)->getDetail($item['product_id']);
                     if ($product) {
-                        $qty = round((float)($item['qty'] ?? 1), 2);
+                        // WHY: rounding precision follows product_qty_decimal (modification
+                        // 20260705T093328, ADR-016) — whole units by default, 2dp when enabled.
+                        $qty = round((float)($item['qty'] ?? 1), gp247_qty_decimal_enabled() ? 2 : 0);
                         $price = (float)($item['price'] ?? 0);
                         $tax = (float)($item['tax'] ?? 0);
                         
@@ -460,7 +464,7 @@ class AdminOrderController extends RootAdminController
             'balance' => $balance,
         ]);
         //
-        return redirect()->route('admin_order.index')->with('success', gp247_language_render('action.create_success'));
+        return redirect(gp247_route_admin('admin_order.index'))->with('success', gp247_language_render('action.create_success'));
     }
 
     /**
@@ -473,7 +477,7 @@ class AdminOrderController extends RootAdminController
         $order = AdminOrder::getOrderAdmin($id);
 
         if (!$order) {
-            return redirect()->route('admin.data_not_found')->with(['url' => url()->full()]);
+            return redirect(gp247_route_admin('admin.data_not_found'))->with(['url' => url()->full()]);
         }
         $products = (new AdminProduct)->getProductSelectAdmin(['kind' => [GP247_PRODUCT_SINGLE, GP247_PRODUCT_BUILD]], $order->store_id);
         $paymentMethod = [];
@@ -881,10 +885,10 @@ class AdminOrderController extends RootAdminController
                 }
             }
 
-            return view('gp247-core::format.invoice')
+            return view('gp247-shop-admin::format.invoice')
             ->with($data);
         } else {
-            return redirect()->route('admin.data_not_found')->with(['url' => url()->full()]);
+            return redirect(gp247_route_admin('admin.data_not_found'))->with(['url' => url()->full()]);
         }
     }
 

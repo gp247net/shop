@@ -526,7 +526,7 @@ class ShopCartController extends RootFrontController
 
         //if cart empty
         if (count(session('dataCheckout', collect([]))) == 0) {
-            return redirect()->route('front.home')->with(['error' => gp247_language_render('cart.item_empty', ['item' => 'dataCheckout'])]);
+            return redirect(gp247_route_front('front.home'))->with(['error' => gp247_language_render('cart.item_empty', ['item' => 'dataCheckout'])]);
         }
         //Not allow for guest
         if (!gp247_config('shop_allow_guest') && !$customer) {
@@ -683,6 +683,12 @@ class ShopCartController extends RootFrontController
      */
     public function addToCart()
     {
+        // WHY: qty was previously completely unvalidated here (relied on
+        // CartItem::setQuantity()'s is_numeric check downstream) — now also
+        // enforces product_qty_decimal (modification 20260705T093328, ADR-016)
+        // with a friendly redirect instead of an uncaught exception.
+        request()->validate(['qty' => 'required|' . gp247_qty_rule()]);
+
         $data      = request()->all();
         $data      = gp247_clean($data);
 
@@ -745,127 +751,6 @@ class ShopCartController extends RootFrontController
         }
     }
 
-
-    /**
-     * Add product to cart
-     * @param Request $request [description]
-     * @return [json]
-     */
-    public function addToCartAjax(Request $request)
-    {
-        if (!$request->ajax()) {
-            return redirect(gp247_route_front('cart'));
-        }
-        $data     = request()->all();
-        $data      = gp247_clean($data);
-
-        $instance = $data['instance'] ?? 'default';
-        $productId       = $data['product_id'] ?? '';
-        $cart     = (new Cart)->instance($instance);
-
-
-        if (gp247_config_global('MultiVendorPro') && (config('app.storeId') == GP247_STORE_ID_ROOT)) {
-            
-            $product = (new ShopProduct)->getDetail($productId);
-            if (!$product) {
-                return response()->json(
-                    [
-                        'error' => 1,
-                        'msg' => gp247_language_render('front.data_notfound'),
-                    ]
-                );
-            }
-            // If multivendor and store id is root, store id is first store
-            $storeId = $product->stores()->first()->id; 
-        } else {
-            $storeId = config('app.storeId');
-            $product = (new ShopProduct)->getDetail($productId, null, $storeId);
-            if (!$product) {
-                return response()->json(
-                    [
-                        'error' => 1,
-                        'msg' => gp247_language_render('front.data_notfound'),
-                    ]
-                );
-            }
-        }
-
-        switch ($instance) {
-            case 'default':
-                if ($product->attributes->count() || $product->kind == GP247_PRODUCT_GROUP) {
-                    //Products have attributes or kind is group,
-                    //need to select properties before adding to the cart
-                    return response()->json(
-                        [
-                            'error' => 1,
-                            'redirect' => $product->getUrl(),
-                            'msg' => '',
-                        ]
-                    );
-                }
-
-                //Check product allow for sale
-                if ($product->allowSale()) {
-                    $cart->add(
-                        array(
-                            'id'      => $productId,
-                            'name'    => $product->name,
-                            'qty'     => 1,
-                            'storeId' => $storeId,
-                        )
-                    );
-                } else {
-                    return response()->json(
-                        [
-                            'error' => 1,
-                            'msg' => gp247_language_render('product.dont_allow_sale', ['sku' => $product->sku]),
-                        ]
-                    );
-                }
-                break;
-
-            default:
-                //Wishlist or Compare...
-                ${'arrID' . $instance} = array_keys($cart->content()->groupBy('id')->toArray());
-                if (!in_array($productId, ${'arrID' . $instance})) {
-                    try {
-                        $cart->add(
-                            array(
-                                'id'      => $productId,
-                                'name'    => $product->name,
-                                'qty'     => 1,
-                                'storeId' => $storeId,
-                            )
-                        );
-                    } catch (\Throwable $e) {
-                        return response()->json(
-                            [
-                                'error' => 1,
-                                'msg' => $e->getMessage(),
-                            ]
-                        );
-                    }
-                } else {
-                    return response()->json(
-                        [
-                            'error' => 1,
-                            'msg' => gp247_language_render('cart.item_exist_in_cart', ['instance' => $instance]),
-                        ]
-                    );
-                }
-                break;
-        }
-
-        $carts = (new Cart)->getListCart($instance);
-        return response()->json(
-            [
-                'error'      => 0,
-                'count_cart' => $carts['count'],
-                'instance'   => $instance,
-                'msg'        => gp247_language_render('cart.add_to_cart_success', ['instance' => ($instance == 'default') ? 'cart' : $instance]),
-            ]
-        );
-    }
 
     /**
      * Update product to cart
@@ -1076,7 +961,7 @@ class ShopCartController extends RootFrontController
         $totalMethod    = session('totalMethod', []);
 
         if ($orderID == 0) {
-            return redirect()->route('front.home', ['error' => 'Error Order ID!']);
+            return redirect(gp247_route_front('front.home', ['error' => 'Error Order ID!']));
         }
 
         $classPaymentConfig = gp247_extension_get_namespace(type: 'Plugins', key: $paymentMethod);
@@ -1125,7 +1010,7 @@ class ShopCartController extends RootFrontController
         \GP247\Shop\Models\ShopOrder::where('id', $orderID)->update(['status' => 4]);
         //Clear session
         $this->clearSession();
-        return redirect()->route('front.home')->with('error', 'Payment cancelled');
+        return redirect(gp247_route_front('front.home'))->with('error', 'Payment cancelled');
     }
 
 
@@ -1156,7 +1041,7 @@ class ShopCartController extends RootFrontController
     private function _orderSuccess()
     {
         if (!session('orderID')) {
-            return redirect()->route('front.home');
+            return redirect(gp247_route_front('front.home'));
         }
         $orderInfo = ShopOrder::with('details')->find(session('orderID'))->toArray();
         $subPath = 'screen.shop_order_success';
