@@ -58,7 +58,7 @@
                         <div class="flex items-center justify-end gap-1">
                             <x-gp247::button size="sm" variant="ghost" href="{{ gp247_route_admin($editBase, $row->id) }}" wire:navigate><i class="fas fa-edit"></i></x-gp247::button>
                             @unless (in_array((string) $row->id, $protectedIds, true))
-                                <x-gp247::button size="sm" variant="ghost" wire:click="delete({{ $row->id }})" wire:confirm="{{ gp247_language_render('action.delete_confirm') }}"><i class="fas fa-trash-alt text-red-600"></i></x-gp247::button>
+                                <x-gp247::button size="sm" variant="ghost" wire:click="delete('{{ $row->id }}')" wire:confirm="{{ gp247_language_render('action.delete_confirm') }}"><i class="fas fa-trash-alt text-red-600"></i></x-gp247::button>
                             @endunless
                         </div>
                     </td>
