@@ -334,7 +334,44 @@ class CartService
             $content = collect($content);
         }
 
-        return $content;
+        // WHY: when config('session.serialization') is "json", Laravel decodes
+        // the whole session payload via json_decode(..., true), so a Collection
+        // of CartItem objects comes back as nested plain arrays and loses its
+        // class. Rehydrate each entry back into a CartItem so downstream code
+        // (e.g. $item->id) keeps working regardless of the serialization mode.
+        return $content->map(function ($item) {
+            return $item instanceof CartItem ? $item : $this->hydrateCartItem($item);
+        });
+    }
+
+    /**
+     * Rebuild a CartItem instance from a plain array/object representation.
+     *
+     * @param array|object $item
+     * @return \GP247\Shop\Services\CartItem
+     *
+     * @aidlc-unit shop-cart
+     */
+    private function hydrateCartItem($item)
+    {
+        $attributes = (array) $item;
+
+        $cartItem = new CartItem(
+            $attributes['id'],
+            $attributes['name'],
+            $attributes['options'] ?? [],
+            $attributes['storeId'] ?? null
+        );
+
+        if (isset($attributes['qty'])) {
+            $cartItem->qty = $attributes['qty'];
+        }
+
+        if (!empty($attributes['rowId'])) {
+            $cartItem->rowId = $attributes['rowId'];
+        }
+
+        return $cartItem;
     }
 
     /**
