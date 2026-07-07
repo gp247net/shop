@@ -4,6 +4,7 @@ namespace GP247\Shop\Services;
 
 use Closure;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use GP247\Shop\Models\ShopCart;
 use Carbon\Carbon;
 
@@ -87,6 +88,8 @@ class CartService
      * @param string $rowId
      * @param mixed  $qty
      * @return \GP247\Shop\Services\CartItem
+     * @throws \InvalidArgumentException When $qty is a fractional value and
+     *         product_qty_decimal is disabled (ADR-016).
      */
     public function update($rowId, $qty)
     {
@@ -94,26 +97,20 @@ class CartService
         if (!$cartItem) {
             return;
         }
-        
-        $cartItem->qty = $qty;
 
-        $content = $this->getContent();
-
-        if ($rowId !== $cartItem->rowId) {
-            $content->pull($rowId);
-
-            if ($content->has($cartItem->rowId)) {
-                $existingCartItem = $this->get($cartItem->rowId);
-                $cartItem->setQuantity($existingCartItem->qty + $cartItem->qty);
-            }
-        }
-
-        if ($cartItem->qty <= 0) {
+        if ($qty <= 0) {
             $this->remove($cartItem->rowId);
             return;
-        } else {
-            $content->put($cartItem->rowId, $cartItem);
         }
+
+        // WHY: setQuantity() enforces the product_qty_decimal rule (ADR-016) —
+        // previously this assigned $qty directly, bypassing that guard and
+        // letting the whole-number rule be bypassed via cart.update/checkout.prepare
+        // (RISK-TECH-016 materialized).
+        $cartItem->setQuantity($qty);
+
+        $content = $this->getContent();
+        $content->put($cartItem->rowId, $cartItem);
 
         session([$this->instance => $content]);
 
@@ -187,13 +184,16 @@ class CartService
     {
         $content = $this->getContent();
 
-        //Check products in cart
+        // WHY: batch the existence/active check into 1 query instead of 1 per
+        // item (N+1) — previously scaled linearly with cart size.
+        $validIds = \GP247\Shop\Models\ShopProduct::whereIn('id', $content->pluck('id'))
+            ->where('status', 1) //Active
+            ->where('approve', 1) //Approve
+            ->pluck('id')
+            ->all();
+
         foreach ($content as $key => $item) {
-            $product = \GP247\Shop\Models\ShopProduct::where('id', $item->id)
-                ->where('status', 1) //Active
-                ->where('approve', 1) //Approve
-                ->first();
-            if (!$product) {
+            if (!in_array($item->id, $validIds)) {
                 $this->remove($key);
             }
         }
@@ -250,6 +250,9 @@ class CartService
         }
 
         $cartItem = $this->get($rowId);
+        if (!$cartItem) {
+            return;
+        }
 
         $cartItem->associate($model);
 
@@ -371,6 +374,14 @@ class CartService
             $cartItem->rowId = $attributes['rowId'];
         }
 
+        // WHY: session.serialization = json drops non-public properties on
+        // encode; associatedModel is now public (RISK-TECH-019) but still
+        // needs explicit rehydration since json_decode(..., true) returns a
+        // plain array, not a CartItem instance.
+        if (!empty($attributes['associatedModel'])) {
+            $cartItem->associatedModel = $attributes['associatedModel'];
+        }
+
         return $cartItem;
     }
 
@@ -408,11 +419,21 @@ class CartService
     public static function getListCart($instance = self::DEFAULT_INSTANCE)
     {
         $cart = (new CartService)->instance($instance);
-        $arrCart['count'] = $cart->count();
+        $count = $cart->count();
+        $arrCart['count'] = $count;
         $arrCart['items'] = [];
-        if ($cart->count()) {
-            foreach ($cart->content() as $key => $item) {
-                $product = \GP247\Shop\Models\ShopProduct::find($item->id);
+        if ($count) {
+            $content = $cart->content();
+
+            // WHY: batch-fetch products into a keyed map instead of 1
+            // ShopProduct::find() per item (N+1) — previously scaled linearly
+            // with cart size.
+            $products = \GP247\Shop\Models\ShopProduct::whereIn('id', $content->pluck('id'))
+                ->get()
+                ->keyBy('id');
+
+            foreach ($content as $key => $item) {
+                $product = $products->get($item->id);
                 if ($product) {
                     $arrCart['items'][] = [
                         'id'        => $item->id,
@@ -440,8 +461,14 @@ class CartService
      */
     private function _updateDatabase($identifier)
     {
-        $this->removeDatabase($identifier);
-        $this->saveDatabase($identifier);
+        // WHY: delete-then-insert was not atomic — a concurrent request for
+        // the same identifier/instance could interleave between the two
+        // statements (shop_shoppingcart has no unique constraint backing
+        // this pair). Wrapping in a transaction closes most of that window.
+        DB::connection(GP247_DB_CONNECTION)->transaction(function () use ($identifier) {
+            $this->removeDatabase($identifier);
+            $this->saveDatabase($identifier);
+        });
     }
 
     /**
@@ -463,17 +490,24 @@ class CartService
             $dbContent = collect(json_decode($dbCart->content, true));
             $sessionContent = $this->getContent();
 
+            // WHY: batch-fetch active/approved products for both carts in 1
+            // query instead of 1 per item across 2 loops (N+1) — previously
+            // scaled linearly with combined cart size.
+            $validIds = \GP247\Shop\Models\ShopProduct::whereIn(
+                'id',
+                $dbContent->pluck('id')->merge($sessionContent->pluck('id'))->unique()
+            )
+                ->where('status', 1)
+                ->where('approve', 1)
+                ->pluck('id')
+                ->all();
+
             // Merge products from both carts
             $mergedContent = new Collection();
-            
+
             // Add items from database cart
             foreach ($dbContent as $item) {
-                $product = \GP247\Shop\Models\ShopProduct::where('id', $item['id'])
-                    ->where('status', 1)
-                    ->where('approve', 1)
-                    ->first();
-                    
-                if ($product) {
+                if (in_array($item['id'], $validIds)) {
                     $cartItem = CartItem::fromArray($item);
                     $cartItem->setQuantity($item['qty']);
                     $mergedContent->put($cartItem->rowId, $cartItem);
@@ -482,15 +516,11 @@ class CartService
 
             // Add or update items from session cart
             foreach ($sessionContent as $item) {
-                $product = \GP247\Shop\Models\ShopProduct::where('id', $item->id)
-                    ->where('status', 1)
-                    ->where('approve', 1)
-                    ->first();
-                    
-                if ($product) {
+                if (in_array($item->id, $validIds)) {
                     if ($mergedContent->has($item->rowId)) {
                         // If item exists in both carts, add quantities
-                        $mergedContent->get($item->rowId)->qty += $item->qty;
+                        $existing = $mergedContent->get($item->rowId);
+                        $existing->setQuantity($existing->qty + $item->qty);
                     } else {
                         $mergedContent->put($item->rowId, $item);
                     }

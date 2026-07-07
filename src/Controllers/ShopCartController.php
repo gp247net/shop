@@ -109,7 +109,15 @@ class ShopCartController extends RootFrontController
             //Qty get from input
             $qtyUpdate = round((float)($data['qty-'.$row->rowId] ?? 0), 2);
             //Update cart
-            (new Cart)->update($row->rowId, $qtyUpdate);
+            try {
+                (new Cart)->update($row->rowId, $qtyUpdate);
+            } catch (\InvalidArgumentException $e) {
+                // WHY: CartService::update() now enforces the whole-number qty
+                // rule (ADR-016) via CartItem::setQuantity() — surface it as a
+                // friendly redirect instead of a 500.
+                return redirect(gp247_route_front('cart'))
+                    ->with(['error' => gp247_language_render('cart.qty_must_be_whole_number')]);
+            }
 
             $arrCheckQty[$row->id] = ($arrCheckQty[$row->rowId] ?? 0) + ($data['qty-'.$row->rowId] ?? 0);
         }
@@ -786,7 +794,17 @@ class ShopCartController extends RootFrontController
                 ]
             );
         } else {
-            (new Cart)->update($rowId, ($new_qty) ? $new_qty : 0);
+            try {
+                (new Cart)->update($rowId, ($new_qty) ? $new_qty : 0);
+            } catch (\InvalidArgumentException $e) {
+                // WHY: CartService::update() now enforces the whole-number qty
+                // rule (ADR-016) via CartItem::setQuantity() — surface it as a
+                // friendly JSON error instead of a 500.
+                return response()->json([
+                    'error' => 1,
+                    'msg' => gp247_language_render('cart.qty_must_be_whole_number'),
+                ]);
+            }
             return response()->json(
                 [
                     'error' => 0,

@@ -49,9 +49,14 @@ class CartItem
     /**
      * The FQN of the associated model.
      *
+     * WHY: must stay public (not private) — session.serialization = json
+     * (compat-foundation_session-json-serialization ADR) round-trips this
+     * object through json_encode()/json_decode(), which silently drops
+     * non-public properties.
+     *
      * @var string|null
      */
-    private $associatedModel = null;
+    public $associatedModel = null;
 
     /**
      * CartItem constructor.
