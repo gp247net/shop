@@ -185,11 +185,9 @@ class CartService
      */
     public function content()
     {
-        if (is_null(session($this->instance))) {
-            return new Collection([]);
-        }
+        $content = $this->getContent();
+
         //Check products in cart
-        $content = session($this->instance);
         foreach ($content as $key => $item) {
             $product = \GP247\Shop\Models\ShopProduct::where('id', $item->id)
                 ->where('status', 1) //Active
@@ -199,7 +197,8 @@ class CartService
                 $this->remove($key);
             }
         }
-        return session($this->instance);
+
+        return $this->getContent();
     }
 
     /**
@@ -327,6 +326,13 @@ class CartService
         $content = session()->has($this->instance)
         ? session()->get($this->instance)
         : new Collection;
+
+        // WHY: stale/legacy session payloads may hold a plain array instead of
+        // a Collection (e.g. leftover sessions from before this format), which
+        // breaks Collection-only calls like sum()/put()/has() downstream.
+        if (!$content instanceof Collection) {
+            $content = collect($content);
+        }
 
         return $content;
     }
