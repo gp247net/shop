@@ -98,7 +98,7 @@ class AdminReportController extends RootAdminController
 
         $data['listTh'] = $listTh;
         $data['dataTr'] = $dataTr;
-        $data['pagination'] = $dataTmp->appends(request()->except(['_token']))->links('gp247-core::component.pagination');
+        $data['pagination'] = $dataTmp->appends(request()->except(['_token']))->links('gp247-admin::component.pagination');
         $data['resultItems'] = gp247_language_render('admin.product.result_item', ['item_from' => $dataTmp->firstItem(), 'item_to' => $dataTmp->lastItem(), 'total' =>  $dataTmp->total()]);
 
         //menu_left
@@ -130,7 +130,7 @@ class AdminReportController extends RootAdminController
                 </form>';
         //=menuSearch
 
-        return view('gp247-core::screen.list')
+        return view('gp247-admin::screen.list')
             ->with($data);
     }
 }
