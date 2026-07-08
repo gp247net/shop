@@ -80,6 +80,14 @@ class ProductManager extends ResourcePanel
     }
 
     /**
+     * @return array<int, string>
+     */
+    protected function richDescriptionFields(): array
+    {
+        return ['content'];
+    }
+
+    /**
      * @return class-string
      */
     protected function descriptionModelClass(): string

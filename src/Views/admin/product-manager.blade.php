@@ -208,7 +208,7 @@
 
             <div class="flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-700">
                 <x-gp247::button variant="secondary" href="{{ gp247_route_admin('admin_product.index') }}" wire:navigate>{{ gp247_language_render($editingId ? 'admin.core.cancel' : 'admin.core.reset') }}</x-gp247::button>
-                <x-gp247::button type="submit" wire:loading.attr="disabled">
+                <x-gp247::button type="submit" wire:loading.attr="disabled" wire:target="save">
                     <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.core.update' : 'admin.core.submit') }}
                 </x-gp247::button>
             </div>
