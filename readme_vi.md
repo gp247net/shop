@@ -122,11 +122,17 @@ Các view sẽ được lưu trữ tại `resources/views/vendor/gp247-shop-admi
 ### Tùy chỉnh giao diện Front
 Để tùy chỉnh và cập nhật giao diện front, chạy lệnh:
 
->`php artisan vendor:publish --tag=gp247:shop-view-admin`
+>`php artisan vendor:publish --tag=gp247:shop-view-front`
 
-Các view sẽ được lưu trữ tại `app/GP247/Templates/Default`
+Các view sẽ được lưu trữ tại `app/GP247/Templates/GP247Front`
 
-Trường hợp bạn không sử dụng template `Default`, vui lòng copy thủ công các view từ `vendor/gp247/shop/Views/front` tới view mới.
+Trường hợp bạn không sử dụng template `GP247Front`, vui lòng copy thủ công các view từ `vendor/gp247/shop/src/Views/front` tới view mới.
+
+### Ghi đè (override) controller
+
+>Bước 1: Copy các file controller muốn ghi đè trong `vendor/gp247/shop/src/Controllers` (hoặc `src/Api/Controllers`) -> `app/GP247/Shop/Controllers` (hoặc `app/GP247/Shop/Api/Controllers`)
+
+>Bước 2: Đổi namespace từ `GP247\Shop\Controllers` (hoặc `GP247\Shop\Api\Controllers`) thành `App\GP247\Shop\Controllers` (hoặc `App\GP247\Shop\Api\Controllers`) — chỉ thêm `App` vào phía trước, giữ nguyên phần còn lại.
 
 ## Tài liệu
 - Để xem tài liệu đầy đủ về hệ thống GP247, truy cập [TÀI LIỆU](https://gp247.net/vi/docs)

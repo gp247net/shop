@@ -114,11 +114,17 @@ The views will be published to `resources/views/vendor/gp247-shop-admin`.
 ### Customize Front Views
 To customize and update front views, run:
 
->`php artisan vendor:publish --tag=gp247:shop-view-admin`
+>`php artisan vendor:publish --tag=gp247:shop-view-front`
 
-The views will be stored in `app/GP247/Templates/Default`.
+The views will be stored in `app/GP247/Templates/GP247Front`.
 
-If you are not using the `Default` template, manually copy the views from `vendor/gp247/shop/Views/front` to your template directory.
+If you are not using the `GP247Front` template, manually copy the views from `vendor/gp247/shop/src/Views/front` to your template directory.
+
+### Overriding controllers
+
+>Step 1: Copy the controller files you want to override from `vendor/gp247/shop/src/Controllers` (or `src/Api/Controllers`) to `app/GP247/Shop/Controllers` (or `app/GP247/Shop/Api/Controllers`)
+
+>Step 2: Change the namespace from `GP247\Shop\Controllers` (or `GP247\Shop\Api\Controllers`) to `App\GP247\Shop\Controllers` (or `App\GP247\Shop\Api\Controllers`) — just prepend `App`, keep the rest as-is.
 
 ## Documentation
 - GP247 documentation: [https://gp247.net/en/docs](https://gp247.net/en/docs)
