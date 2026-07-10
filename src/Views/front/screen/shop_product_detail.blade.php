@@ -179,18 +179,21 @@
                     $builds = $product->builds;
                 @endphp
                 <p class="label mb-2">{{ gp247_language_render('product.kind_bundle') }}</p>
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="w-16 h-16 rounded-lg overflow-hidden border">{!! gp247_image_render($product->image) !!}</span>
-                    @foreach ($builds as $k => $build)
-                        @if ($k)
-                        <span class="text-ink-400">+</span>
+                <div class="rounded-xl border border-ink-100 bg-ink-50/60 p-4">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-4">
+                        @foreach ($builds as $key => $build)
+                        @if ($key)
+                        <span class="text-ink-300 text-lg font-light">+</span>
                         @endif
-                        <span class="flex items-center gap-1 text-sm">{{ $build->quantity }} x
-                            <a target="_blank" href="{{ $build->product->getUrl() }}" class="w-16 h-16 rounded-lg overflow-hidden border">
-                                {!! gp247_image_render($build->product->image) !!}
-                            </a>
-                        </span>
-                    @endforeach
+                        <a target="_blank" href="{{ $build->product->getUrl() }}" class="flex flex-col items-center gap-1.5 w-20 text-center group">
+                            <span class="relative w-16 h-16 block">
+                                <span class="w-16 h-16 rounded-lg overflow-hidden border bg-white block">{!! gp247_image_render($build->product->image) !!}</span>
+                                <span class="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center">{{ gp247_qty_format($build->quantity) }}</span>
+                            </span>
+                            <span class="text-xs text-ink-600 clamp-2 group-hover:text-brand-600">{{ $build->product->getName() }}</span>
+                        </a>
+                        @endforeach
+                    </div>
                 </div>
             </div>
             @endif
