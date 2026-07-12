@@ -218,7 +218,7 @@
                                             <option value="">— {{ gp247_language_render('action.select') }} —</option>
                                             @foreach ($products as $p)
                                                 <option value="{{ $p['id'] }}"
-                                                        data-price="0"
+                                                        data-price="{{ $p['price'] }}"
                                                         data-name="{{ $p['name'] }}"
                                                         data-sku="{{ $p['sku'] }}">
                                                     {{ $p['name'] }} — {{ $p['sku'] }}

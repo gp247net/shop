@@ -55,7 +55,7 @@
                         @foreach ($results as $p)
                             <button type="button" wire:click="selectProduct('{{ $p->id }}')"
                                 class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
-                                <span class="font-medium">{{ $p->sku }}</span> — {{ $p->name ?? $p->alias }}
+                                <span class="font-medium">{{ $p->sku }}</span> — {{ $p->getName() ?: $p->alias }}
                             </button>
                         @endforeach
                     </div>

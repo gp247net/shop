@@ -105,8 +105,14 @@ trait HasOrderItems
 
         $needle = '%' . $term . '%';
 
-        return ShopProduct::where('sku', 'like', $needle)
-            ->orWhere('alias', 'like', $needle)
+        // WHY: a "group" product (kind=2) is a non-sellable container linking to
+        // real single/build products (price is always 0, and the storefront hides
+        // its Add-to-cart button) — exclude it here to match that same rule.
+        return ShopProduct::where('kind', '!=', GP247_PRODUCT_GROUP)
+            ->where(function ($query) use ($needle) {
+                $query->where('sku', 'like', $needle)
+                    ->orWhere('alias', 'like', $needle);
+            })
             ->limit(15)
             ->get();
     }
@@ -136,7 +142,7 @@ trait HasOrderItems
 
         $this->itemForm['product_id'] = (string) $product->id;
         $this->itemForm['sku'] = (string) $product->sku;
-        $this->itemForm['name'] = (string) ($product->name ?? $product->sku);
+        $this->itemForm['name'] = (string) ($product->getName() ?: $product->sku);
         $this->itemForm['price'] = (float) $product->price;
         $this->productSearch = '';
     }

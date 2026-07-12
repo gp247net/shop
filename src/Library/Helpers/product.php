@@ -23,6 +23,7 @@ if (!function_exists('gp247_product_admin_select_list') && !in_array('gp247_prod
         $colSelect = [
             $tableProduct.'.id',
             $tableProduct.'.sku',
+            $tableProduct.'.price',
             $tableDescription . '.name'
         ];
         $productList = (new ShopProduct)->select($colSelect)
@@ -48,7 +49,7 @@ if (!function_exists('gp247_product_admin_select_list') && !in_array('gp247_prod
         if ($limit) {
             $productList = $productList->limit($limit);
         }
-        $productList->groupBy('id','name','sku');
+        $productList->groupBy('id','name','sku','price');
         $dataTmp = $productList->get()->keyBy('id');
         $data = [];
         foreach ($dataTmp as $key => $row) {
@@ -56,6 +57,7 @@ if (!function_exists('gp247_product_admin_select_list') && !in_array('gp247_prod
                 'id' => $row['id'],
                 'sku' => $row['sku'],
                 'name' => addslashes($row['name']),
+                'price' => (float) $row['price'],
             ];
         }
         return $data;
