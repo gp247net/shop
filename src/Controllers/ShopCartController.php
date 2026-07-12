@@ -394,6 +394,9 @@ class ShopCartController extends RootFrontController
         $arrCheckQty = [];
         $cart = $dataCheckout;
         foreach ($cart as $key => $row) {
+            // WHY: read straight from session('dataCheckout'), which comes back as a
+            // plain array (not a CartItem) when session.serialization = json.
+            $row = \GP247\Shop\Services\CartItem::hydrate($row);
             $arrCheckQty[$row->id] = ($arrCheckQty[$row->id] ?? 0) + $row->qty;
         }
         $arrProductMinimum = ShopProduct::whereIn('id', array_keys($arrCheckQty))->pluck('minimum', 'id')->all();
@@ -624,6 +627,9 @@ class ShopCartController extends RootFrontController
 
         $arrCartDetail = [];
         foreach ($dataCheckout as $cartItem) {
+            // WHY: read straight from session('dataCheckout'), which comes back as a
+            // plain array (not a CartItem) when session.serialization = json.
+            $cartItem = \GP247\Shop\Services\CartItem::hydrate($cartItem);
             $product = (new ShopProduct)->getDetail(key: $cartItem->id, type: 'id', storeId: $cartItem->storeId);
             if (!$product) {
                 continue;
@@ -1086,6 +1092,9 @@ class ShopCartController extends RootFrontController
         $dataCheckout = session('dataCheckout') ?? '';
         if ($dataCheckout) {
             foreach ($dataCheckout as $key => $row) {
+                // WHY: read straight from session('dataCheckout'), which comes back as a
+                // plain array (not a CartItem) when session.serialization = json.
+                $row = \GP247\Shop\Services\CartItem::hydrate($row);
                 (new Cart)->remove($row->rowId);
             }
         }

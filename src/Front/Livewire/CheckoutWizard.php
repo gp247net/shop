@@ -6,6 +6,7 @@ use GP247\Core\Models\AdminCountry;
 use GP247\Front\Livewire\BaseFrontComponent;
 use GP247\Shop\Models\ShopAttributeGroup;
 use GP247\Shop\Models\ShopOrderTotal;
+use GP247\Shop\Services\CartItem;
 
 /**
  * Livewire wizard component for the checkout flow (US-LW-006).
@@ -322,7 +323,10 @@ class CheckoutWizard extends BaseFrontComponent
             'shippingPlugins' => $this->loadShippingPlugins(),
             'paymentPlugins'  => $this->loadPaymentPlugins(),
             'dataTotal'       => $this->step === 'confirm' ? (session('dataTotal') ?? []) : [],
-            'cartItems'       => session('dataCheckout') ?? collect([]),
+            // WHY: session('dataCheckout') comes back as plain arrays instead of
+            // CartItem instances when session.serialization = json; rehydrate so
+            // the view can keep using $item->id/$item->options etc.
+            'cartItems'       => collect(session('dataCheckout') ?? [])->map(fn ($item) => CartItem::hydrate($item)),
             'attributesGroup' => ShopAttributeGroup::pluck('name', 'id')->all(),
             'customer'        => customer()->user(),
             'countries'       => AdminCountry::getCodeAll(),

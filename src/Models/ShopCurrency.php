@@ -5,6 +5,7 @@
 namespace GP247\Shop\Models;
 
 use Cart;
+use GP247\Shop\Services\CartItem;
 use Illuminate\Database\Eloquent\Model;
 
 class ShopCurrency extends Model
@@ -224,6 +225,10 @@ class ShopCurrency extends Model
         $sumSubtotal  = 0;
         $sumSubtotalWithTax  = 0;
         foreach ($dataCheckout as $item) {
+            // WHY: session('dataCheckout') is read straight from the session, not
+            // via Cart::content(), so when session.serialization = json it comes
+            // back as a plain array instead of a CartItem (see CartService::getContent).
+            $item = CartItem::hydrate($item);
             $product = (new ShopProduct)->getDetail(key:$item->id, type:'id', storeId: $item->storeId);
             if($product) {
                 $priceItem = $product->getFinalPrice();

@@ -154,6 +154,54 @@ class CartItem
     }
 
     /**
+     * Rebuild a CartItem from a plain array/stdClass representation, e.g. one
+     * that came back from a session payload decoded with session.serialization
+     * = json (which loses the original class). Returns the item unchanged
+     * when it is already a CartItem.
+     *
+     * WHY: session.serialization = json round-trips a CartItem through
+     * json_encode()/json_decode(true), turning it into a plain array and
+     * dropping its class. Any code reading cart items straight out of the
+     * session (not just CartService::getContent()) needs this same
+     * rehydration, e.g. ShopCurrency::sumCartCheckout() reading
+     * session('dataCheckout').
+     *
+     * @param array|object $item
+     * @return \GP247\Shop\Services\CartItem
+     *
+     * @aidlc-unit shop-cart
+     */
+    public static function hydrate($item)
+    {
+        if ($item instanceof self) {
+            return $item;
+        }
+
+        $attributes = (array) $item;
+
+        $cartItem = new self(
+            $attributes['id'],
+            $attributes['name'],
+            $attributes['options'] ?? [],
+            $attributes['storeId'] ?? null
+        );
+
+        if (isset($attributes['qty'])) {
+            $cartItem->qty = $attributes['qty'];
+        }
+
+        if (!empty($attributes['rowId'])) {
+            $cartItem->rowId = $attributes['rowId'];
+        }
+
+        if (!empty($attributes['associatedModel'])) {
+            $cartItem->associatedModel = $attributes['associatedModel'];
+        }
+
+        return $cartItem;
+    }
+
+    /**
      * Generate a unique id for the cart item.
      *
      * @param string $id

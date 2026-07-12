@@ -343,46 +343,8 @@ class CartService
         // class. Rehydrate each entry back into a CartItem so downstream code
         // (e.g. $item->id) keeps working regardless of the serialization mode.
         return $content->map(function ($item) {
-            return $item instanceof CartItem ? $item : $this->hydrateCartItem($item);
+            return CartItem::hydrate($item);
         });
-    }
-
-    /**
-     * Rebuild a CartItem instance from a plain array/object representation.
-     *
-     * @param array|object $item
-     * @return \GP247\Shop\Services\CartItem
-     *
-     * @aidlc-unit shop-cart
-     */
-    private function hydrateCartItem($item)
-    {
-        $attributes = (array) $item;
-
-        $cartItem = new CartItem(
-            $attributes['id'],
-            $attributes['name'],
-            $attributes['options'] ?? [],
-            $attributes['storeId'] ?? null
-        );
-
-        if (isset($attributes['qty'])) {
-            $cartItem->qty = $attributes['qty'];
-        }
-
-        if (!empty($attributes['rowId'])) {
-            $cartItem->rowId = $attributes['rowId'];
-        }
-
-        // WHY: session.serialization = json drops non-public properties on
-        // encode; associatedModel is now public (RISK-TECH-019) but still
-        // needs explicit rehydration since json_decode(..., true) returns a
-        // plain array, not a CartItem instance.
-        if (!empty($attributes['associatedModel'])) {
-            $cartItem->associatedModel = $attributes['associatedModel'];
-        }
-
-        return $cartItem;
     }
 
     /**
