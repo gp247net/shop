@@ -43,7 +43,7 @@
     {{-- Revenue by currency + Top products --}}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <x-gp247::card :title="gp247_language_render('order.totals.total')">
-            <x-gp247::table :empty="empty($revenueByCurrency) ? gp247_language_render('admin.core.no_records') : null">
+            <x-gp247::table :empty="empty($revenueByCurrency) ? gp247_language_render('admin.no_records') : null">
                 <x-slot:head>
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('currency.title') }}</th>
@@ -60,7 +60,7 @@
         </x-gp247::card>
 
         <x-gp247::card :title="gp247_language_render('product.product')">
-            <x-gp247::table :empty="empty($topProducts) ? gp247_language_render('admin.core.no_records') : null">
+            <x-gp247::table :empty="empty($topProducts) ? gp247_language_render('admin.no_records') : null">
                 <x-slot:head>
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('product.sku') }}</th>

@@ -10,7 +10,7 @@
     @aidlc-adr ADR-006, ADR-007
 --}}
 <x-gp247::card :title="gp247_language_render('order.product')">
-    <x-gp247::table :empty="empty($items) ? gp247_language_render('admin.core.no_records') : null">
+    <x-gp247::table :empty="empty($items) ? gp247_language_render('admin.no_records') : null">
         <x-slot:head>
             <tr>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('product.sku') }}</th>
@@ -18,7 +18,7 @@
                 <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.price') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.qty') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.totals.total') }}</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.action') }}</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.action') }}</th>
             </tr>
         </x-slot:head>
 
@@ -48,7 +48,7 @@
         @if (! $editingItemId)
             <div class="relative mb-3">
                 <input type="search" wire:model.live.debounce.300ms="productSearch"
-                    placeholder="{{ gp247_language_render('product.sku') }} / {{ gp247_language_render('admin.core.search') }}" class="{{ $inputCls }}">
+                    placeholder="{{ gp247_language_render('product.sku') }} / {{ gp247_language_render('admin.search') }}" class="{{ $inputCls }}">
                 @php($results = $this->productResults())
                 @if (is_countable($results) && count($results))
                     <div class="mt-1 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -82,10 +82,10 @@
 
         <div class="mt-3 flex items-center justify-end gap-2">
             @if ($editingItemId)
-                <x-gp247::button variant="secondary" wire:click="newItem">{{ gp247_language_render('admin.core.cancel') }}</x-gp247::button>
+                <x-gp247::button variant="secondary" wire:click="newItem">{{ gp247_language_render('admin.cancel') }}</x-gp247::button>
             @endif
             <x-gp247::button wire:click="saveItem" wire:loading.attr="disabled">
-                <i class="fas fa-save"></i> {{ gp247_language_render($editingItemId ? 'admin.core.update' : 'admin.core.submit') }}
+                <i class="fas fa-save"></i> {{ gp247_language_render($editingItemId ? 'admin.update' : 'admin.submit') }}
             </x-gp247::button>
         </div>
     </div>

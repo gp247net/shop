@@ -49,7 +49,7 @@
 
                     <div class="flex flex-wrap gap-4">
                         <x-gp247::checkbox :label="gp247_language_render('admin.category.top')" wire:model="form.top" value="1" />
-                        <x-gp247::checkbox :label="gp247_language_render('admin.core.active')" wire:model="form.status" value="1" />
+                        <x-gp247::checkbox :label="gp247_language_render('admin.active')" wire:model="form.status" value="1" />
                     </div>
                 </div>
 
@@ -82,9 +82,9 @@
             </x-gp247::tabs>
 
             <div class="flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-700">
-                <x-gp247::button variant="secondary" href="{{ gp247_route_admin('admin_category.index') }}" wire:navigate>{{ gp247_language_render($editingId ? 'admin.core.cancel' : 'admin.core.reset') }}</x-gp247::button>
+                <x-gp247::button variant="secondary" href="{{ gp247_route_admin('admin_category.index') }}" wire:navigate>{{ gp247_language_render($editingId ? 'admin.cancel' : 'admin.reset') }}</x-gp247::button>
                 <x-gp247::button type="submit" wire:loading.attr="disabled">
-                    <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.core.update' : 'admin.core.submit') }}
+                    <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.update' : 'admin.submit') }}
                 </x-gp247::button>
             </div>
         </form>
@@ -97,7 +97,7 @@
                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
         </div>
 
-        <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.core.no_records') : null">
+        <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.no_records') : null">
             <x-slot:head>
                 <tr>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.category.image') }}</th>
@@ -105,8 +105,8 @@
                     <th class="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" wire:click="setSort('sort')">
                         {{ gp247_language_render('admin.category.sort') }} @if ($sortField === 'sort')<span class="text-[10px]">{{ $sortDir === 'asc' ? '▲' : '▼' }}</span>@endif
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.status') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.action') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.status') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.action') }}</th>
                 </tr>
             </x-slot:head>
 
@@ -117,7 +117,7 @@
                     </td>
                     <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">{{ $row->getTitle() ?: $row->alias }}</td>
                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->sort }}</td>
-                    <td class="px-4 py-3"><x-gp247::badge :color="$row->status ? 'green' : 'gray'">{{ $row->status ? gp247_language_render('admin.core.active') : gp247_language_render('admin.core.inactive') }}</x-gp247::badge></td>
+                    <td class="px-4 py-3"><x-gp247::badge :color="$row->status ? 'green' : 'gray'">{{ $row->status ? gp247_language_render('admin.active') : gp247_language_render('admin.inactive') }}</x-gp247::badge></td>
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-end gap-1">
                             <x-gp247::button size="sm" variant="ghost" href="{{ gp247_route_admin('admin_category.edit', $row->id) }}" wire:navigate><i class="fas fa-edit"></i></x-gp247::button>

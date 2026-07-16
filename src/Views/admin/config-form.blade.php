@@ -59,7 +59,7 @@
                                 @php $key = $field['key']; $label = gp247_language_render($field['label']) . ($field['labelSuffix'] ?? ''); @endphp
                                 <x-gp247::checkbox :label="$label" wire:model="values.{{ $key }}" value="1" :disabled="(bool) $field['disabled']" />
                             @empty
-                                <p class="text-sm text-gray-400">{{ gp247_language_render('admin.core.no_records') }}</p>
+                                <p class="text-sm text-gray-400">{{ gp247_language_render('admin.no_records') }}</p>
                             @endforelse
                         </div>
 
@@ -96,7 +96,7 @@
                                             </td>
                                         </tr>
                                     @empty
-                                        <tr><td colspan="3" class="py-3 text-sm text-gray-400">{{ gp247_language_render('admin.core.no_records') }}</td></tr>
+                                        <tr><td colspan="3" class="py-3 text-sm text-gray-400">{{ gp247_language_render('admin.no_records') }}</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>
@@ -144,13 +144,13 @@
                                     <thead>
                                         <tr class="border-b border-gray-200 dark:border-gray-700">
                                             <th class="py-2 pr-4 text-left font-semibold text-gray-700 dark:text-gray-200">
-                                                {{ gp247_language_render('product.config_manager.field') }}
+                                                {{ gp247_language_render('admin.product.config_manager.field') }}
                                             </th>
                                             <th class="px-4 py-2 text-center font-semibold text-gray-700 dark:text-gray-200">
-                                                {{ gp247_language_render('product.config_manager.value') }}
+                                                {{ gp247_language_render('admin.product.config_manager.value') }}
                                             </th>
                                             <th class="px-4 py-2 text-center font-semibold text-gray-700 dark:text-gray-200">
-                                                {{ gp247_language_render('product.config_manager.required') }}
+                                                {{ gp247_language_render('admin.product.config_manager.required') }}
                                             </th>
                                         </tr>
                                     </thead>
@@ -229,7 +229,7 @@
                                     </div>
                                 @endif
                             @empty
-                                <p class="text-sm text-gray-400">{{ gp247_language_render('admin.core.no_records') }}</p>
+                                <p class="text-sm text-gray-400">{{ gp247_language_render('admin.no_records') }}</p>
                             @endforelse
                         </div>
                     @endif
@@ -238,7 +238,7 @@
 
             <div class="mt-6 flex items-center justify-end border-t border-gray-200 pt-4 dark:border-gray-700">
                 <x-gp247::button type="submit" wire:loading.attr="disabled">
-                    <i class="fas fa-save"></i> {{ gp247_language_render('admin.core.save') }}
+                    <i class="fas fa-save"></i> {{ gp247_language_render('admin.save') }}
                 </x-gp247::button>
             </div>
         </x-gp247::card>

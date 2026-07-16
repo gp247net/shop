@@ -21,7 +21,7 @@
             </div>
         </div>
     @empty
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.no_records') }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.no_records') }}</p>
     @endforelse
 
     <x-gp247::button size="sm" variant="secondary" wire:click="addVariant"><i class="fas fa-plus"></i> {{ gp247_language_render('admin.product_attribute_group.list') }}</x-gp247::button>

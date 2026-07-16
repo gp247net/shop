@@ -17,7 +17,7 @@
     $customerEditRoute = \Illuminate\Support\Facades\Route::has('admin_customer.edit') ? 'admin_customer.edit' : null;
 @endphp
 <x-gp247::card :title="gp247_language_render('admin.dashboard.top_customer_new')">
-    <x-gp247::table :empty="$topCustomers->isEmpty() ? gp247_language_render('admin.core.no_records') : null">
+    <x-gp247::table :empty="$topCustomers->isEmpty() ? gp247_language_render('admin.no_records') : null">
         <x-slot:head>
             <tr>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.email') }}</th>

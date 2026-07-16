@@ -10,7 +10,7 @@
 --}}
 <x-gp247::card :title="gp247_language_render('order.history')">
     @if (empty($history))
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.no_records') }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.no_records') }}</p>
     @else
         <ol class="space-y-3">
             @foreach ($history as $h)

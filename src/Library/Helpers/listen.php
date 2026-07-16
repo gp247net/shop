@@ -10,7 +10,7 @@ if (!function_exists('gp247_listen_order_success') && !in_array('gp247_listen_or
      */
     function gp247_listen_order_success(ShopOrder $order)
     {
-        gp247_notice_add(type: 'Order', typeId: $order->id, content:'admin_notice.gp247_new_order_success::name__'.$order->id);
+        gp247_notice_add(type: 'Order', typeId: $order->id, content:'admin.notice.gp247_new_order_success::name__'.$order->id);
     }
 }
 

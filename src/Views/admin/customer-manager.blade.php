@@ -32,7 +32,7 @@
                     wire:model="form.last_name" :error="$errors->first('form.last_name')" />
             @endif
 
-            <x-gp247::input type="password" :label="gp247_language_render('customer.password') . ($editingId ? ' (' . gp247_language_render('admin.core.leave_blank_keep') . ')' : '')"
+            <x-gp247::input type="password" :label="gp247_language_render('customer.password') . ($editingId ? ' (' . gp247_language_render('admin.leave_blank_keep') . ')' : '')"
                 name="password" wire:model="form.password" :error="$errors->first('form.password')" />
             <x-gp247::input type="password" :label="gp247_language_render('customer.confirm_password')"
                 name="password_confirmation" wire:model="form.password_confirmation" />
@@ -118,12 +118,12 @@
                 </div>
             @endif
 
-            <x-gp247::checkbox :label="gp247_language_render('admin.core.active')" wire:model="form.status" value="1" />
+            <x-gp247::checkbox :label="gp247_language_render('admin.active')" wire:model="form.status" value="1" />
 
             <div class="flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-700">
-                <x-gp247::button variant="secondary" href="{{ gp247_route_admin('admin_customer.index') }}" wire:navigate>{{ gp247_language_render($editingId ? 'admin.core.cancel' : 'admin.core.reset') }}</x-gp247::button>
+                <x-gp247::button variant="secondary" href="{{ gp247_route_admin('admin_customer.index') }}" wire:navigate>{{ gp247_language_render($editingId ? 'admin.cancel' : 'admin.reset') }}</x-gp247::button>
                 <x-gp247::button type="submit" wire:loading.attr="disabled">
-                    <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.core.update' : 'admin.core.submit') }}
+                    <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.update' : 'admin.submit') }}
                 </x-gp247::button>
             </div>
         </form>
@@ -141,7 +141,7 @@
                 class="{{ $inputCls }}">
         </div>
 
-        <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.core.no_records') : null">
+        <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.no_records') : null">
             <x-slot:head>
                 <tr>
                     @if (gp247_config_admin('customer_email'))
@@ -153,8 +153,8 @@
                     @if (gp247_config_admin('customer_address1'))
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.address1') }}</th>
                     @endif
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.status') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.action') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.status') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.action') }}</th>
                 </tr>
             </x-slot:head>
 
@@ -167,7 +167,7 @@
                     @if (gp247_config_admin('customer_address1'))
                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->address1 }}</td>
                     @endif
-                    <td class="px-4 py-3"><x-gp247::badge :color="$row->status ? 'green' : 'gray'">{{ $row->status ? gp247_language_render('admin.core.active') : gp247_language_render('admin.core.inactive') }}</x-gp247::badge></td>
+                    <td class="px-4 py-3"><x-gp247::badge :color="$row->status ? 'green' : 'gray'">{{ $row->status ? gp247_language_render('admin.active') : gp247_language_render('admin.inactive') }}</x-gp247::badge></td>
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-end gap-1">
                             <x-gp247::button size="sm" variant="ghost" href="{{ gp247_route_admin('admin_customer.edit', $row->id) }}" wire:navigate><i class="fas fa-edit"></i></x-gp247::button>

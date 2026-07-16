@@ -34,7 +34,7 @@
                 </div>
             </div>
         @empty
-            <p class="text-sm text-gray-400">{{ gp247_language_render('admin.core.no_records') }}</p>
+            <p class="text-sm text-gray-400">{{ gp247_language_render('admin.no_records') }}</p>
         @endforelse
     </div>
 
@@ -80,10 +80,10 @@
             @endif
             <div class="flex items-center gap-2">
                 <x-gp247::button type="button" wire:click="saveAddress" wire:loading.attr="disabled">
-                    <i class="fas fa-save"></i> {{ gp247_language_render($editingAddressId ? 'admin.core.update' : 'customer.address_add') }}
+                    <i class="fas fa-save"></i> {{ gp247_language_render($editingAddressId ? 'admin.update' : 'customer.address_add') }}
                 </x-gp247::button>
                 @if ($editingAddressId)
-                    <x-gp247::button type="button" variant="secondary" wire:click="newAddress">{{ gp247_language_render('admin.core.cancel') }}</x-gp247::button>
+                    <x-gp247::button type="button" variant="secondary" wire:click="newAddress">{{ gp247_language_render('admin.cancel') }}</x-gp247::button>
                 @endif
             </div>
         </div>

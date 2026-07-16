@@ -18,7 +18,7 @@
     <div class="space-y-3">
         <div class="relative">
             <input type="search" wire:model.live.debounce.300ms="compositionSearch"
-                placeholder="{{ gp247_language_render('product.sku') }} / {{ gp247_language_render('admin.core.search') }}" class="{{ $inputCls }}">
+                placeholder="{{ gp247_language_render('product.sku') }} / {{ gp247_language_render('admin.search') }}" class="{{ $inputCls }}">
             @php($results = $this->compositionResults())
             @if (is_countable($results) && count($results))
                 <div class="mt-1 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -40,7 +40,7 @@
                     <x-gp247::button size="sm" variant="ghost" wire:click="removeBuildItem({{ $index }})"><i class="fas fa-trash-alt text-red-600"></i></x-gp247::button>
                 </div>
             @empty
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.no_records') }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.no_records') }}</p>
             @endforelse
             @error('buildItems')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
         @else
@@ -50,7 +50,7 @@
                     <x-gp247::button size="sm" variant="ghost" wire:click="removeGroupItem({{ $index }})"><i class="fas fa-trash-alt text-red-600"></i></x-gp247::button>
                 </div>
             @empty
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.no_records') }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.no_records') }}</p>
             @endforelse
             @error('groupItems')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
         @endif

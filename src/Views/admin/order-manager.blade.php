@@ -39,12 +39,12 @@
                     @endforeach
                 </select>
                 <x-gp247::input type="date" wire:model.live="filterFrom" name="filterFrom"
-                    placeholder="{{ gp247_language_render('admin.core.from_date') }}" />
+                    placeholder="{{ gp247_language_render('admin.from_date') }}" />
                 <x-gp247::input type="date" wire:model.live="filterTo" name="filterTo"
-                    placeholder="{{ gp247_language_render('admin.core.to_date') }}" />
+                    placeholder="{{ gp247_language_render('admin.to_date') }}" />
             </div>
 
-            <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.core.no_records') : null">
+            <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.no_records') : null">
                 <x-slot:head>
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.id') }}</th>
@@ -60,7 +60,7 @@
                         <th class="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" wire:click="setSort('created_at')">
                             {{ gp247_language_render('order.created_at') }} @if ($sortField === 'created_at')<span class="text-xs">{{ $sortDir === 'asc' ? '▲' : '▼' }}</span>@endif
                         </th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.core.action') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.action') }}</th>
                     </tr>
                 </x-slot:head>
 

@@ -222,7 +222,7 @@ class CustomerManager extends ResourcePanel
             }
         }
 
-        session()->flash('gp247_admin_success', gp247_language_render('admin.core.save_success'));
+        session()->flash('gp247_admin_success', gp247_language_render('admin.save_success'));
         $this->redirect(route($this->baseRoute()), navigate: true);
     }
 
@@ -413,7 +413,7 @@ class CustomerManager extends ResourcePanel
 
         $this->refreshAddresses();
         $this->resetAddressForm();
-        $this->notify('success', gp247_language_render('admin.core.save_success'));
+        $this->notify('success', gp247_language_render('admin.save_success'));
     }
 
     /**
@@ -439,7 +439,7 @@ class CustomerManager extends ResourcePanel
         $isDefault = (string) $id === (string) $this->defaultAddressId;
         $total = ShopCustomerAddress::where('customer_id', $this->editingId)->count();
         if ($isDefault && $total <= 1) {
-            $this->notify('warning', gp247_language_render('admin.core.delete_error'));
+            $this->notify('warning', gp247_language_render('admin.delete_error'));
 
             return;
         }
@@ -453,7 +453,7 @@ class CustomerManager extends ResourcePanel
         }
 
         $this->refreshAddresses();
-        $this->notify('success', gp247_language_render('admin.core.delete_success'));
+        $this->notify('success', gp247_language_render('admin.delete_success'));
     }
 
     /**
@@ -476,7 +476,7 @@ class CustomerManager extends ResourcePanel
         }
 
         $this->applyDefaultAddress($id);
-        $this->notify('success', gp247_language_render('admin.core.save_success'));
+        $this->notify('success', gp247_language_render('admin.save_success'));
     }
 
     /**
