@@ -23,7 +23,7 @@
 @endphp
 @if ($topCategories->count())
 <section class="container-x py-6">
-    <h2 class="section-title mb-4">{{ gp247_language_quickly('front.shop_by_category', 'Mua theo danh mục') }}</h2>
+    <h2 class="section-title mb-4">{{ gp247_language_quickly('front.shop_by_category', 'Shop by category') }}</h2>
     <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
         @foreach ($topCategories as $category)
             <a href="{{ $category->getUrl() }}" class="flex flex-col items-center gap-2 group">

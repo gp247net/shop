@@ -27,12 +27,19 @@
 <section class="container-x py-6">
     <div class="flex items-center justify-between mb-4">
         <h2 class="section-title">{{ gp247_language_render('front.products_new') }}</h2>
-        <a href="{{ gp247_route_front('product.all') }}" class="nav-link">{{ gp247_language_quickly('common.view_all', 'Xem tất cả') }}</a>
+        <a href="{{ gp247_route_front('product.all') }}" class="nav-link">{{ gp247_language_quickly('front.view_all', 'View all') }}</a>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         @foreach ($productsNew as $productNew)
+            @php
+                $badgeKey = match ((int) $productNew->kind) {
+                    GP247_PRODUCT_GROUP => 'front.products_group',
+                    GP247_PRODUCT_BUILD => 'front.products_bundle',
+                    default => 'front.products_new',
+                };
+            @endphp
             <div class="relative">
-                <span class="badge-accent absolute top-2 start-2 z-10 uppercase">{{ gp247_language_quickly('product.new', 'Mới') }}</span>
+                <span class="badge-accent absolute top-2 start-2 z-10 uppercase">{{ gp247_language_render($badgeKey) }}</span>
                 @livewire('gp247-shop-front::product-card', ['productId' => $productNew->id], key('product-card-'.$productNew->id))
             </div>
         @endforeach

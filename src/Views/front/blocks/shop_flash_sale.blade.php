@@ -43,7 +43,7 @@
                 </div>
             @endif
         </div>
-        <a href="{{ gp247_route_front('product.all') }}" class="nav-link">{{ gp247_language_quickly('common.view_all', 'Xem tất cả') }}</a>
+        <a href="{{ gp247_route_front('product.all') }}" class="nav-link">{{ gp247_language_quickly('front.view_all', 'View all') }}</a>
     </div>
     <div class="flex gap-4 overflow-x-auto no-scrollbar snap-x pb-2">
         @foreach ($flashSaleProducts as $product)
