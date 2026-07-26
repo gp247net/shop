@@ -54,7 +54,7 @@ class DataShopInitializeSeeder extends Seeder
         $idBlockShop = AdminMenu::insertGetId(
             [
                 'parent_id' => 0,
-                'sort'      => 100,
+                'sort'      => 90,
                 'title'     => 'admin.menu_titles.ADMIN_SHOP_BLOCK',
                 'icon'      => 'nav-icon fab fa-shopify',
                 'key'       => 'ADMIN_SHOP_BLOCK',
