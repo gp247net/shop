@@ -2,6 +2,8 @@
 
 namespace GP247\Shop\Controllers\Auth;
 
+
+use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use Auth;
 use Illuminate\Foundation\Auth\ResetsPasswords;
@@ -80,7 +82,7 @@ class ResetPasswordController extends RootFrontController
             [
                 'title'       => gp247_language_render('customer.password_reset'),
                 'token'       => $token,
-                'layout_page' => 'shop_auth',
+                'layout_page' => ShopLayoutPage::Auth->value,
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('customer.password_reset')],
                 ],

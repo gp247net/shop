@@ -1,6 +1,8 @@
 <?php
 namespace GP247\Shop\Controllers;
 
+
+use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopAttributeGroup;
 use GP247\Core\Models\AdminCountry;
@@ -64,7 +66,7 @@ class ShopCartController extends RootFrontController
                 'keyword'         => '',
                 'cart'            => $cart,
                 'attributesGroup' => ShopAttributeGroup::pluck('name', 'id')->all(),
-                'layout_page'     => 'shop_cart',
+                'layout_page'     => ShopLayoutPage::Cart->value,
                 'breadcrumbs'  => [
                     ['url' => '', 'title' => gp247_language_render('cart.cart_title')],
                 ],
@@ -301,7 +303,7 @@ class ShopCartController extends RootFrontController
                 'countries'       => AdminCountry::getCodeAll(),
                 'attributesGroup' => ShopAttributeGroup::pluck('name', 'id')->all(),
                 'viewCaptcha'     => $viewCaptcha,
-                'layout_page'     => 'shop_checkout',
+                'layout_page'     => ShopLayoutPage::Checkout->value,
                 'breadcrumbs'     => [
                     ['url'        => '', 'title' => gp247_language_render('cart.checkout')],
                 ],
@@ -514,7 +516,7 @@ class ShopCartController extends RootFrontController
                 'shippingMethodData' => $shippingMethodData,
                 'shippingAddress'    => $shippingAddress,
                 'attributesGroup'    => ShopAttributeGroup::getListAll(),
-                'layout_page'        => 'shop_checkout_confirm',
+                'layout_page'        => ShopLayoutPage::CheckoutConfirm->value,
                 'breadcrumbs'        => [
                     ['url'           => '', 'title' => gp247_language_render('checkout.page_title')],
                 ],
@@ -851,7 +853,7 @@ class ShopCartController extends RootFrontController
                 'description' => '',
                 'keyword'     => '',
                 'wishlist'    => $wishlist,
-                'layout_page' => 'shop_wishlist',
+                'layout_page' => ShopLayoutPage::Wishlist->value,
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('cart.page_wishlist_title')],
                 ],
@@ -892,7 +894,7 @@ class ShopCartController extends RootFrontController
                 'description' => '',
                 'keyword'     => '',
                 'compare'     => $compare,
-                'layout_page' => 'shop_compare',
+                'layout_page' => ShopLayoutPage::Compare->value,
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('cart.page_compare_title')],
                 ],
@@ -1076,7 +1078,7 @@ class ShopCartController extends RootFrontController
             [
                 'title'       => gp247_language_render('checkout.success_title'),
                 'orderInfo'   => $orderInfo,
-                'layout_page' => 'shop_order_success',
+                'layout_page' => ShopLayoutPage::OrderSuccess->value,
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('checkout.success_title')],
                 ],

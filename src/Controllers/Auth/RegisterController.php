@@ -2,6 +2,8 @@
 
 namespace GP247\Shop\Controllers\Auth;
 
+
+use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopCustomer;
 use GP247\Core\Models\AdminCustomField;
@@ -133,7 +135,7 @@ class RegisterController extends RootFrontController
                 'title'       => gp247_language_render('customer.title_register'),
                 'customer'    => [],
                 'countries'   => AdminCountry::getCodeAll(),
-                'layout_page' => 'shop_auth',
+                'layout_page' => ShopLayoutPage::Auth->value,
                 'viewCaptcha' => $viewCaptcha,
                 'customFields'=> (new AdminCustomField)->getCustomField($type = 'shop_customer'),
                 'breadcrumbs' => [

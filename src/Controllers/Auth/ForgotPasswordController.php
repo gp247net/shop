@@ -2,6 +2,8 @@
 
 namespace GP247\Shop\Controllers\Auth;
 
+
+use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use Auth;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
@@ -100,7 +102,7 @@ class ForgotPasswordController extends RootFrontController
             $view,
             array(
                 'title'       => gp247_language_render('customer.password_forgot'),
-                'layout_page' => 'shop_auth',
+                'layout_page' => ShopLayoutPage::Auth->value,
                 'viewCaptcha' => $viewCaptcha,
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('customer.password_forgot')],

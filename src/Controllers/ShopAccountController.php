@@ -1,6 +1,8 @@
 <?php
 namespace GP247\Shop\Controllers;
 
+
+use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Core\Models\AdminCountry;
 use GP247\Shop\Models\ShopOrder;
@@ -41,7 +43,7 @@ class ShopAccountController extends RootFrontController
                 [
                     'title'       => gp247_language_render('customer.my_account'),
                     'customer'    => $customer,
-                    'layout_page' => 'shop_profile',
+                    'layout_page' => ShopLayoutPage::Profile->value,
                     'breadcrumbs' => [
                         ['url'    => '', 'title' => gp247_language_render('customer.my_account')],
                     ],
@@ -67,7 +69,7 @@ class ShopAccountController extends RootFrontController
             [
                 'title'       => gp247_language_render('customer.change_password'),
                 'customer'    => $customer,
-                'layout_page' => 'shop_profile',
+                'layout_page' => ShopLayoutPage::Profile->value,
                 'breadcrumbs' => [
                     ['url'    => gp247_route_front('customer.index'), 'title' => gp247_language_render('customer.my_profile')],
                     ['url'    => '', 'title' => gp247_language_render('customer.change_password')],
@@ -152,7 +154,7 @@ class ShopAccountController extends RootFrontController
                     'title'       => gp247_language_render('customer.change_infomation'),
                     'customer'    => $customer,
                     'countries'   => AdminCountry::getCodeAll(),
-                    'layout_page' => 'shop_profile',
+                    'layout_page' => ShopLayoutPage::Profile->value,
                     'customFields'=> (new AdminCustomField)->getCustomField($type = 'shop_customer'),
                     'breadcrumbs' => [
                         ['url'    => gp247_route_front('customer.index'), 'title' => gp247_language_render('customer.my_profile')],
@@ -225,7 +227,7 @@ class ShopAccountController extends RootFrontController
                 'statusOrder' => $statusOrder,
                 'orders'      => (new ShopOrder)->setCustomerId($customer->id)->getData(),
                 'customer'    => $customer,
-                'layout_page' => 'shop_profile',
+                'layout_page' => ShopLayoutPage::Profile->value,
                 'breadcrumbs' => [
                     ['url'    => gp247_route_front('customer.index'), 'title' => gp247_language_render('customer.my_profile')],
                     ['url'    => '', 'title' => gp247_language_render('customer.order_history')],
@@ -264,7 +266,7 @@ class ShopAccountController extends RootFrontController
             'attributesGroup' => $attributesGroup,
             'order'           => $order,
             'customer'        => $customer,
-            'layout_page'     => 'shop_profile',
+            'layout_page'     => ShopLayoutPage::Profile->value,
             'breadcrumbs'     => [
                 ['url'        => gp247_route_front('customer.index'), 'title' => gp247_language_render('customer.my_profile')],
                 ['url'        => '', 'title' => $title],
@@ -291,7 +293,7 @@ class ShopAccountController extends RootFrontController
                 'addresses'   => $customer->addresses,
                 'countries'   => AdminCountry::getCodeAll(),
                 'customer'    => $customer,
-                'layout_page' => 'shop_profile',
+                'layout_page' => ShopLayoutPage::Profile->value,
                 'breadcrumbs' => [
                     ['url'    => gp247_route_front('customer.index'), 'title' => gp247_language_render('customer.my_profile')],
                     ['url'    => '', 'title' => gp247_language_render('customer.address_list')],
@@ -325,7 +327,7 @@ class ShopAccountController extends RootFrontController
             'address'     => $address,
             'customer'    => $customer,
             'countries'   => AdminCountry::getCodeAll(),
-            'layout_page' => 'shop_profile',
+            'layout_page' => ShopLayoutPage::Profile->value,
             'breadcrumbs' => [
                 ['url'    => gp247_route_front('customer.index'), 'title' => gp247_language_render('customer.my_profile')],
                 ['url'    => '', 'title' => $title],

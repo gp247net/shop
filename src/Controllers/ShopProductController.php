@@ -1,6 +1,8 @@
 <?php
 namespace GP247\Shop\Controllers;
 
+
+use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopProduct;
 use GP247\Shop\Models\ShopBrand;
@@ -62,7 +64,7 @@ class ShopProductController extends RootFrontController
                 'keyword'     => '',
                 'description' => '',
                 'products'    => $products,
-                'layout_page' => 'shop_product_list',
+                'layout_page' => ShopLayoutPage::ProductList->value,
                 'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('front.all_product')],
@@ -153,7 +155,7 @@ class ShopProductController extends RootFrontController
                     'product'         => $product,
                     'productRelation' => $productRelation,
                     'og_image'        => gp247_file($product->getImage()),
-                    'layout_page'     => 'shop_product_detail',
+                    'layout_page'     => ShopLayoutPage::ProductDetail->value,
                     'breadcrumbs'     => [
                         ['url'        => gp247_route_front('product.all'), 'title' => gp247_language_render('front.all_product')],
                         $dataCategoryFirst,

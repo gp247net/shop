@@ -1,6 +1,8 @@
 <?php
 namespace GP247\Shop\Controllers;
 
+
+use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopBrand;
@@ -51,7 +53,7 @@ class ShopCategoryController extends RootFrontController
                 'itemsList'   => $itemsList,
                 'keyword'     => '',
                 'description' => '',
-                'layout_page' => 'shop_item_list',
+                'layout_page' => ShopLayoutPage::ItemList->value,
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('front.categories')],
                 ],
@@ -145,7 +147,7 @@ class ShopCategoryController extends RootFrontController
                     'products'    => $products,
                     'category'    => $category,
                     'subCategory' => $subCategory,
-                    'layout_page' => 'shop_product_list',
+                    'layout_page' => ShopLayoutPage::ProductList->value,
                     'og_image'    => gp247_file($category->getImage()),
                     'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
                     'breadcrumbs' => $breadcrumbs,
