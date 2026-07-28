@@ -1739,6 +1739,33 @@ class DataShopInitializeSeeder extends Seeder
             ['code' => 'admin.back',      'text' => 'Quay lại',  'position' => 'admin.common', 'location' => 'vi'],
             ['code' => 'admin.search',    'text' => 'Search',    'position' => 'admin.common', 'location' => 'en'],
             ['code' => 'admin.search',    'text' => 'Tìm kiếm',  'position' => 'admin.common', 'location' => 'vi'],
+
+            // LayoutBlock "Page" scope labels for shop page-types (registered in
+            // ShopServiceProvider into front.layout_page). Modification 20260728T224338.
+            ['code' => 'admin.layout_block_page.shop_item_list',        'text' => 'Product list (category/brand)', 'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_item_list',        'text' => 'Danh sách SP (danh mục/thương hiệu)', 'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_product_list',     'text' => 'Product list',        'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_product_list',     'text' => 'Danh sách sản phẩm',  'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_product_detail',   'text' => 'Product detail',      'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_product_detail',   'text' => 'Chi tiết sản phẩm',   'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_cart',             'text' => 'Cart',               'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_cart',             'text' => 'Giỏ hàng',           'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_checkout',         'text' => 'Checkout',           'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_checkout',         'text' => 'Thanh toán',         'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_checkout_confirm', 'text' => 'Checkout confirm',    'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_checkout_confirm', 'text' => 'Xác nhận thanh toán', 'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_order_success',    'text' => 'Order success',       'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_order_success',    'text' => 'Đặt hàng thành công', 'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_wishlist',         'text' => 'Wishlist',           'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_wishlist',         'text' => 'Danh sách yêu thích', 'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_compare',          'text' => 'Compare',            'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_compare',          'text' => 'So sánh',            'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_profile',          'text' => 'Customer account',   'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_profile',          'text' => 'Trang tài khoản',    'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_auth',             'text' => 'Login / Register',    'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_auth',             'text' => 'Đăng nhập / Đăng ký', 'position' => 'admin.layout_block', 'location' => 'vi'],
+            ['code' => 'admin.layout_block_page.shop_search',           'text' => 'Search (shop)',      'position' => 'admin.layout_block', 'location' => 'en'],
+            ['code' => 'admin.layout_block_page.shop_search',           'text' => 'Tìm kiếm (cửa hàng)', 'position' => 'admin.layout_block', 'location' => 'vi'],
         ]);
     }
 

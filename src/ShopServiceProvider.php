@@ -203,18 +203,28 @@ class ShopServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_passwords.php', 'auth.passwords');
         $this->mergeConfigFrom(__DIR__.'/Config/customer_auth_providers.php', 'auth.providers');
 
-        //Process layout_page
+        // Register shop page-types into the LayoutBlock "Page" scope registry
+        // (front.layout_page), same runtime-append idiom as the News plugin.
+        // WHY: values are i18n lang codes (seeded in DataShopInitializeSeeder,
+        // group admin.layout_block_page) so the admin dropdown shows readable,
+        // localized labels — not raw tokens (modification 20260728T224338, ADR
+        // front-admin_layout-block-page-scope-registry). shop_checkout_confirm
+        // and shop_order_success were added: their controllers emit those
+        // $layout_page tokens but the registry was missing them, so they could
+        // not be selected as a block scope.
         $layoutPage = config('gp247-config.front.layout_page');
-        $layoutPage['shop_item_list'] = 'shop_item_list';
-        $layoutPage['shop_product_detail'] = 'shop_product_detail';
-        $layoutPage['shop_product_list'] = 'shop_product_list';
-        $layoutPage['shop_profile'] = 'shop_profile';
-        $layoutPage['shop_cart'] = 'shop_cart';
-        $layoutPage['shop_checkout'] = 'shop_checkout';
-        $layoutPage['shop_wishlist'] = 'shop_wishlist';
-        $layoutPage['shop_compare'] = 'shop_compare';
-        $layoutPage['shop_auth'] = 'shop_auth';
-        $layoutPage['shop_search'] = 'shop_search';
+        $layoutPage['shop_item_list'] = 'admin.layout_block_page.shop_item_list';
+        $layoutPage['shop_product_detail'] = 'admin.layout_block_page.shop_product_detail';
+        $layoutPage['shop_product_list'] = 'admin.layout_block_page.shop_product_list';
+        $layoutPage['shop_profile'] = 'admin.layout_block_page.shop_profile';
+        $layoutPage['shop_cart'] = 'admin.layout_block_page.shop_cart';
+        $layoutPage['shop_checkout'] = 'admin.layout_block_page.shop_checkout';
+        $layoutPage['shop_checkout_confirm'] = 'admin.layout_block_page.shop_checkout_confirm';
+        $layoutPage['shop_order_success'] = 'admin.layout_block_page.shop_order_success';
+        $layoutPage['shop_wishlist'] = 'admin.layout_block_page.shop_wishlist';
+        $layoutPage['shop_compare'] = 'admin.layout_block_page.shop_compare';
+        $layoutPage['shop_auth'] = 'admin.layout_block_page.shop_auth';
+        $layoutPage['shop_search'] = 'admin.layout_block_page.shop_search';
         config(['gp247-config.front.layout_page' => $layoutPage]);
 
     }
