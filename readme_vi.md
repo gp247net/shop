@@ -1,17 +1,13 @@
-<p align="center">
-    <a href="https://gp247.net"><img src="https://static.gp247.net/logo/logo.png" height="100"></a>
-</p>
+[![GP247](https://static.gp247.net/logo/logo.png)](https://gp247.net)
 
-<p align="center">Hệ thống website thương mại điện tử miễn phí cho doanh nghiệp<br>
-    <code><b>composer require GP247/Shop</b></code>
-</p>
+Hệ thống website thương mại điện tử miễn phí cho doanh nghiệp
 
-<p align="center">
-<a href="https://packagist.org/packages/GP247/Shop"><img src="https://poser.pugx.org/GP247/Shop/d/total.svg" alt="Tổng số lượt tải"></a>
-<a href="https://packagist.org/packages/GP247/Shop"><img src="https://poser.pugx.org/GP247/Shop/v/stable.svg" alt="Phiên bản ổn định mới nhất"></a>
-<a href="https://packagist.org/packages/GP247/Shop"><img src="https://poser.pugx.org/GP247/Shop/license.svg" alt="Giấy phép"></a>
-<a href="https://deepwiki.com/gp247net/shop"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
-</p>
+`composer require GP247/Shop`
+
+[![Tổng số lượt tải](https://poser.pugx.org/GP247/Shop/d/total.svg)](https://packagist.org/packages/GP247/Shop)
+[![Phiên bản ổn định mới nhất](https://poser.pugx.org/GP247/Shop/v/stable.svg)](https://packagist.org/packages/GP247/Shop)
+[![Giấy phép](https://poser.pugx.org/GP247/Shop/license.svg)](https://packagist.org/packages/GP247/Shop)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/gp247net/shop)
 
 
 ## Giới thiệu
@@ -107,8 +103,9 @@ S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có t
 >`php artisan sc:sample`
 
 
-<img src="https://static.s-cart.org/guide/use/common/shop.jpg">
-<img src="https://static.s-cart.org/guide/use/common/dashboard.jpg">
+![Shop](https://static.s-cart.org/guide/use/common/shop.jpg)
+
+![Dashboard](https://static.s-cart.org/guide/use/common/dashboard.jpg)
 
 ## Tùy chỉnh
 

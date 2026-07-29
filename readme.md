@@ -1,15 +1,13 @@
-<p align="center">
-    <a href="https://gp247.net"><img src="https://static.gp247.net/logo/logo.png" height="100"></a>
-</p>
-<p align="center">Free e-commerce platform for businesses<br>
-    <code><b>composer require GP247/Shop</b></code></p>
+[![GP247](https://static.gp247.net/logo/logo.png)](https://gp247.net)
 
-<p align="center">
-<a href="https://packagist.org/packages/GP247/Shop"><img src="https://poser.pugx.org/GP247/Shop/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/GP247/Shop"><img src="https://poser.pugx.org/GP247/Shop/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/GP247/Shop"><img src="https://poser.pugx.org/GP247/Shop/license.svg" alt="License"></a>
-<a href="https://deepwiki.com/gp247net/shop"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
-</p>
+Free e-commerce platform for businesses
+
+`composer require GP247/Shop`
+
+[![Total Downloads](https://poser.pugx.org/GP247/Shop/d/total.svg)](https://packagist.org/packages/GP247/Shop)
+[![Latest Stable Version](https://poser.pugx.org/GP247/Shop/v/stable.svg)](https://packagist.org/packages/GP247/Shop)
+[![License](https://poser.pugx.org/GP247/Shop/license.svg)](https://packagist.org/packages/GP247/Shop)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/gp247net/shop)
 
 ## Introduction
 
@@ -100,8 +98,9 @@ S-Cart already includes all the necessary components. See the full details at th
 >`php artisan sc:sample`
 
 
-<img src="https://static.s-cart.org/guide/use/common/shop.jpg">
-<img src="https://static.s-cart.org/guide/use/common/dashboard.jpg">
+![Shop](https://static.s-cart.org/guide/use/common/shop.jpg)
+
+![Dashboard](https://static.s-cart.org/guide/use/common/dashboard.jpg)
 
 ## Customization
 
