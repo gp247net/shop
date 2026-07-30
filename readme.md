@@ -1,4 +1,13 @@
-[![GP247](https://static.gp247.net/logo/logo.png)](https://gp247.net)
+```
+  _____  _____     ___  _  _   _____ 
+ / ____|  __ \   |__ \| || | |___  |
+| |  __| |__) |     ) | || |_   / / 
+| | |_ |  ___/     / /|__   _| / /  
+| |__| | |        / /_   | |  / /   
+ \_____|_|       |____|  |_| /_/    
+```
+
+> 🌐 **Language:** 🇬🇧 English (current) · [🇻🇳 Tiếng Việt](readme_vi.md)
 
 Free e-commerce platform for businesses
 
@@ -97,10 +106,6 @@ S-Cart already includes all the necessary components. See the full details at th
 
 >`php artisan sc:sample`
 
-
-![Shop](https://static.s-cart.org/guide/use/common/shop.jpg)
-
-![Dashboard](https://static.s-cart.org/guide/use/common/dashboard.jpg)
 
 ## Customization
 

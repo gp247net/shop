@@ -1,4 +1,13 @@
-[![GP247](https://static.gp247.net/logo/logo.png)](https://gp247.net)
+```
+  _____  _____     ___  _  _   _____ 
+ / ____|  __ \   |__ \| || | |___  |
+| |  __| |__) |     ) | || |_   / / 
+| | |_ |  ___/     / /|__   _| / /  
+| |__| | |        / /_   | |  / /   
+ \_____|_|       |____|  |_| /_/    
+```
+
+> 🌐 **Ngôn ngữ:** 🇻🇳 Tiếng Việt (hiện tại) · [🇬🇧 English](readme.md)
 
 Hệ thống website thương mại điện tử miễn phí cho doanh nghiệp
 
@@ -102,10 +111,6 @@ S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có t
 
 >`php artisan sc:sample`
 
-
-![Shop](https://static.s-cart.org/guide/use/common/shop.jpg)
-
-![Dashboard](https://static.s-cart.org/guide/use/common/dashboard.jpg)
 
 ## Tùy chỉnh
 
