@@ -279,16 +279,11 @@
         </div>
         @endif
 
-        @if (!empty($dataTotal))
-        <div class="card p-5">
-            @foreach ($dataTotal as $total)
-            <div class="flex justify-between text-sm py-1">
-                <span class="text-ink-500">{{ $total['title'] ?? '' }}</span>
-                <span class="font-medium">{{ $total['text'] ?? '' }}</span>
-            </div>
-            @endforeach
-        </div>
-        @endif
+        {{-- Total-method zone (coupon/point) + order totals — checkout total contract
+             (ADR-storefront-checkout-total-method-contract). A template overriding this
+             view only needs these two @include points to support every total plugin. --}}
+        @include('gp247-shop-front::partials.checkout_total_methods')
+        @include('gp247-shop-front::partials.order_totals')
 
         {{-- Place order form (non-Livewire POST — addOrder() reads from session, not request body). --}}
         <form method="POST" action="{{ gp247_route_front('order.add') }}">

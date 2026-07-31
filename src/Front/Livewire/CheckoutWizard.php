@@ -4,9 +4,11 @@ namespace GP247\Shop\Front\Livewire;
 
 use GP247\Core\Models\AdminCountry;
 use GP247\Front\Livewire\BaseFrontComponent;
+use GP247\Shop\Front\Contracts\CheckoutTotalMethod;
 use GP247\Shop\Models\ShopAttributeGroup;
 use GP247\Shop\Models\ShopOrderTotal;
 use GP247\Shop\Services\CartItem;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Livewire wizard component for the checkout flow (US-LW-006).
@@ -55,6 +57,23 @@ class CheckoutWizard extends BaseFrontComponent
 
     /** @var string Selected payment plugin key. */
     public string $paymentMethod = '';
+
+    /**
+     * Per-plugin input for total-method plugins (coupon/point), keyed by plugin key
+     * (e.g. ['ShopDiscount' => ['code' => 'SUMMER']]). Bound by the plugin's checkout
+     * fragment via wire:model. See ADR-storefront-checkout-total-method-contract.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    public array $totalPayload = [];
+
+    /**
+     * Per-plugin apply/remove result, keyed by plugin key
+     * (['error' => 0|1, 'msg' => string]). The fragment renders this as feedback.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    public array $totalMessages = [];
 
     /**
      * Mount: pre-fill address from the authenticated customer's default address.
@@ -284,8 +303,131 @@ class CheckoutWizard extends BaseFrontComponent
         ]);
 
         // WHY: processDataTotal() depends on session('shippingMethod') being set.
+        $this->recomputeTotals();
+    }
+
+    // -------------------------------------------------------------------------
+    // Total-method plugins (coupon/point) — L1/L2 of the checkout total contract.
+    // See ADR-storefront-checkout-total-method-contract.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Recompute session('dataTotal') from the current session('totalMethod') /
+     * shipping / payment state. Shared by commitToSession() and apply/removeTotal().
+     *
+     * @return void
+     */
+    private function recomputeTotals(): void
+    {
         $objects = ShopOrderTotal::getObjectOrderTotal();
         session(['dataTotal' => ShopOrderTotal::processDataTotal($objects)]);
+    }
+
+    /**
+     * Apply a total-method plugin from its checkout fragment (e.g. a coupon code).
+     * Guarded: the key must be an active total plugin implementing the contract;
+     * the payload is sanitised before delegation. Totals recompute reactively.
+     *
+     * @param string $key Plugin key (e.g. 'ShopDiscount').
+     * @return void
+     */
+    public function applyTotal(string $key): void
+    {
+        $plugin = $this->resolveTotalPlugin($key);
+        if ($plugin === null) {
+            return;
+        }
+
+        $payload = (array) ($this->totalPayload[$key] ?? []);
+        $payload = (array) gp247_clean(data: $payload);
+
+        $this->totalMessages[$key] = $plugin->checkoutApply($payload);
+        $this->recomputeTotals();
+    }
+
+    /**
+     * Remove a previously applied total-method plugin from the order.
+     *
+     * @param string $key Plugin key (e.g. 'ShopDiscount').
+     * @return void
+     */
+    public function removeTotal(string $key): void
+    {
+        $plugin = $this->resolveTotalPlugin($key);
+        if ($plugin === null) {
+            return;
+        }
+
+        $plugin->checkoutRemove();
+        unset($this->totalMessages[$key], $this->totalPayload[$key]);
+        $this->recomputeTotals();
+    }
+
+    /**
+     * Resolve a total plugin's AppConfig instance for a mutating action, or null.
+     * Whitelist: the key must be an active plugin with code 'total' whose AppConfig
+     * implements CheckoutTotalMethod. This is the security boundary for the client
+     * -supplied $key on applyTotal/removeTotal.
+     *
+     * @param string $key
+     * @return CheckoutTotalMethod|null
+     */
+    private function resolveTotalPlugin(string $key): ?CheckoutTotalMethod
+    {
+        $key     = (string) gp247_clean(data: $key, hight: true);
+        $modules = gp247_extension_get_via_code(code: 'total');
+        if (!array_key_exists($key, $modules)) {
+            return null;
+        }
+
+        $class = gp247_extension_get_namespace(type: 'Plugins', key: $key) . '\AppConfig';
+        if (!class_exists($class) || !is_subclass_of($class, CheckoutTotalMethod::class)) {
+            return null;
+        }
+
+        return new $class;
+    }
+
+    /**
+     * Load active total-method plugins for the confirm step's total-method zone.
+     * Each entry: ['info' => getInfo(), 'view' => checkoutView()]. A total plugin
+     * that does not implement the contract is hidden + logged (v1 not upgraded) —
+     * RISK-MAINT-plugin-total-v1-hidden.
+     *
+     * @return array<string, array{info: array<string,mixed>, view: string|null}>
+     */
+    private function loadTotalPlugins(): array
+    {
+        $modules = gp247_extension_get_via_code(code: 'total');
+        $sources = gp247_extension_get_all_local(type: 'Plugins');
+        $result  = [];
+
+        foreach ($modules as $module) {
+            $key = $module['key'];
+            if (!array_key_exists($key, $sources)) {
+                continue;
+            }
+
+            $class = $sources[$key] . '\AppConfig';
+            if (!class_exists($class)) {
+                continue;
+            }
+
+            if (!is_subclass_of($class, CheckoutTotalMethod::class)) {
+                // WHY: legacy total plugin (v1) — its jQuery ::render/::script is dead
+                // under the Livewire checkout; hide but log so it can be traced/upgraded.
+                Log::warning('[GP247 checkout] total-method plugin "' . $key . '" does not implement ' . CheckoutTotalMethod::class . ' — hidden from checkout until upgraded.');
+                continue;
+            }
+
+            $instance = new $class;
+            $result[$key] = [
+                'info' => method_exists($instance, 'getInfo') ? (array) $instance->getInfo() : [],
+                'view' => $instance->checkoutView(),
+            ];
+        }
+
+        return $result;
     }
 
     // -------------------------------------------------------------------------
@@ -322,6 +464,7 @@ class CheckoutWizard extends BaseFrontComponent
         return [
             'shippingPlugins' => $this->loadShippingPlugins(),
             'paymentPlugins'  => $this->loadPaymentPlugins(),
+            'totalPlugins'    => $this->step === 'confirm' ? $this->loadTotalPlugins() : [],
             'dataTotal'       => $this->step === 'confirm' ? (session('dataTotal') ?? []) : [],
             // WHY: session('dataCheckout') comes back as plain arrays instead of
             // CartItem instances when session.serialization = json; rehydrate so
