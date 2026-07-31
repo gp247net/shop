@@ -17,7 +17,7 @@
     Variables: $totalPlugins (key => ['info'=>getInfo(), 'view'=>fragment]); $totalMessages, $totalPayload (component state).
 --}}
 @if (!empty($totalPlugins))
-    <div class="space-y-3" id="gp247_total_methods">
+    <div class="space-y-3">
         @foreach ($totalPlugins as $totalKey => $totalPlugin)
             @if (!empty($totalPlugin['view']) && view()->exists($totalPlugin['view']))
                 @php
