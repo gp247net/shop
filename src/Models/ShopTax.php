@@ -12,6 +12,11 @@ class ShopTax extends Model
     protected $guarded = [];
     protected $connection = GP247_DB_CONNECTION;
 
+    // WHY: value is decimal(8,4) since modification 20260803T223543 (ADR
+    // shop-admin_tax-standardization, D1). Cast to float so reads/arithmetic keep
+    // fractional percents (8.5, 8.375) and displays stay clean (no "8.5000" string).
+    protected $casts = ['value' => 'float'];
+
     private static $getList = null;
     private static $status = null;
     private static $arrayId = null;

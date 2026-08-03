@@ -86,6 +86,32 @@ if (!function_exists('gp247_tax_price') && !in_array('gp247_tax_price', config('
 }
 
 /**
+ * Compute the tax amount for a whole order line, rounded once at the line level.
+ *
+ * Single source of the tax-rounding rule (ADR shop-admin_tax-standardization, D2/D4):
+ * every tax touchpoint — cart (ShopCurrency::sumCartCheckout), order total
+ * (ShopOrderTotal::processDataTotal), storefront persistence
+ * (ShopCartController::addOrder) and admin (AdminOrder) — must reuse this so that
+ * shop_order.tax == Σ shop_order_detail.tax stays exact. Rounding the line once
+ * (not each unit) avoids the per-unit cent drift of gp247_tax_price × qty.
+ *
+ * @param float $unitPriceWithOption Unit price incl. option surcharges, already in the target currency.
+ * @param float $qty                 Line quantity.
+ * @param float $rate                Tax rate as a percent (e.g. 8.5 for 8.5%).
+ * @return float Tax amount for the line, rounded to 2 decimals.
+ *
+ * @aidlc-unit shop-admin
+ * @aidlc-story US-SADM-003
+ * @aidlc-adr shop-admin_tax-standardization
+ */
+if (!function_exists('gp247_line_tax') && !in_array('gp247_line_tax', config('gp247_functions_except', []))) {
+    function gp247_line_tax($unitPriceWithOption, $qty, $rate)
+    {
+        return round((float) $unitPriceWithOption * (float) $qty * (float) $rate / 100, 2);
+    }
+}
+
+/**
  * Render html option price
  *
  * @param   string $arrtribute  format: attribute-name__value-option-price

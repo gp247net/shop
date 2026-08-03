@@ -390,7 +390,10 @@ return new class extends Migration
             function (Blueprint $table) {
                 $table->increments('id');
                 $table->string('name', 255);
-                $table->integer('value')->default(0);
+                // WHY: decimal (not integer) so tax rates can carry fractional percents
+                // such as 8.5% or the US 8.375% (modification 20260803T223543, ADR
+                // shop-admin_tax-standardization, decision D1). 8,4 = up to 9999.9999%.
+                $table->decimal('value', 8, 4)->default(0);
                 $table->timestamps();
             }
         );

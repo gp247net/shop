@@ -159,8 +159,12 @@ class ShopOrder extends Model
                 if (!gp247_config('product_buy_out_of_stock') && $product->stock < $cartDetail['qty']) {
                     throw new \Exception(gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $cartDetail['qty']]));
                 }
-                //
-                $tax = (gp247_tax_price($cartDetail['price'], $product->getTaxValue()) - $cartDetail['price']) *  $cartDetail['qty'];
+                // WHY: line-level tax on the same basis as the cart total — unit price
+                // incl. option surcharges, in order currency — so shop_order.tax equals
+                // Σ shop_order_detail.tax (ADR shop-admin_tax-standardization, D2/D4). The
+                // old per-unit formula ignored option surcharges, drifting from the cart.
+                $priceWithOptions = $cartDetail['price'] + gp247_currency_value(gp247_cart_options_price($cartDetail['attribute'] ?? []));
+                $tax = gp247_line_tax($priceWithOptions, $cartDetail['qty'], $product->getTaxValue());
 
                 $cartDetail['order_id'] = $orderID;
                 $cartDetail['currency'] = $currency;

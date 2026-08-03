@@ -233,10 +233,15 @@ class ShopCurrency extends Model
             if($product) {
                 $priceItem = $product->getFinalPrice();
                 $priceItem += gp247_cart_options_price($item->options);
-                $sumValue = $item->qty * self::getValue($priceItem, $rate);
-                $sumValueWithTax = $item->qty * self::getValue(gp247_tax_price($priceItem, $product->getTaxValue()), $rate);
-                $sumSubtotal += $sumValue;
-                $sumSubtotalWithTax +=  $sumValueWithTax;
+                $priceConverted = self::getValue($priceItem, $rate);
+                $lineSubtotal = $priceConverted * $item->qty;
+                // WHY: line-level rounding (round the whole line once) so the order-total
+                // tax equals the sum of per-line taxes persisted on shop_order_detail
+                // (ADR shop-admin_tax-standardization, D2). gp247_line_tax is the single
+                // source shared with ShopCartController::addOrder.
+                $lineTax = gp247_line_tax($priceConverted, $item->qty, $product->getTaxValue());
+                $sumSubtotal += $lineSubtotal;
+                $sumSubtotalWithTax += $lineSubtotal + $lineTax;
             }
         }
         $dataReturn['subTotal'] = $sumSubtotal;
