@@ -238,6 +238,16 @@ trait HasOrderItems
             ShopProduct::updateStock($detail->product_id, $qty - $oldQty);
         }
 
+        // WHY: warn (not block) when the qty increase exceeds stock — allow-but-warn
+        // (ADR shop-admin_order-stock-parity).
+        $delta = $qty - $oldQty;
+        if ($delta > 0) {
+            $product = ShopProduct::find($detail->product_id);
+            if ($product !== null && !$product->hasStockForOrder($delta)) {
+                $this->notify('warning', gp247_language_render('cart.item_over_qty', ['sku' => $detail->sku, 'qty' => $qty]));
+            }
+        }
+
         $this->logHistory(
             gp247_language_render('product.edit_product') . ' #' . $detail->id,
             $this->currentOrder()->status ?? 0,
@@ -263,6 +273,13 @@ trait HasOrderItems
 
         $productId = (string) ($clean['product_id'] ?? '');
         $product = $productId !== '' ? ShopProduct::find($productId) : null;
+
+        // WHY: allow-but-warn on oversell (ADR shop-admin_order-stock-parity) — the
+        // line is still added (admin authority); the admin just sees a warning toast.
+        if ($product !== null && !$product->hasStockForOrder($qty)) {
+            $this->notify('warning', gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $qty]));
+        }
+
         $name = $clean['name'] ?: ($product->name ?? $product->sku ?? '');
         $sku = $clean['sku'] ?: ($product->sku ?? '');
 

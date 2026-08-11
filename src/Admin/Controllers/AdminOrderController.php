@@ -393,78 +393,114 @@ class AdminOrderController extends RootAdminController
             'comment'         => $data['comment'] ?? '',
         ];
         $dataCreate = gp247_clean($dataCreate, [], true);
-        $order = AdminOrder::create($dataCreate);
-        
-        // Process products if any
-        $subtotal = 0;
-        $taxTotal = 0;
-        if (!empty($data['products']) && is_array($data['products'])) {
-            foreach ($data['products'] as $item) {
-                if (!empty($item['product_id'])) {
-                    $product = (new AdminProduct)->getDetail($item['product_id']);
-                    if ($product) {
-                        // WHY: rounding precision follows product_qty_decimal (modification
-                        // 20260705T093328, ADR-016) — whole units by default, 2dp when enabled.
-                        $qty = round((float)($item['qty'] ?? 1), gp247_qty_decimal_enabled() ? 2 : 0);
-                        $price = (float)($item['price'] ?? 0);
-                        $tax = (float)($item['tax'] ?? 0);
-                        
-                        $itemSubtotal = $qty * $price;
-                        $itemTax = $itemSubtotal * $tax / 100;
-                        $totalPrice = $itemSubtotal + $itemTax;
-                        
-                        $subtotal += $itemSubtotal;
-                        $taxTotal += $itemTax;
-                        
-                        // Create order detail
-                        ShopOrderDetail::create([
-                            'order_id' => $order->id,
-                            'product_id' => $item['product_id'],
-                            'name' => $item['name'] ?? $product->name,
-                            'sku' => $product->sku,
-                            'price' => $price,
-                            'qty' => $qty,
-                            'total_price' => $totalPrice,
-                            'tax' => $tax,
-                            'attribute' => null,
-                            'currency' => $data['currency'],
-                            'exchange_rate' => $data['exchange_rate'],
-                        ]);
+        // WHY: create order + line items + totals and decrement stock atomically,
+        // parity with the storefront ShopOrder::createOrder (US-SADM-order-stock-parity,
+        // ADR shop-admin_order-stock-parity). A partial failure must not leave an
+        // order/detail/stock in an inconsistent half-written state.
+        $overStockWarnings = [];
+        try {
+            \DB::connection(GP247_DB_CONNECTION)->beginTransaction();
+            $order = AdminOrder::create($dataCreate);
+
+            // Process products if any
+            $subtotal = 0;
+            $taxTotal = 0;
+            if (!empty($data['products']) && is_array($data['products'])) {
+                foreach ($data['products'] as $item) {
+                    if (!empty($item['product_id'])) {
+                        $product = (new AdminProduct)->getDetail($item['product_id']);
+                        if ($product) {
+                            // WHY: rounding precision follows product_qty_decimal (modification
+                            // 20260705T093328, ADR-016) — whole units by default, 2dp when enabled.
+                            $qty = round((float)($item['qty'] ?? 1), gp247_qty_decimal_enabled() ? 2 : 0);
+                            $price = (float)($item['price'] ?? 0);
+                            $tax = (float)($item['tax'] ?? 0);
+
+                            $itemSubtotal = $qty * $price;
+                            $itemTax = $itemSubtotal * $tax / 100;
+                            $totalPrice = $itemSubtotal + $itemTax;
+
+                            $subtotal += $itemSubtotal;
+                            $taxTotal += $itemTax;
+
+                            // WHY: admin may oversell (allow-but-warn) — collect exceeding
+                            // lines, do NOT block, unlike the storefront hard block
+                            // (ADR shop-admin_order-stock-parity).
+                            if (!$product->hasStockForOrder($qty)) {
+                                $overStockWarnings[] = gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $qty]);
+                            }
+
+                            // WHY: addNewDetail inserts AND decrements stock/sold (parity with
+                            // storefront createOrder + postAddItem). The previous
+                            // ShopOrderDetail::create() left stock untouched → oversell
+                            // (RISK-BIZ-admin-oversell).
+                            (new ShopOrderDetail)->addNewDetail([[
+                                'id' => gp247_uuid(),
+                                'order_id' => $order->id,
+                                'product_id' => $item['product_id'],
+                                'name' => $item['name'] ?? $product->name,
+                                'sku' => $product->sku,
+                                'price' => $price,
+                                'qty' => $qty,
+                                'total_price' => $totalPrice,
+                                'tax' => $tax,
+                                'attribute' => null,
+                                'currency' => $data['currency'],
+                                'exchange_rate' => $data['exchange_rate'],
+                                'created_at' => gp247_time_now(),
+                            ]]);
+                        }
                     }
                 }
             }
+
+            // Get shipping, discount and received from form
+            $shipping = (float)($data['shipping'] ?? 0);
+            $discount = (float)($data['discount'] ?? 0);
+            $received = (float)($data['received'] ?? 0);
+            $total = $subtotal + $taxTotal + $shipping - $discount;
+            $balance = $total + $received;
+
+            // Insert order totals with calculated values
+            AdminOrder::insertOrderTotal([
+                ['id' => gp247_uuid(),'code' => 'subtotal', 'value' => $subtotal, 'title' => gp247_language_render('order.totals.sub_total'), 'sort' => ShopOrderTotal::POSITION_SUBTOTAL, 'order_id' => $order->id],
+                ['id' => gp247_uuid(),'code' => 'tax', 'value' => $taxTotal, 'title' => gp247_language_render('order.totals.tax'), 'sort' => ShopOrderTotal::POSITION_TAX, 'order_id' => $order->id],
+                ['id' => gp247_uuid(),'code' => 'shipping', 'value' => $shipping, 'title' => gp247_language_render('order.totals.shipping'), 'sort' => ShopOrderTotal::POSITION_SHIPPING_METHOD, 'order_id' => $order->id],
+                ['id' => gp247_uuid(),'code' => 'discount', 'value' => $discount, 'title' => gp247_language_render('order.totals.discount'), 'sort' => ShopOrderTotal::POSITION_TOTAL_METHOD, 'order_id' => $order->id],
+                ['id' => gp247_uuid(),'code' => 'other_fee', 'value' => 0, 'title' => gp247_language_render('order.totals.other_fee'), 'sort' => ShopOrderTotal::POSITION_OTHER_FEE, 'order_id' => $order->id],
+                ['id' => gp247_uuid(),'code' => 'total', 'value' => $total, 'title' => gp247_language_render('order.totals.total'), 'sort' => ShopOrderTotal::POSITION_TOTAL, 'order_id' => $order->id],
+                ['id' => gp247_uuid(),'code' => 'received', 'value' => $received, 'title' => gp247_language_render('order.totals.received'), 'sort' => ShopOrderTotal::POSITION_RECEIVED, 'order_id' => $order->id],
+            ]);
+
+            // Update order total
+            $order->update([
+                'subtotal' => $subtotal,
+                'shipping' => $shipping,
+                'discount' => $discount,
+                'tax' => $taxTotal,
+                'total' => $total,
+                'received' => $received,
+                'balance' => $balance,
+            ]);
+
+            \DB::connection(GP247_DB_CONNECTION)->commit();
+        } catch (\Throwable $e) {
+            \DB::connection(GP247_DB_CONNECTION)->rollBack();
+
+            return redirect()->back()->withInput()
+                ->with('error', gp247_language_render('action.error') . ' ' . $e->getMessage());
         }
-        
-        // Get shipping, discount and received from form
-        $shipping = (float)($data['shipping'] ?? 0);
-        $discount = (float)($data['discount'] ?? 0);
-        $received = (float)($data['received'] ?? 0);
-        $total = $subtotal + $taxTotal + $shipping - $discount;
-        $balance = $total + $received;
-        
-        // Insert order totals with calculated values
-        AdminOrder::insertOrderTotal([
-            ['id' => gp247_uuid(),'code' => 'subtotal', 'value' => $subtotal, 'title' => gp247_language_render('order.totals.sub_total'), 'sort' => ShopOrderTotal::POSITION_SUBTOTAL, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'tax', 'value' => $taxTotal, 'title' => gp247_language_render('order.totals.tax'), 'sort' => ShopOrderTotal::POSITION_TAX, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'shipping', 'value' => $shipping, 'title' => gp247_language_render('order.totals.shipping'), 'sort' => ShopOrderTotal::POSITION_SHIPPING_METHOD, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'discount', 'value' => $discount, 'title' => gp247_language_render('order.totals.discount'), 'sort' => ShopOrderTotal::POSITION_TOTAL_METHOD, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'other_fee', 'value' => 0, 'title' => gp247_language_render('order.totals.other_fee'), 'sort' => ShopOrderTotal::POSITION_OTHER_FEE, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'total', 'value' => $total, 'title' => gp247_language_render('order.totals.total'), 'sort' => ShopOrderTotal::POSITION_TOTAL, 'order_id' => $order->id],
-            ['id' => gp247_uuid(),'code' => 'received', 'value' => $received, 'title' => gp247_language_render('order.totals.received'), 'sort' => ShopOrderTotal::POSITION_RECEIVED, 'order_id' => $order->id],
-        ]);
-        
-        // Update order total
-        $order->update([
-            'subtotal' => $subtotal,
-            'shipping' => $shipping,
-            'discount' => $discount,
-            'tax' => $taxTotal,
-            'total' => $total,
-            'received' => $received,
-            'balance' => $balance,
-        ]);
-        //
-        return redirect(gp247_route_admin('admin_order.index'))->with('success', gp247_language_render('action.create_success'));
+
+        $redirect = redirect(gp247_route_admin('admin_order.index'))
+            ->with('success', gp247_language_render('action.create_success'));
+
+        // WHY: surface the oversell warning after a successful create — the order is
+        // still created (admin authority), the admin just needs to see it.
+        if (!empty($overStockWarnings)) {
+            $redirect->with('warning', implode(' ', $overStockWarnings));
+        }
+
+        return $redirect;
     }
 
     /**
@@ -636,6 +672,7 @@ class AdminOrderController extends RootAdminController
         $add_tax = request('add_tax');
         $orderId = request('order_id');
         $items = [];
+        $overStockWarnings = [];
 
         $order = AdminOrder::getOrderAdmin($orderId);
 
@@ -645,6 +682,11 @@ class AdminOrderController extends RootAdminController
                 $product = AdminProduct::getProductAdmin($id);
                 if (!$product) {
                     return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => '#'.$id]), 'detail' => '']);
+                }
+                // WHY: allow-but-warn on oversell in admin, unlike storefront hard
+                // block (ADR shop-admin_order-stock-parity).
+                if (!$product->hasStockForOrder($add_qty[$key])) {
+                    $overStockWarnings[] = gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $add_qty[$key]]);
                 }
                 $pAttr = json_encode($add_att[$id] ?? []);
                 $items[] = array(
@@ -677,9 +719,13 @@ class AdminOrderController extends RootAdminController
                 (new AdminOrder)->addOrderHistory($dataHistory);
 
                 AdminOrder::updateSubTotal($orderId);
-                
+
                 //end update total price
-                return response()->json(['error' => 0, 'msg' => gp247_language_render('action.update_success')]);
+                $msg = gp247_language_render('action.update_success');
+                if (!empty($overStockWarnings)) {
+                    $msg .= ' ' . implode(' ', $overStockWarnings);
+                }
+                return response()->json(['error' => 0, 'msg' => $msg, 'warning' => !empty($overStockWarnings)]);
             } catch (\Throwable $e) {
                 return response()->json(['error' => 1, 'msg' => 'Error: ' . $e->getMessage()]);
             }
@@ -721,10 +767,17 @@ class AdminOrderController extends RootAdminController
             (new AdminOrder)->addOrderHistory($dataHistory);
 
             //Update stock
+            $overStockWarning = '';
             if ($field == 'qty') {
                 $checkQty = $value - $fieldOrg;
                 //Update stock, sold
                 AdminProduct::updateStock($item->product_id, $checkQty);
+
+                // WHY: warn (not block) when the qty increase exceeds stock — admin
+                // authority, allow-but-warn (ADR shop-admin_order-stock-parity).
+                if ($checkQty > 0 && $item->product && !$item->product->hasStockForOrder($checkQty)) {
+                    $overStockWarning = ' ' . gp247_language_render('cart.item_over_qty', ['sku' => $item->sku, 'qty' => $value]);
+                }
             }
 
             //Update total price
@@ -752,7 +805,8 @@ class AdminOrderController extends RootAdminController
                 'item_total_price' => gp247_currency_render_symbol($item->total_price, $item->currency),
                 'item_id'          => $id,
                 'balance'          => $blance,
-            ],'msg' => gp247_language_render('action.update_success')
+            ],'msg' => gp247_language_render('action.update_success') . $overStockWarning,
+                'warning' => $overStockWarning !== '',
             ];
         } catch (\Throwable $e) {
             $arrayReturn = ['error' => 1, 'msg' => $e->getMessage()];

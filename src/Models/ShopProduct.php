@@ -418,6 +418,35 @@ class ShopProduct extends Model
     }
 
     /**
+     * Whether the given quantity may be ordered under the current stock policy.
+     *
+     * Encodes the same predicate the storefront uses in ShopOrder::createOrder:
+     * ordering is allowed when the shop permits buying out of stock, when stock
+     * is not managed at all (product_stock off), or when on-hand stock covers the
+     * quantity. Callers decide how to react when this returns false — the
+     * storefront throws (hard block); admin flows warn but still proceed
+     * (allow-but-warn, per ADR shop-admin_order-stock-parity). Single source so
+     * the condition is not re-implemented inline per caller.
+     *
+     * @param float|int|string $qty Quantity requested.
+     * @return bool True when the quantity may be ordered.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-stock-parity
+     * @aidlc-adr shop-admin_order-stock-parity
+     */
+    public function hasStockForOrder($qty): bool
+    {
+        $storeId = config('app.storeId');
+        if (gp247_config('product_buy_out_of_stock', $storeId)
+            || empty(gp247_config('product_stock', $storeId))) {
+            return true;
+        }
+
+        return $this->stock >= (float) $qty;
+    }
+
+    /**
      * Start new process get data
      *
      * @return  new model
