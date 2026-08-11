@@ -113,7 +113,10 @@ class ShopConfigForm extends GP247AdminComponent
         // --- Order (global) ---
         $fields = [];
         foreach ($load('order_config', $global) as $c) {
-            $fields[] = $this->field($c, 'checkbox', 'global');
+            // WHY: product_buy_out_of_stock only has an effect when product_stock
+            // (stock management) is on — surface that relationship as a help note.
+            $note = $c->key === 'product_buy_out_of_stock' ? 'admin.order.product_buy_out_of_stock_note' : '';
+            $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', '', $note);
         }
         $tabs[] = ['id' => 'order', 'label' => 'admin.shop.config_order', 'fields' => $fields];
 
@@ -177,7 +180,7 @@ class ShopConfigForm extends GP247AdminComponent
      * @param string $labelSuffix Appended to the label (e.g. " (*)").
      * @return array<string, mixed>
      */
-    private function field($c, string $type, string $scope, array $options = [], bool $disabled = false, string $labelSuffix = '', string $section = ''): array
+    private function field($c, string $type, string $scope, array $options = [], bool $disabled = false, string $labelSuffix = '', string $section = '', string $note = ''): array
     {
         return [
             'key' => $c->key,
@@ -189,6 +192,8 @@ class ShopConfigForm extends GP247AdminComponent
             'disabled' => $disabled,
             'value' => $c->value,
             'section' => $section,
+            // Optional help text (language code) rendered under the field.
+            'note' => $note,
         ];
     }
 

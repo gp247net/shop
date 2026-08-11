@@ -1117,6 +1117,8 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'admin.order.select_product','text' => 'Chọn sản phẩm','position' => 'order.admin','location' => 'vi'],
                 ['code' => 'admin.order.product_buy_out_of_stock','text' => 'Allow buy out of stock','position' => 'order.admin','location' => 'en'],
                 ['code' => 'admin.order.product_buy_out_of_stock','text' => 'Cho phép mua hàng đã hết','position' => 'order.admin','location' => 'vi'],
+                ['code' => 'admin.order.product_buy_out_of_stock_note','text' => "Only applies when 'Stock management' (product_stock) is on. If stock management is off, this option has no effect.",'position' => 'order.admin','location' => 'en'],
+                ['code' => 'admin.order.product_buy_out_of_stock_note','text' => "Chỉ có tác dụng khi bật 'Quản lý tồn kho' (product_stock). Nếu tắt quản lý tồn kho, tuỳ chọn này không có ý nghĩa.",'position' => 'order.admin','location' => 'vi'],
                 ['code' => 'admin.order.use_shipping','text' => 'Use shipping method','position' => 'order.admin','location' => 'en'],
                 ['code' => 'admin.order.use_shipping','text' => 'Sử dụng phương thức vận chuyển','position' => 'order.admin','location' => 'vi'],
                 ['code' => 'admin.order.use_payment','text' => 'Use payment method','position' => 'order.admin','location' => 'en'],

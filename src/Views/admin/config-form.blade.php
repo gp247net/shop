@@ -190,7 +190,12 @@
                                 @php $key = $field['key']; $label = gp247_language_render($field['label']) . ($field['labelSuffix'] ?? ''); @endphp
 
                                 @if ($field['type'] === 'checkbox')
-                                    <x-gp247::checkbox :label="$label" wire:model="values.{{ $key }}" value="1" :disabled="(bool) $field['disabled']" />
+                                    <div>
+                                        <x-gp247::checkbox :label="$label" wire:model="values.{{ $key }}" value="1" :disabled="(bool) $field['disabled']" />
+                                        @if (!empty($field['note']))
+                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render($field['note']) }}</p>
+                                        @endif
+                                    </div>
 
                                 @elseif ($field['type'] === 'checklist')
                                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-start">
