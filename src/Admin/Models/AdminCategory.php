@@ -109,16 +109,20 @@ class AdminCategory extends ShopCategory
         $tableDescription = (new ShopCategoryDescription)->getTable();
         $table = (new AdminCategory)->getTable();
         if (gp247_config_global('cache_status') && gp247_config_global('cache_category')) {
-            if (!Cache::has($storeCache.'_cache_category_'.gp247_get_locale())) {
+            // Embed the group version so gp247_cache_clear('cache_category') (a version
+            // bump) invalidates every store x locale variant at once — the `database`
+            // cache driver cannot wildcard-forget the old per-store/locale keys.
+            $cacheKey = $storeCache.'_cache_category_'.gp247_get_locale().'_v'.gp247_cache_version('category');
+            if (!Cache::has($cacheKey)) {
                 if (self::$getListTitleAdmin === null) {
                     self::$getListTitleAdmin = self::join($tableDescription, $tableDescription.'.category_id', $table.'.id')
                     ->where('lang', gp247_get_locale())
                     ->pluck('name', 'id')
                     ->toArray();
                 }
-                gp247_cache_set($storeCache.'_cache_category_'.gp247_get_locale(), self::$getListTitleAdmin);
+                gp247_cache_set($cacheKey, self::$getListTitleAdmin);
             }
-            return Cache::get($storeCache.'_cache_category_'.gp247_get_locale());
+            return Cache::get($cacheKey);
         } else {
             if (self::$getListTitleAdmin === null) {
                 self::$getListTitleAdmin = self::join($tableDescription, $tableDescription.'.category_id', $table.'.id')

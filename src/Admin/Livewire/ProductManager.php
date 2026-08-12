@@ -369,10 +369,6 @@ class ProductManager extends ResourcePanel
             $this->persistVariants($product);
             $this->persistComposition($product);
             $this->persistPricing($product, $data);
-
-            if (function_exists('gp247_cache_clear')) {
-                gp247_cache_clear('cache_product');
-            }
         });
     }
 
@@ -426,9 +422,6 @@ class ProductManager extends ResourcePanel
         $model = $this->baseQuery()->find($id);
         if ($model !== null) {
             $model->delete();
-            if (function_exists('gp247_cache_clear')) {
-                gp247_cache_clear('cache_product');
-            }
         }
     }
 
