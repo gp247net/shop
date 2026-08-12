@@ -30,6 +30,57 @@ if (!function_exists('gp247_cart_options_price') && !in_array('gp247_cart_option
     }
 }
 
+/**
+ * Rebuild the selected attribute options with server-side add_price values.
+ *
+ * WHY: the storefront submits form_attr[<group_id>] = "name__add_price" where the
+ * add_price part comes straight from client HTML. Trusting it lets a shopper tamper
+ * the surcharge (even negative) because every downstream price calc explodes '__'[1]
+ * from this string. We keep only the client-supplied group_id + name to identify the
+ * chosen option, then rebuild the string from the authoritative shop_product_attribute
+ * row so the whole cart/checkout/order pipeline is trustworthy without touching it.
+ *
+ * An option whose (attribute_group_id, name) does not belong to the product is treated
+ * as tampering/UI error and rejects the whole add (returns false) rather than silently
+ * dropping it (ADR storefront_attribute-price-integrity, decision 2).
+ *
+ * @param  int|string $productId Product UUID/id the options are being added for.
+ * @param  array      $formAttr  Raw client options: ["<group_id>" => "name__add_price", ...].
+ * @return array|false Canonical options with DB add_price, or false if any option is invalid.
+ *
+ * @aidlc-unit storefront
+ * @aidlc-story US-LW-004
+ * @aidlc-adr storefront_attribute-price-integrity
+ */
+if (!function_exists('gp247_cart_options_canonicalize') && !in_array('gp247_cart_options_canonicalize', config('gp247_functions_except', []))) {
+    function gp247_cart_options_canonicalize($productId, $formAttr)
+    {
+        if (!is_array($formAttr) || !$formAttr) {
+            return [];
+        }
+
+        // Index the product's real attributes by "<group_id>||<name>" → add_price.
+        $attributes = \GP247\Shop\Models\ShopProductAttribute::where('product_id', $productId)->get();
+        $priceByKey = [];
+        foreach ($attributes as $attribute) {
+            $priceByKey[$attribute->attribute_group_id . '||' . $attribute->name] = $attribute->add_price;
+        }
+
+        $clean = [];
+        foreach ($formAttr as $groupId => $raw) {
+            // Keep only the name segment from the client; the add_price segment is discarded.
+            $name = explode('__', (string) $raw)[0];
+            $key  = $groupId . '||' . $name;
+            if (!array_key_exists($key, $priceByKey)) {
+                // Group/name not owned by this product → reject the whole add.
+                return false;
+            }
+            $clean[$groupId] = $name . '__' . $priceByKey[$key];
+        }
+        return $clean;
+    }
+}
+
 
 // Process data cart
 if (!function_exists('gp247_cart_process_data') && !in_array('gp247_cart_process_data', config('gp247_functions_except', []))) {

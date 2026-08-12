@@ -132,7 +132,10 @@ return new class extends Migration
                 $table->string('sku', 50);
                 $table->string('currency', 10);
                 $table->float('exchange_rate')->nullable();
-                $table->string('attribute', 100)->nullable();
+                // WHY: stores json_encode(options) whose length grows with the number of
+                // attribute groups / long names — a fixed varchar(100) truncates it
+                // (RISK-TECH-order-attribute-truncation, ADR storefront_attribute-price-integrity).
+                $table->text('attribute')->nullable();
                 $table->timestamps();
             }
         );

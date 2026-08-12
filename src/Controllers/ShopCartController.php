@@ -745,8 +745,19 @@ class ShopCartController extends RootFrontController
                     );
             }
 
+            // WHY: never trust the add_price the client puts in form_attr — rebuild each
+            // option's surcharge from shop_product_attribute so the cart/checkout/order
+            // pipeline is server-authoritative (RISK-TECH-attribute-price-tampering,
+            // ADR storefront_attribute-price-integrity). A false result means the client
+            // sent an attribute that does not belong to this product → reject the add.
+            $options = gp247_cart_options_canonicalize($productId, $formAttr);
+            if ($options === false) {
+                return redirect()->back()
+                    ->with(
+                        ['error' => gp247_language_render('product.please_select_attribute')]
+                    );
+            }
 
-            $options = $formAttr;
             $dataCart = array(
                 'id'      => $productId,
                 'name'    => $product->name,
