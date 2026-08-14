@@ -108,8 +108,24 @@
                                             @endforeach
                                         </div>
                                         @break
+                                    @case('radio')
+                                        <div class="flex flex-wrap gap-3">
+                                            @foreach ($opts as $optVal => $optLabel)
+                                                <label class="flex cursor-pointer select-none items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-400">
+                                                    {{-- WHY: core admin Tailwind bundle ships no accent-* utility (not in
+                                                         scan/safelist), so the brand accent is set inline to render blue
+                                                         without a rebuild; layout stays on already-built classes. --}}
+                                                    <input type="radio" wire:model="customFields.{{ $field->code }}"
+                                                        value="{{ $optVal }}" style="accent-color:#2563eb" class="cursor-pointer">
+                                                    <span>{{ $optLabel }}</span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                        @break
                                     @default
-                                        <input type="text" wire:model="customFields.{{ $field->code }}" class="{{ $inputCls }}">
+                                        {{-- Typed inputs (number/date/month/week/time/email/password/url/color) use
+                                             the option name as the native input type; unknown/empty falls back to text. --}}
+                                        <input type="{{ $field->option ?: 'text' }}" wire:model="customFields.{{ $field->code }}" class="{{ $inputCls }}">
                                 @endswitch
                                 @error('customFields.' . $field->code)<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                             </div>

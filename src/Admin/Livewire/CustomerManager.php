@@ -61,7 +61,10 @@ class CustomerManager extends ResourcePanel
      */
     protected function customFieldType(): string
     {
-        return 'shop_customer';
+        // WHY: use the model's prefixed table name so the `type` key matches the
+        // read/display path (ModelTrait::getCustomFields keys on getTable()); a bare
+        // 'shop_customer' literal diverges from the prefixed key and never round-trips.
+        return (new ShopCustomer)->getTable();
     }
 
     /**

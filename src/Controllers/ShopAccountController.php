@@ -155,7 +155,7 @@ class ShopAccountController extends RootFrontController
                     'customer'    => $customer,
                     'countries'   => AdminCountry::getCodeAll(),
                     'layout_page' => ShopLayoutPage::Profile->value,
-                    'customFields'=> (new AdminCustomField)->getCustomField($type = 'shop_customer'),
+                    'customFields'=> (new AdminCustomField)->getCustomField($type = (new ShopCustomer)->getTable()),
                     'breadcrumbs' => [
                         ['url'    => gp247_route_front('customer.index'), 'title' => gp247_language_render('customer.my_profile')],
                         ['url'    => '', 'title' => gp247_language_render('customer.change_infomation')],

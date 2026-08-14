@@ -198,15 +198,12 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             $dataInsert['status']  = $dataRaw['status'];
         }
 
-        //Custom fields
-        $customFields = (new AdminCustomField)->getCustomField($type = 'shop_customer');
-        if ($customFields) {
-            foreach ($customFields as $field) {
-                if ($field->required) {
-                    $validate['fields.'.$field->code] = 'required';
-                }
-            }
-        }
+        // WHY: route custom-field rules through the shared validator so the public register
+        // form enforces required + typed rules per field option. The old
+        // (new AdminCustomField)->getCustomField('shop_customer') returned a single detail
+        // row keyed on the wrong table/rel_id and never listed the definitions, so this
+        // validation was silently dead (RISK-TECH-custom-field-typing).
+        $validate = gp247_custom_field_validate($validate, (new ShopCustomer)->getTable());
 
         if (gp247_config('customer_lastname')) {
             if (gp247_config('customer_lastname_required')) {
@@ -415,16 +412,12 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
             'password' => gp247_customer_validate_password()['password_nullable'],
         ];
 
-        //Custom fields
-        $customFields = (new AdminCustomField)->getCustomField($type = 'shop_customer');
-        if ($customFields) {
-            foreach ($customFields as $field) {
-                if ($field->required) {
-                    $validate['fields.'.$field->code] = 'required';
-                }
-            }
-            $dataUpdate['fields'] = $dataRaw['fields'] ?? [];
-        }
+        // WHY: see the register path — delegate to the shared validator (required + typed)
+        // instead of the dead getCustomField() loop. The $dataUpdate['fields'] assignment
+        // must live OUTSIDE any custom-field-exists guard: previously it sat inside the dead
+        // block, so submitted values never reached gp247_custom_field_update() on profile edit.
+        $validate = gp247_custom_field_validate($validate, (new ShopCustomer)->getTable());
+        $dataUpdate['fields'] = $dataRaw['fields'] ?? [];
 
         if (!empty($dataRaw['password'])) {
             $dataUpdate['password'] = bcrypt($dataRaw['password']);

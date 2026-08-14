@@ -108,7 +108,10 @@ class ProductManager extends ResourcePanel
      */
     protected function customFieldType(): string
     {
-        return 'shop_product';
+        // WHY: use the model's prefixed table name so the `type` key matches the
+        // read/display path (ModelTrait::getCustomFields keys on getTable()); a bare
+        // 'shop_product' literal diverges from the prefixed key and never round-trips.
+        return (new ShopProduct)->getTable();
     }
 
     // --- ResourcePanel contract ---------------------------------------------
@@ -359,7 +362,7 @@ class ProductManager extends ResourcePanel
             $this->saveDescriptions($product->id);
 
             if (function_exists('gp247_custom_field_update')) {
-                gp247_custom_field_update($this->customFieldsPayload(), (string) $product->id, 'shop_product');
+                gp247_custom_field_update($this->customFieldsPayload(), (string) $product->id, $this->customFieldType());
             }
 
             $product->categories()->sync(array_filter((array) ($data['category'] ?? [])));

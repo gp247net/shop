@@ -76,10 +76,13 @@ class ShopCustomer extends Authenticatable
             function ($customer) {
                 
                 //Delete custom field
+                // Custom field type key is canonically Model::getTable() (prefixed),
+                // not the unprefixed 'shop_customer' literal — keep this cleanup query
+                // aligned so detail rows are actually matched and removed on delete.
                 (new \GP247\Core\Models\AdminCustomFieldDetail)
                 ->join(GP247_DB_PREFIX.'admin_custom_field', GP247_DB_PREFIX.'admin_custom_field.id', GP247_DB_PREFIX.'admin_custom_field_detail.custom_field_id')
                 ->where(GP247_DB_PREFIX.'admin_custom_field_detail.rel_id', $customer->id)
-                ->where(GP247_DB_PREFIX.'admin_custom_field.type', 'shop_customer')
+                ->where(GP247_DB_PREFIX.'admin_custom_field.type', $customer->getTable())
                 ->delete();
             }
         );
@@ -108,8 +111,10 @@ class ShopCustomer extends Authenticatable
         $user = self::find($id);
         $user->update($dataClean);
 
-        //Insert custom fields
-        gp247_custom_field_update($fields, $user->id, 'shop_customer');
+        // Insert custom fields. WHY $user->getTable(): the `type` key must match the
+        // read/display path (which derives it from Model::getTable(), prefixed); a bare
+        // 'shop_customer' literal diverges from the prefixed key and never round-trips.
+        gp247_custom_field_update($fields, $user->id, $user->getTable());
 
         return $user;
     }
@@ -132,9 +137,9 @@ class ShopCustomer extends Authenticatable
         $user->address_id = $address->id;
         $user->save();
 
-        //Insert custom fields
-        gp247_custom_field_update($fields, $user->id, 'shop_customer');
-        
+        // Insert custom fields (see updateInfo(): key on the prefixed getTable()).
+        gp247_custom_field_update($fields, $user->id, $user->getTable());
+
         // Process event customer created
         gp247_event_customer_created($user);
         

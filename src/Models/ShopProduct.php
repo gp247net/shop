@@ -273,12 +273,14 @@ class ShopProduct extends Model
                 $product->categories()->detach();
                 $product->stores()->detach();
 
-                //Delete custom field
+                // Custom field type key is canonically Model::getTable() (prefixed),
+                // not the unprefixed 'shop_product' literal — keep this cleanup query
+                // aligned so detail rows are actually matched and removed on delete.
                 (new \GP247\Core\Models\AdminCustomFieldDetail)
                 ->join(GP247_DB_PREFIX.'admin_custom_field', GP247_DB_PREFIX.'admin_custom_field.id', GP247_DB_PREFIX.'admin_custom_field_detail.custom_field_id')
                 ->select('code', 'name', 'text')
                 ->where(GP247_DB_PREFIX.'admin_custom_field_detail.rel_id', $product->id)
-                ->where(GP247_DB_PREFIX.'admin_custom_field.type', 'shop_product')
+                ->where(GP247_DB_PREFIX.'admin_custom_field.type', $product->getTable())
                 ->delete();
             }
         );

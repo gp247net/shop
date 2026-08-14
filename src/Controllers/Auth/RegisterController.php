@@ -137,7 +137,7 @@ class RegisterController extends RootFrontController
                 'countries'   => AdminCountry::getCodeAll(),
                 'layout_page' => ShopLayoutPage::Auth->value,
                 'viewCaptcha' => $viewCaptcha,
-                'customFields'=> (new AdminCustomField)->getCustomField($type = 'shop_customer'),
+                'customFields'=> (new AdminCustomField)->getCustomField($type = (new ShopCustomer)->getTable()),
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('customer.title_register')],
                 ],
