@@ -11,7 +11,10 @@
     Variables: $addresses, $addressForm, $editingAddressId, $defaultAddressId (component state).
 --}}
 @php($inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100')
-<div class="mt-6 border-t border-gray-200 pt-4 dark:border-gray-700">
+{{-- WHY: no top divider/margin — this panel now sits in its own "Addresses" tab
+     (see customer-manager.blade.php), so the separator that framed it as an inline
+     sub-section below the form is no longer needed. --}}
+<div>
     <p class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{{ gp247_language_render('customer.address_list') }}</p>
 
     {{-- Address list --}}

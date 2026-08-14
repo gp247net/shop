@@ -16,7 +16,22 @@
 
     {{-- Left: add / edit form --}}
     <x-gp247::card :title="gp247_language_render($editingId ? 'action.edit' : 'admin.customer.add_new_title')">
-        <form wire:submit="save" class="space-y-4">
+        {{-- WHY: the edit screen is split into an Info tab + a dedicated Addresses tab
+             (product-manager tab pattern, ADR-005). The addresses tab only exists on
+             edit ($editingId); on add-new only the single Info tab shows. --}}
+        @php($tabsMap = array_filter([
+            'info' => gp247_language_render('admin.product.tab_general'),
+            'addresses' => $editingId ? gp247_language_render('customer.address_list') : null,
+        ]))
+        {{-- Route validation errors to their tab: addressForm.* belong to the
+             Addresses tab, everything else (form.*, customFields.*) to Info. --}}
+        @php($tabsWithErrors = array_values(array_filter([
+            collect($errors->keys())->contains(fn ($k) => ! str_starts_with($k, 'addressForm.')) ? 'info' : null,
+            $editingId && collect($errors->keys())->contains(fn ($k) => str_starts_with($k, 'addressForm.')) ? 'addresses' : null,
+        ])))
+        <x-gp247::tabs :tabs="$tabsMap" :errors="$tabsWithErrors" default="info">
+            <div x-show="tab === 'info'" class="space-y-4">
+                <form wire:submit="save" class="space-y-4">
             @if (gp247_config_admin('customer_email'))
                 <x-gp247::input type="email"
                     :label="gp247_language_render('customer.email') . (gp247_config_admin('customer_email_required') ? ' *' : '')"
@@ -90,7 +105,7 @@
                         @foreach ($customDefs as $field)
                             @php($opts = json_decode($field->default ?? '', true) ?: [])
                             <div>
-                                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">{{ gp247_language_render($field->name) }}</label>
+                                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">{{ gp247_language_render($field->name) }}@if ($field->required) <span class="text-red-500">*</span>@endif</label>
                                 @switch($field->option)
                                     @case('textarea')
                                         <textarea wire:model="customFields.{{ $field->code }}" rows="2" class="{{ $inputCls }}"></textarea>
@@ -142,12 +157,16 @@
                     <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.update' : 'admin.submit') }}
                 </x-gp247::button>
             </div>
-        </form>
+                </form>
+            </div>
 
-        {{-- Address sub-panel (1:N) renders on edit --}}
-        @if ($editingId)
-            @include('gp247-shop-admin::partials.customer-addresses')
-        @endif
+            {{-- Address sub-panel (1:N) — its own tab, only on edit --}}
+            @if ($editingId)
+                <div x-show="tab === 'addresses'" x-cloak>
+                    @include('gp247-shop-admin::partials.customer-addresses')
+                </div>
+            @endif
+        </x-gp247::tabs>
     </x-gp247::card>
 
     {{-- Right: list --}}

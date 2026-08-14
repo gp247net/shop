@@ -176,7 +176,7 @@
                         @foreach ($customDefs as $field)
                             @php($opts = json_decode($field->default ?? '', true) ?: [])
                             <div>
-                                <label class="{{ $labelCls }}">{{ gp247_language_render($field->name) }}</label>
+                                <label class="{{ $labelCls }}">{{ gp247_language_render($field->name) }}@if ($field->required) <span class="text-red-500">*</span>@endif</label>
                                 @switch($field->option)
                                     @case('textarea')
                                         <textarea wire:model="customFields.{{ $field->code }}" rows="2" class="{{ $inputCls }}"></textarea>
