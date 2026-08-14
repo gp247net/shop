@@ -138,6 +138,11 @@ class RegisterController extends RootFrontController
                 'layout_page' => ShopLayoutPage::Auth->value,
                 'viewCaptcha' => $viewCaptcha,
                 'customFields'=> (new AdminCustomField)->getCustomField($type = (new ShopCustomer)->getTable()),
+                // WHY: register binds no customer model, so the shared renderer cannot
+                // derive the EAV type from a model. Pass it explicitly so custom fields
+                // render here too (the POST validator already enforces them). Blade
+                // @include inherits this parent-scope var. See modification 20260814T140030.
+                'customFieldType' => (new ShopCustomer)->getTable(),
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('customer.title_register')],
                 ],

@@ -156,6 +156,10 @@ class ShopAccountController extends RootFrontController
                     'countries'   => AdminCountry::getCodeAll(),
                     'layout_page' => ShopLayoutPage::Profile->value,
                     'customFields'=> (new AdminCustomField)->getCustomField($type = (new ShopCustomer)->getTable()),
+                    // WHY: consistency with the register form — makes the shared renderer
+                    // model-independent. A bound $customer already supplies the type here,
+                    // so this is inert but keeps both entry points symmetric. Modification 20260814T140030.
+                    'customFieldType' => (new ShopCustomer)->getTable(),
                     'breadcrumbs' => [
                         ['url'    => gp247_route_front('customer.index'), 'title' => gp247_language_render('customer.my_profile')],
                         ['url'    => '', 'title' => gp247_language_render('customer.change_infomation')],
