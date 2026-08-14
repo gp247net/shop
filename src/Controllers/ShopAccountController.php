@@ -180,6 +180,13 @@ class ShopAccountController extends RootFrontController
         $user = customer()->user();
         $cId = $user->id;
         $data = request()->all();
+        // WHY: the change-infomation form posts no `id`, but the shared edit mapping
+        // (gp247_customer_data_edit_mapping) needs it — it builds the email
+        // unique-ignore-self rule as `unique:...,email,<id>,id` and unsets `id`
+        // before update. Without it, an enabled `customer_email` config dereferences
+        // an undefined `id` and the whole save 500s (never reaching the custom-field
+        // write). Inject the authenticated customer id, matching the admin edit path.
+        $data['id'] = $cId;
 
         $v =  $this->validator($data);
         if ($v->fails()) {
