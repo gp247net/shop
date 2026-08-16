@@ -177,7 +177,7 @@
                         @endif
 
                         <div class="col-span-2">
-                            <label class="{{ $labelCls }}">{{ gp247_language_render('cart.comment') }}</label>
+                            <label class="{{ $labelCls }}">{{ gp247_language_render('order.note') }}</label>
                             <textarea name="comment" rows="2" class="{{ $inputCls }}">{{ old('comment') }}</textarea>
                         </div>
                     </div>
@@ -187,7 +187,7 @@
                 <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <div class="mb-4 flex items-center justify-between">
                         <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            {{ gp247_language_render('product.title') }}
+                            {{ gp247_language_render('order.product') }}
                         </h3>
                         <button type="button" @click="addProduct"
                             class="inline-flex items-center gap-1 rounded-md bg-green-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-green-700">
@@ -209,13 +209,13 @@
                                 <div class="grid grid-cols-2 gap-2">
                                     <div class="col-span-2">
                                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">
-                                            {{ gp247_language_render('product.title') }}
+                                            {{ gp247_language_render('order.product') }}
                                         </label>
                                         <select :name="'products[' + idx + '][product_id]'"
                                                 x-model="item.product_id"
                                                 @change="fillProduct(idx, $event.target)"
                                                 class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                                            <option value="">— {{ gp247_language_render('action.select') }} —</option>
+                                            <option value="">— {{ gp247_language_render('admin.order.select_product') }} —</option>
                                             @foreach ($products as $p)
                                                 <option value="{{ $p['id'] }}"
                                                         data-price="{{ $p['price'] }}"
@@ -234,7 +234,7 @@
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">
-                                            {{ gp247_language_render('product.qty') }}
+                                            {{ gp247_language_render('product.quantity') }}
                                         </label>
                                         <input type="number" :name="'products[' + idx + '][qty]'"
                                                x-model.number="item.qty" min="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" step="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}"
@@ -351,7 +351,7 @@
                 {{-- Totals --}}
                 <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <h3 class="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                        {{ gp247_language_render('order.totals.title') }}
+                        {{ gp247_language_render('order.totals.total') }}
                     </h3>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between text-sm">
