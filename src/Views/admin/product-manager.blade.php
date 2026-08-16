@@ -34,7 +34,7 @@
                 'general' => gp247_language_render('admin.product.tab_general'),
                 'desc' => gp247_language_render('admin.product.tab_description'),
                 'custom' => gp247_language_render('admin.custom_field.title'),
-                'variants' => $isSingle ? gp247_language_render('admin.product_attribute_group.list') : null,
+                'variants' => ($isSingle && $this->productFieldEnabled('product_attribute')) ? gp247_language_render('admin.product_attribute_group.list') : null,
                 'composition' => ($isBuild || $isGroup) ? gp247_language_render('product.product') : null,
             ]))
             {{-- WHY: surface validation errors on hidden tabs by mapping each error key to its owning tab. --}}
@@ -77,13 +77,13 @@
                     />
 
                     <div class="grid grid-cols-2 gap-3">
-                        @if ($isSingle || $isBuild)
+                        @if (($isSingle || $isBuild) && $this->productFieldEnabled('product_price'))
                             <x-gp247::input type="number" step="0.01" :label="gp247_language_render('product.price')" name="price" wire:model="form.price" :error="$errors->first('form.price')" />
                         @endif
-                        @if ($isSingle)
+                        @if ($isSingle && $this->productFieldEnabled('product_cost'))
                             <x-gp247::input type="number" step="0.01" :label="gp247_language_render('product.cost')" name="cost" wire:model="form.cost" :error="$errors->first('form.cost')" />
                         @endif
-                        @if ($isSingle || $isBuild)
+                        @if (($isSingle || $isBuild) && $this->productFieldEnabled('product_stock'))
                             <x-gp247::input type="number" min="0" :step="gp247_qty_decimal_enabled() ? '0.01' : '1'" :label="gp247_language_render('product.stock')" name="stock" wire:model="form.stock" :error="$errors->first('form.stock')" />
                         @endif
                         <x-gp247::input type="number" :label="gp247_language_render('product.sort')" name="sort" wire:model="form.sort" :error="$errors->first('form.sort')" />
@@ -91,16 +91,22 @@
 
                     @if ($isSingle || $isBuild)
                         <div class="grid grid-cols-2 gap-3">
-                            <x-gp247::searchable-select
-                                model="form.brand_id"
-                                :label="gp247_language_render('product.brand')"
-                                :options="collect($this->brandOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
-                            />
-                            <x-gp247::searchable-select
-                                model="form.supplier_id"
-                                :label="gp247_language_render('product.supplier')"
-                                :options="collect($this->supplierOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
-                            />
+                            @if ($this->productFieldEnabled('product_brand'))
+                                <x-gp247::searchable-select
+                                    model="form.brand_id"
+                                    :label="gp247_language_render('product.brand')"
+                                    :options="collect($this->brandOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
+                                />
+                            @endif
+                            @if ($this->productFieldEnabled('product_supplier'))
+                                <x-gp247::searchable-select
+                                    model="form.supplier_id"
+                                    :label="gp247_language_render('product.supplier')"
+                                    :options="collect($this->supplierOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
+                                />
+                            @endif
+                            {{-- Tax has no on/off toggle in Shop Config (it is configured via the
+                                 tax-config select there), so it is always shown for single/bundle. --}}
                             <x-gp247::searchable-select
                                 model="form.tax_id"
                                 :label="gp247_language_render('product.tax')"
@@ -155,8 +161,8 @@
                     @endforeach
                 </div>
 
-                {{-- ---- Variants (SINGLE only, legacy parity) ---- --}}
-                @if ($isSingle)
+                {{-- ---- Variants (SINGLE only, legacy parity; gated by product_attribute config) ---- --}}
+                @if ($isSingle && $this->productFieldEnabled('product_attribute'))
                     <div x-show="tab === 'variants'" x-cloak>
                         @include('gp247-shop-admin::partials.product-variants', ['inputCls' => $inputCls])
                     </div>

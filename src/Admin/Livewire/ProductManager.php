@@ -321,6 +321,92 @@ class ProductManager extends ResourcePanel
     }
 
     /**
+     * Localized attribute labels for the validator, keyed by the dotted rule path.
+     * Reuses the existing product.* language strings (the same keys the form labels
+     * render) so validation errors read the field's real name — e.g. "Mã SKU" — and
+     * never leak the raw Livewire state path ("form.sku").
+     *
+     * @return array<string, string>
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-001
+     */
+    private function attributeLabels(): array
+    {
+        return [
+            'form.sku' => $this->label('product.sku'),
+            'form.alias' => $this->label('product.alias'),
+            'form.category' => $this->label('product.category'),
+            'form.price' => $this->label('product.price'),
+            'form.cost' => $this->label('product.cost'),
+            'form.stock' => $this->label('product.stock'),
+            'form.brand_id' => $this->label('product.brand'),
+            'form.supplier_id' => $this->label('product.supplier'),
+            'form.tag' => $this->label('product.tag'),
+            'form.sort' => $this->label('product.sort'),
+            'form.minimum' => $this->label('product.minimum'),
+            'desc.*.name' => $this->label('product.name'),
+            'desc.*.keyword' => $this->label('product.keyword'),
+            'desc.*.description' => $this->label('product.description'),
+            'desc.*.content' => $this->label('product.content'),
+        ];
+    }
+
+    /**
+     * Render a product field label as PLAIN TEXT for use as a validator attribute.
+     *
+     * WHY: some language strings embed presentational markup for the form label —
+     * e.g. product.alias carries a trailing "SEO" icon span — which would leak as
+     * raw HTML into the validation message. Strip tags/entities so the message reads
+     * the clean field name only. The keys themselves are unchanged (existing i18n).
+     *
+     * @param string $key Language key (e.g. 'product.alias').
+     * @return string Tag-free, trimmed label.
+     */
+    private function label(string $key): string
+    {
+        $rendered = (string) gp247_language_render($key);
+
+        return trim(strip_tags(html_entity_decode($rendered, ENT_QUOTES)));
+    }
+
+    /**
+     * Friendly attribute names for every rule (Livewire hook). Fixes messages of
+     * rules we do not override in messages() (max/unique/numeric/…) so they show the
+     * localized field name instead of the raw "form.*" path.
+     *
+     * @return array<string, string>
+     */
+    public function validationAttributes(): array
+    {
+        return $this->attributeLabels();
+    }
+
+    /**
+     * Localized validator messages, built from the shared validation.* language keys
+     * exactly like gp247_customer_data_*_mapping(). Every rule used by rules() is
+     * routed through gp247_language_render so it reads the DB translation (falling
+     * back to the framework message) — otherwise non-required rules would bypass the
+     * DB and always render in English. Rule-specific placeholders (:min/:max) are left
+     * for the framework's replacers to fill after :attribute is substituted here.
+     *
+     * @return array<string, string>
+     */
+    protected function messages(): array
+    {
+        // Rules referenced by rules()/configRules() that carry a user-facing message.
+        $rules = ['required', 'min', 'max', 'numeric', 'array', 'string'];
+        $messages = [];
+        foreach ($this->attributeLabels() as $field => $label) {
+            foreach ($rules as $rule) {
+                $messages[$field . '.' . $rule] = gp247_language_render('validation.' . $rule, ['attribute' => $label]);
+            }
+        }
+
+        return $messages;
+    }
+
+    /**
      * Auto-derive the alias from the first language's name when empty, then run the
      * standard validate/persist/redirect.
      *
@@ -447,6 +533,32 @@ class ProductManager extends ResourcePanel
         }
         $value = gp247_config('product_kind');
         // WHY: null means the key hasn't been seeded yet — treat as enabled (default=1 in seeder).
+        return $value !== '0' && $value !== 0;
+    }
+
+    /**
+     * Whether a config-gated product field should be shown in the add/edit form.
+     *
+     * Mirrors structureTypeEnabled(): a product_config_attribute toggle that is
+     * absent (config not yet seeded) is treated as ENABLED so default behaviour is
+     * preserved on a fresh install; only an explicit '0'/0 hides the field. Keeps
+     * the form field set in sync with Shop Config > Product (US-SADM-005) — a field
+     * turned off in config is not rendered (its save/validation rules already relax
+     * to nullable in configRules(), so hiding it never triggers a validation error).
+     *
+     * @param string $configKey product_config_attribute key (e.g. 'product_price').
+     * @return bool
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-001
+     */
+    public function productFieldEnabled(string $configKey): bool
+    {
+        if (!function_exists('gp247_config')) {
+            return true;
+        }
+        $value = gp247_config($configKey);
+
         return $value !== '0' && $value !== 0;
     }
 
