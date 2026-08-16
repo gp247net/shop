@@ -3,6 +3,7 @@
 namespace GP247\Shop\Admin\Livewire;
 
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
+use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Admin\Models\AdminSubscribe;
 
 /**
@@ -18,6 +19,8 @@ use GP247\Shop\Admin\Models\AdminSubscribe;
  */
 class SubscribeManager extends ResourcePanel
 {
+    use HasValidationLabels;
+
     protected ?string $permission = 'admin_subscribe';
 
     /**
@@ -106,6 +109,18 @@ class SubscribeManager extends ResourcePanel
     {
         return [
             'form.email' => ['required', 'email', 'max:255'],
+        ];
+    }
+
+    /**
+     * Reuse the existing v1 subscribe label key.
+     *
+     * @return array<string, string>
+     */
+    protected function attributeLabels(): array
+    {
+        return [
+            'form.email' => 'admin.subscribe.email',
         ];
     }
 

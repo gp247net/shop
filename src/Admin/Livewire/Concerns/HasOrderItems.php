@@ -322,7 +322,7 @@ trait HasOrderItems
         // line (US-SADM-order-line-integrity). Validation already blocks this on
         // the happy path; this is the defensive backstop for the addNewItem path.
         if ($product === null || (int) $product->kind === GP247_PRODUCT_GROUP) {
-            $this->notify('error', gp247_language_render('admin.data_not_found_detail', ['msg' => '#' . $productId]));
+            $this->notify('error', gp247_language_render('admin.display.data_not_found_detail', ['msg' => '#' . $productId]));
 
             return false;
         }

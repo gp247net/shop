@@ -5,6 +5,7 @@ namespace GP247\Shop\Admin\Livewire;
 use GP247\Core\AdminShell\Infrastructure\HasMultilingualDescriptions;
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
 use GP247\Core\Models\AdminLanguage;
+use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopCategoryDescription;
@@ -30,6 +31,7 @@ use Illuminate\Validation\Rule;
 class CategoryManager extends ResourcePanel
 {
     use HasMultilingualDescriptions;
+    use HasValidationLabels;
 
     protected ?string $permission = 'admin_category';
 
@@ -163,6 +165,23 @@ class CategoryManager extends ResourcePanel
             'desc.*.name' => ['required', 'string', 'max:200'],
             'desc.*.keyword' => ['nullable', 'string', 'max:200'],
             'desc.*.description' => ['nullable', 'string', 'max:500'],
+        ];
+    }
+
+    /**
+     * Reuse the existing v1 category label keys (the per-language title maps to
+     * admin.category.title, matching the form label).
+     *
+     * @return array<string, string>
+     */
+    protected function attributeLabels(): array
+    {
+        return [
+            'form.alias' => 'admin.category.alias',
+            'form.sort' => 'admin.category.sort',
+            'desc.*.name' => 'admin.category.title',
+            'desc.*.keyword' => 'admin.category.keyword',
+            'desc.*.description' => 'admin.category.description',
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace GP247\Shop\Admin\Livewire;
 
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
+use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -19,6 +20,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 abstract class AbstractStatusManager extends ResourcePanel
 {
+    use HasValidationLabels;
+
     /**
      * @return class-string<Model> The status model class.
      */
@@ -82,6 +85,18 @@ abstract class AbstractStatusManager extends ResourcePanel
     {
         return [
             'form.name' => ['required', 'string', 'max:255'],
+        ];
+    }
+
+    /**
+     * Reuse the existing v1 label key for the status name field.
+     *
+     * @return array<string, string>
+     */
+    protected function attributeLabels(): array
+    {
+        return [
+            'form.name' => 'admin.name',
         ];
     }
 

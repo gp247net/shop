@@ -3,6 +3,7 @@
 namespace GP247\Shop\Admin\Livewire;
 
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
+use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Models\ShopCurrency;
 use Illuminate\Validation\Rule;
 
@@ -19,6 +20,8 @@ use Illuminate\Validation\Rule;
  */
 class CurrencyManager extends ResourcePanel
 {
+    use HasValidationLabels;
+
     protected ?string $permission = 'admin_currency';
 
     /**
@@ -115,6 +118,25 @@ class CurrencyManager extends ResourcePanel
             'form.symbol_first' => ['required', 'in:0,1'],
             'form.thousands' => ['required', 'string', 'max:2'],
             'form.sort' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
+    /**
+     * Reuse the existing v1 currency label keys.
+     *
+     * @return array<string, string>
+     */
+    protected function attributeLabels(): array
+    {
+        return [
+            'form.name' => 'admin.currency.name',
+            'form.code' => 'admin.currency.code',
+            'form.symbol' => 'admin.currency.symbol',
+            'form.exchange_rate' => 'admin.currency.exchange_rate',
+            'form.precision' => 'admin.currency.precision',
+            'form.symbol_first' => 'admin.currency.symbol_first',
+            'form.thousands' => 'admin.currency.thousands',
+            'form.sort' => 'admin.sort',
         ];
     }
 

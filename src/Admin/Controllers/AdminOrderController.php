@@ -492,7 +492,7 @@ class AdminOrderController extends RootAdminController
             \DB::connection(GP247_DB_CONNECTION)->rollBack();
 
             return redirect()->back()->withInput()
-                ->with('error', gp247_language_render('action.error') . ' ' . $e->getMessage());
+                ->with('error', gp247_language_render('admin.toast_error') . ' ' . $e->getMessage());
         }
 
         return redirect(gp247_route_admin('admin_order.index'))
@@ -564,7 +564,7 @@ class AdminOrderController extends RootAdminController
         $oder = AdminOrder::getOrderAdmin($orderId);
         $product = AdminProduct::getProductAdmin($id);
         if (!$product) {
-            return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => '#product:'.$id]), 'detail' => '']);
+            return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.display.data_not_found_detail', ['msg' => '#product:'.$id]), 'detail' => '']);
         }
         $arrayReturn = $product->toArray();
         $arrayReturn['renderAttDetails'] = $product->renderAttributeDetailsAdmin($oder->currency, $oder->exchange_rate);
@@ -619,7 +619,7 @@ class AdminOrderController extends RootAdminController
             $oldValue = $orderTotalOrigin->value;
             $order = AdminOrder::getOrderAdmin($orderId);
             if (!$order) {
-                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => 'order#'.$orderId]), 'detail' => '']);
+                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.display.data_not_found_detail', ['msg' => 'order#'.$orderId]), 'detail' => '']);
             }
             $dataRowTotal = [
                 'id' => $id,
@@ -632,7 +632,7 @@ class AdminOrderController extends RootAdminController
             $orderId = $id;
             $order = AdminOrder::getOrderAdmin($orderId);
             if (!$order) {
-                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => 'order#'.$orderId]), 'detail' => '']);
+                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.display.data_not_found_detail', ['msg' => 'order#'.$orderId]), 'detail' => '']);
             }
             $oldValue = $order->{$code};
             $order->update([$code => $value]);
@@ -708,7 +708,7 @@ class AdminOrderController extends RootAdminController
             if ($id && $add_qty[$key]) {
                 $product = AdminProduct::getProductAdmin($id);
                 if (!$product) {
-                    return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => '#'.$id]), 'detail' => '']);
+                    return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.display.data_not_found_detail', ['msg' => '#'.$id]), 'detail' => '']);
                 }
                 // WHY: unified hard block across front + admin (ADR
                 // shop-admin_order-stock-parity, revised 2026-08-16). Reject over-stock
@@ -793,7 +793,7 @@ class AdminOrderController extends RootAdminController
             $item = $item->fresh();
             $order = AdminOrder::getOrderAdmin($orderId);
             if (!$order) {
-                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => '#order:'.$orderId]), 'detail' => '']);
+                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.display.data_not_found_detail', ['msg' => '#order:'.$orderId]), 'detail' => '']);
             }
             //Add history
             $dataHistory = [
@@ -856,12 +856,12 @@ class AdminOrderController extends RootAdminController
             $pId = $data['pId'] ?? "";
             $itemDetail = (new ShopOrderDetail)->where('id', $pId)->first();
             if (!$itemDetail) {
-                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => 'detail#'.$pId]), 'detail' => '']);
+                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.display.data_not_found_detail', ['msg' => 'detail#'.$pId]), 'detail' => '']);
             }
             $orderId = $itemDetail->order_id;
             $order = AdminOrder::getOrderAdmin($orderId);
             if (!$order) {
-                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => 'order#'.$orderId]), 'detail' => '']);
+                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.display.data_not_found_detail', ['msg' => 'order#'.$orderId]), 'detail' => '']);
             }
 
             $pId = $itemDetail->product_id;

@@ -3,6 +3,7 @@
 namespace GP247\Shop\Admin\Livewire;
 
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
+use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Models\ShopTax;
 
 /**
@@ -17,6 +18,8 @@ use GP247\Shop\Models\ShopTax;
  */
 class TaxManager extends ResourcePanel
 {
+    use HasValidationLabels;
+
     protected ?string $permission = 'admin_tax';
 
     /**
@@ -92,6 +95,19 @@ class TaxManager extends ResourcePanel
         return [
             'form.name' => ['required', 'string', 'max:255'],
             'form.value' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
+    /**
+     * Reuse the existing v1 tax label keys.
+     *
+     * @return array<string, string>
+     */
+    protected function attributeLabels(): array
+    {
+        return [
+            'form.name' => 'admin.tax.name',
+            'form.value' => 'admin.tax.value',
         ];
     }
 

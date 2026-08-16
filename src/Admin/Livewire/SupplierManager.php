@@ -3,6 +3,7 @@
 namespace GP247\Shop\Admin\Livewire;
 
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
+use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Models\ShopSupplier;
 use Illuminate\Validation\Rule;
 
@@ -19,6 +20,8 @@ use Illuminate\Validation\Rule;
  */
 class SupplierManager extends ResourcePanel
 {
+    use HasValidationLabels;
+
     protected ?string $permission = 'admin_supplier';
 
     /**
@@ -117,6 +120,23 @@ class SupplierManager extends ResourcePanel
             'form.url' => ['nullable', 'url', 'max:255'],
             'form.email' => ['nullable', 'email', 'max:255'],
             'form.sort' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
+    /**
+     * Reuse the existing v1 supplier label keys.
+     *
+     * @return array<string, string>
+     */
+    protected function attributeLabels(): array
+    {
+        return [
+            'form.name' => 'admin.supplier.name',
+            'form.alias' => 'admin.supplier.alias',
+            'form.image' => 'admin.supplier.image',
+            'form.url' => 'admin.supplier.url',
+            'form.email' => 'admin.supplier.email',
+            'form.sort' => 'admin.sort',
         ];
     }
 

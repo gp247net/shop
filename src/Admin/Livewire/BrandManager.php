@@ -3,6 +3,7 @@
 namespace GP247\Shop\Admin\Livewire;
 
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
+use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Models\ShopBrand;
 use Illuminate\Validation\Rule;
 
@@ -19,6 +20,8 @@ use Illuminate\Validation\Rule;
  */
 class BrandManager extends ResourcePanel
 {
+    use HasValidationLabels;
+
     protected ?string $permission = 'admin_brand';
 
     /**
@@ -106,6 +109,22 @@ class BrandManager extends ResourcePanel
             'form.image' => ['required', 'string'],
             'form.url' => ['nullable', 'url', 'max:255'],
             'form.sort' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
+    /**
+     * Reuse the existing v1 brand label keys.
+     *
+     * @return array<string, string>
+     */
+    protected function attributeLabels(): array
+    {
+        return [
+            'form.name' => 'admin.brand.name',
+            'form.alias' => 'admin.brand.alias',
+            'form.image' => 'admin.brand.image',
+            'form.url' => 'admin.brand.url',
+            'form.sort' => 'admin.sort',
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace GP247\Shop\Admin\Livewire;
 
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
+use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Models\ShopAttributeGroup;
 
 /**
@@ -18,6 +19,8 @@ use GP247\Shop\Models\ShopAttributeGroup;
  */
 class AttributeGroupManager extends ResourcePanel
 {
+    use HasValidationLabels;
+
     protected ?string $permission = 'admin_attribute_group';
 
     /** Attribute-group input types, mirroring the legacy form (radio/select). */
@@ -99,6 +102,19 @@ class AttributeGroupManager extends ResourcePanel
         return [
             'form.name' => ['required', 'string', 'max:255'],
             'form.type' => ['required', 'string', 'in:' . implode(',', self::TYPES)],
+        ];
+    }
+
+    /**
+     * Reuse the existing v1 attribute-group label keys.
+     *
+     * @return array<string, string>
+     */
+    protected function attributeLabels(): array
+    {
+        return [
+            'form.name' => 'admin.product_attribute_group.name',
+            'form.type' => 'admin.product_attribute_group.type',
         ];
     }
 

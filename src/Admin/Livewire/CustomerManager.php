@@ -442,7 +442,7 @@ class CustomerManager extends ResourcePanel
         $isDefault = (string) $id === (string) $this->defaultAddressId;
         $total = ShopCustomerAddress::where('customer_id', $this->editingId)->count();
         if ($isDefault && $total <= 1) {
-            $this->notify('warning', gp247_language_render('admin.delete_error'));
+            $this->notify('warning', gp247_language_render('admin.toast_error'));
 
             return;
         }
