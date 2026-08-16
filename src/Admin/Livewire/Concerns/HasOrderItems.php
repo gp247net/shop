@@ -35,6 +35,13 @@ trait HasOrderItems
     /** @var string|null Id of the line item being edited (null = adding). */
     public ?string $editingItemId = null;
 
+    /**
+     * @var bool Whether the add/edit line-item form is revealed. Hidden by
+     * default so the panel shows a single "add" button (parity with the
+     * create-order screen), only expanding to the form on demand.
+     */
+    public bool $showItemForm = false;
+
     /** @var string Product picker search term (sku / alias). */
     public string $productSearch = '';
 
@@ -58,6 +65,7 @@ trait HasOrderItems
         $this->editingItemId = null;
         $this->itemForm = $this->itemDefaults();
         $this->productSearch = '';
+        $this->showItemForm = false;
     }
 
     /**
@@ -98,27 +106,26 @@ trait HasOrderItems
      */
     public function productResults(): iterable
     {
-        $term = trim($this->productSearch);
-        if (strlen($term) < 2) {
-            return [];
-        }
-
-        $needle = '%' . $term . '%';
-
-        // WHY: a "group" product (kind=2) is a non-sellable container linking to
-        // real single/build products (price is always 0, and the storefront hides
-        // its Add-to-cart button) — exclude it here to match that same rule.
-        return ShopProduct::where('kind', '!=', GP247_PRODUCT_GROUP)
-            ->where(function ($query) use ($needle) {
-                $query->where('sku', 'like', $needle)
-                    ->orWhere('alias', 'like', $needle);
-            })
-            ->limit(15)
-            ->get();
+        // WHY: delegate to the shared picker query so the create-order (Alpine) and
+        // edit-order (Livewire) screens search identically (sku / alias / name,
+        // current locale, GROUP excluded, capped) — single source of truth.
+        return ShopProduct::searchForAdminOrderPicker($this->productSearch);
     }
 
     /**
-     * Start adding a new line item.
+     * Reveal the line-item form in "add" mode (from the panel's add button).
+     *
+     * @return void
+     */
+    public function showAddItem(): void
+    {
+        $this->resetItemForm();
+        $this->showItemForm = true;
+    }
+
+    /**
+     * Close the line-item form, discarding any in-progress add/edit and
+     * collapsing back to the panel's add button.
      *
      * @return void
      */
@@ -173,6 +180,7 @@ trait HasOrderItems
             'price' => (float) $detail->price,
             'tax' => (float) $detail->tax,
         ];
+        $this->showItemForm = true;
     }
 
     /**

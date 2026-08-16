@@ -211,21 +211,29 @@
                                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">
                                             {{ gp247_language_render('order.product') }}
                                         </label>
-                                        <select :name="'products[' + idx + '][product_id]'"
-                                                x-model="item.product_id"
-                                                @change="fillProduct(idx, $event.target)"
-                                                class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                                            <option value="">— {{ gp247_language_render('admin.order.select_product') }} —</option>
-                                            @foreach ($products as $p)
-                                                <option value="{{ $p['id'] }}"
-                                                        data-price="{{ $p['price'] }}"
-                                                        data-name="{{ $p['name'] }}"
-                                                        data-sku="{{ $p['sku'] }}">
-                                                    {{ $p['name'] }} — {{ $p['sku'] }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <input type="hidden" :name="'products[' + idx + '][name]'" :value="item.name">
+                                        {{-- Searchable product picker (sku / alias / name) — parity with the
+                                             edit-order screen; results fetched server-side on demand instead of
+                                             dumping the whole catalog into a <select>. --}}
+                                        <div class="relative">
+                                            <input type="text" x-model="item.search"
+                                                   @input.debounce.300ms="searchProduct(idx)"
+                                                   @focus="item.results.length && (item.open = true)"
+                                                   autocomplete="off"
+                                                   placeholder="{{ gp247_language_render('product.sku') }} / {{ gp247_language_render('admin.search') }}"
+                                                   class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                                            <input type="hidden" :name="'products[' + idx + '][product_id]'" :value="item.product_id">
+                                            <input type="hidden" :name="'products[' + idx + '][name]'" :value="item.name">
+                                            <div x-show="item.open && item.results.length" @click.outside="item.open = false"
+                                                 class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                                                <template x-for="(r, ridx) in item.results" :key="ridx">
+                                                    <button type="button" @click="pickProduct(idx, r)"
+                                                            class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
+                                                        <span class="font-medium" x-text="r.sku"></span> — <span x-text="r.name"></span>
+                                                        <span class="ml-1 text-xs text-gray-400 dark:text-gray-500">({{ gp247_language_render('product.stock') }}: <span x-text="r.stock"></span>)</span>
+                                                    </button>
+                                                </template>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-span-2">
                                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">SKU</label>
@@ -419,6 +427,7 @@
 function orderCreate() {
     const rates = {!! $currenciesRate !!};
     const userInfoUrl = '{{ gp247_route_admin("admin_order.user_info") }}';
+    const productSearchUrl = '{{ gp247_route_admin("admin_order.product_search") }}';
 
     return {
         customerId: {!! json_encode(old('customer_id', '')) !!},
@@ -469,7 +478,7 @@ function orderCreate() {
         },
 
         addProduct() {
-            this.products.push({ product_id: '', name: '', sku: '', qty: 1, price: 0, tax: 0 });
+            this.products.push({ product_id: '', name: '', sku: '', qty: 1, price: 0, tax: 0, search: '', results: [], open: false });
         },
 
         removeProduct(idx) {
@@ -477,12 +486,27 @@ function orderCreate() {
             this.recalc();
         },
 
-        fillProduct(idx, select) {
-            const opt = select.options[select.selectedIndex];
-            if (!opt) return;
-            this.products[idx].name  = opt.dataset.name  ?? '';
-            this.products[idx].sku   = opt.dataset.sku   ?? '';
-            this.products[idx].price = parseFloat(opt.dataset.price ?? 0);
+        async searchProduct(idx) {
+            const term = (this.products[idx].search || '').trim();
+            if (term.length < 2) {
+                this.products[idx].results = [];
+                this.products[idx].open = false;
+                return;
+            }
+            const res = await fetch(productSearchUrl + '?term=' + encodeURIComponent(term));
+            const data = await res.json();
+            this.products[idx].results = Array.isArray(data) ? data : [];
+            this.products[idx].open = this.products[idx].results.length > 0;
+        },
+
+        pickProduct(idx, r) {
+            this.products[idx].product_id = r.id;
+            this.products[idx].name  = r.name;
+            this.products[idx].sku   = r.sku;
+            this.products[idx].price = parseFloat(r.price ?? 0);
+            this.products[idx].search = r.sku + ' — ' + r.name;
+            this.products[idx].results = [];
+            this.products[idx].open = false;
             this.recalc();
         },
 

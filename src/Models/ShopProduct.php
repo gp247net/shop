@@ -109,6 +109,48 @@ class ShopProduct extends Model
     }
     //End  get text description
 
+    /**
+     * Search sellable products for the admin order product picker, shared by the
+     * create-order (Alpine) and edit-order (Livewire) screens so both match sku /
+     * alias / name (current locale). A "group" container (kind=2, non-sellable,
+     * price always 0) is excluded; results are capped to $limit.
+     *
+     * @param string $term  Raw search term (sku / alias / name fragment).
+     * @param int    $limit Maximum rows to return.
+     * @return \Illuminate\Support\Collection Matching products (empty when term < 2 chars).
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-003
+     */
+    public static function searchForAdminOrderPicker(string $term, int $limit = 15)
+    {
+        $term = trim($term);
+        if (strlen($term) < 2) {
+            return collect();
+        }
+
+        $needle = '%' . $term . '%';
+        $productTable = (new static)->getTable();
+        $descTable = (new ShopProductDescription)->getTable();
+
+        return static::where('kind', '!=', GP247_PRODUCT_GROUP)
+            // WHY: the product name lives on the per-language description table, not
+            // shop_product, so join it (current locale only, to avoid duplicate rows)
+            // to make name searchable alongside sku/alias.
+            ->leftJoin($descTable, $descTable . '.product_id', $productTable . '.id')
+            ->where($descTable . '.lang', gp247_get_locale())
+            ->where(function ($query) use ($needle, $productTable, $descTable) {
+                $query->where($productTable . '.sku', 'like', $needle)
+                    ->orWhere($productTable . '.alias', 'like', $needle)
+                    ->orWhere($descTable . '.name', 'like', $needle);
+            })
+            ->limit($limit)
+            // WHY: the join pulls in description columns that collide with product
+            // columns (id, etc.) — select only the product table so id/sku stay correct.
+            ->select($productTable . '.*')
+            ->get();
+    }
+
     /*
     *Get final price
     */

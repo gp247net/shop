@@ -39,6 +39,15 @@
         @endforeach
     </x-gp247::table>
 
+    {{-- Add-item trigger: collapse the form behind a single button (parity with
+         the create-order screen), only expanding on demand. --}}
+    @if (! $showItemForm)
+        <div class="mt-4 flex justify-end">
+            <x-gp247::button variant="success" wire:click="showAddItem" data-testid="shop-admin-order-item-add">
+                <i class="fas fa-plus"></i> {{ gp247_language_render('product.add_product') }}
+            </x-gp247::button>
+        </div>
+    @else
     {{-- Add / edit line-item form --}}
     <div class="mt-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
         <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -56,6 +65,7 @@
                             <button type="button" wire:click="selectProduct('{{ $p->id }}')" data-testid="shop-admin-order-item-result"
                                 class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
                                 <span class="font-medium">{{ $p->sku }}</span> — {{ $p->getName() ?: $p->alias }}
+                                <span class="ml-1 text-xs text-gray-400 dark:text-gray-500">({{ gp247_language_render('product.stock') }}: {{ gp247_qty_format($p->stock) }})</span>
                             </button>
                         @endforeach
                     </div>
@@ -83,12 +93,11 @@
         </div>
 
         <div class="mt-3 flex items-center justify-end gap-2">
-            @if ($editingItemId)
-                <x-gp247::button variant="secondary" wire:click="newItem">{{ gp247_language_render('admin.cancel') }}</x-gp247::button>
-            @endif
+            <x-gp247::button variant="secondary" wire:click="newItem">{{ gp247_language_render('admin.cancel') }}</x-gp247::button>
             <x-gp247::button wire:click="saveItem" wire:loading.attr="disabled" data-testid="shop-admin-order-item-submit">
                 <i class="fas fa-save"></i> {{ gp247_language_render($editingItemId ? 'admin.update' : 'admin.submit') }}
             </x-gp247::button>
         </div>
     </div>
+    @endif
 </x-gp247::card>

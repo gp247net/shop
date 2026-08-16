@@ -22,6 +22,7 @@ Route::group(['prefix' => 'order'], function () {
     Route::post('/delete', AdminOrderController::class . '@deleteList')->name('admin_order.delete');
     Route::post('/create', AdminOrderController::class . '@postCreate')->name('admin_order.post_create');
     Route::get('/product_info', AdminOrderController::class . '@getInfoProduct')->name('admin_order.product_info');
+    Route::get('/product_search', AdminOrderController::class . '@getSearchProduct')->name('admin_order.product_search');
     Route::get('/user_info', AdminOrderController::class . '@getInfoUser')->name('admin_order.user_info');
     Route::get('/invoice', AdminOrderController::class . '@invoice')->name('admin_order.invoice');
 });

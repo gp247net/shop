@@ -7,6 +7,7 @@ use GP247\Core\Models\AdminCountry;
 use GP247\Shop\Models\ShopCurrency;
 use GP247\Shop\Models\ShopOrderDetail;
 use GP247\Shop\Models\ShopOrderStatus;
+use GP247\Shop\Models\ShopProduct;
 use GP247\Shop\Models\ShopPaymentStatus;
 use GP247\Shop\Models\ShopShippingStatus;
 use GP247\Shop\Admin\Models\AdminCustomer;
@@ -243,9 +244,10 @@ class AdminOrderController extends RootAdminController
         $countries              = $this->country;
         $currenciesRate         = json_encode(ShopCurrency::getListRate());
         $users                  = AdminCustomer::getListAll();
-        $products               = (new AdminProduct)->getProductSelectAdmin(['kind' => [GP247_PRODUCT_SINGLE, GP247_PRODUCT_BUILD]]);
+        // WHY: products are now fetched on demand via the searchable picker
+        // (admin_order.product_search), so the full catalog is no longer dumped
+        // into the page — keeps the create screen light on large catalogs.
         $data['users']          = $users;
-        $data['products']       = $products;
         $data['currencies']     = $currencies;
         $data['countries']      = $countries;
         $data['orderStatus']    = $orderStatus;
@@ -574,6 +576,38 @@ class AdminOrderController extends RootAdminController
         $arrayReturn['renderAttDetails'] = $product->renderAttributeDetailsAdmin($oder->currency, $oder->exchange_rate);
         $arrayReturn['price_final'] = $product->getFinalPrice();
         return response()->json($arrayReturn);
+    }
+
+    /**
+     * Product picker search for the create-order screen (Alpine fetch). Returns
+     * sellable products matching sku / alias / name (current locale) as JSON,
+     * mirroring the edit-order (Livewire) picker via the shared query.
+     *
+     * @return \Illuminate\Http\JsonResponse List of {id, sku, name, price}.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-003
+     */
+    public function getSearchProduct()
+    {
+        $term = (string) request('term', '');
+        $products = ShopProduct::searchForAdminOrderPicker($term);
+
+        return response()->json(
+            $products->map(function ($product) {
+                return [
+                    'id' => (string) $product->id,
+                    'sku' => (string) $product->sku,
+                    // WHY: name lives on the description relation (getName()), so use
+                    // it — $product->name is usually null — falling back to sku.
+                    'name' => (string) ($product->getName() ?: $product->sku),
+                    'price' => (float) $product->price,
+                    // WHY: display-only on-hand stock beside the name — pre-formatted
+                    // (gp247_qty_format) to match the edit-order picker exactly.
+                    'stock' => gp247_qty_format((float) $product->stock),
+                ];
+            })->all()
+        );
     }
 
     /**
