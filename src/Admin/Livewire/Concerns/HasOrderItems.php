@@ -223,9 +223,17 @@ trait HasOrderItems
         $price = (float) ($clean['price'] ?? 0);
         $tax = (float) ($clean['tax'] ?? 0);
 
-        $this->editingItemId !== null
+        // WHY: the add/update helpers return false when the line is rejected
+        // (over-stock hard block or invalid product) — abort the post-steps so we
+        // neither recalc totals nor flash a misleading success. The helper already
+        // showed the error toast.
+        $persisted = $this->editingItemId !== null
             ? $this->updateExistingItem($clean, $qty, $price, $tax)
             : $this->addNewItem($clean, $qty, $price, $tax);
+
+        if (! $persisted) {
+            return;
+        }
 
         AdminOrder::updateSubTotal($this->editingId);
         $this->resetItemForm();
@@ -240,17 +248,33 @@ trait HasOrderItems
      * @param float $qty
      * @param float $price
      * @param float $tax
-     * @return void
+     * @return bool True when persisted; false when rejected (detail missing or
+     *              over-stock hard block) — caller aborts the post-steps.
      */
-    private function updateExistingItem(array $clean, float $qty, float $price, float $tax): void
+    private function updateExistingItem(array $clean, float $qty, float $price, float $tax): bool
     {
         $detail = ShopOrderDetail::where('id', $this->editingItemId)
             ->where('order_id', $this->editingId)->first();
         if ($detail === null) {
-            return;
+            return false;
         }
 
         $oldQty = (float) $detail->qty;
+        $delta = $qty - $oldQty;
+
+        // WHY: unified hard block (ADR shop-admin_order-stock-parity, revised
+        // 2026-08-16) — when increasing qty beyond stock, reject BEFORE writing /
+        // decrementing stock so nothing partial is applied. Enable
+        // product_buy_out_of_stock to sell beyond stock.
+        if ($delta > 0) {
+            $product = ShopProduct::find($detail->product_id);
+            if ($product !== null && !$product->hasStockForOrder($delta)) {
+                $this->notify('error', gp247_language_render('cart.item_over_qty', ['sku' => $detail->sku, 'qty' => $qty]));
+
+                return false;
+            }
+        }
+
         (new ShopOrderDetail)->updateDetail($detail->id, [
             'qty' => $qty,
             'price' => $price,
@@ -260,23 +284,15 @@ trait HasOrderItems
 
         // WHY: keep inventory in sync with the qty delta, as the legacy edit does.
         if ($qty !== $oldQty) {
-            ShopProduct::updateStock($detail->product_id, $qty - $oldQty);
-        }
-
-        // WHY: warn (not block) when the qty increase exceeds stock — allow-but-warn
-        // (ADR shop-admin_order-stock-parity).
-        $delta = $qty - $oldQty;
-        if ($delta > 0) {
-            $product = ShopProduct::find($detail->product_id);
-            if ($product !== null && !$product->hasStockForOrder($delta)) {
-                $this->notify('warning', gp247_language_render('cart.item_over_qty', ['sku' => $detail->sku, 'qty' => $qty]));
-            }
+            ShopProduct::updateStock($detail->product_id, $delta);
         }
 
         $this->logHistory(
             gp247_language_render('product.edit_product') . ' #' . $detail->id,
             $this->currentOrder()->status ?? 0,
         );
+
+        return true;
     }
 
     /**
@@ -287,13 +303,14 @@ trait HasOrderItems
      * @param float $qty
      * @param float $price
      * @param float $tax
-     * @return void
+     * @return bool True when persisted; false when rejected (invalid product or
+     *              over-stock hard block) — caller aborts the post-steps.
      */
-    private function addNewItem(array $clean, float $qty, float $price, float $tax): void
+    private function addNewItem(array $clean, float $qty, float $price, float $tax): bool
     {
         $order = $this->currentOrder();
         if ($order === null) {
-            return;
+            return false;
         }
 
         $productId = (string) ($clean['product_id'] ?? '');
@@ -307,13 +324,17 @@ trait HasOrderItems
         if ($product === null || (int) $product->kind === GP247_PRODUCT_GROUP) {
             $this->notify('error', gp247_language_render('admin.data_not_found_detail', ['msg' => '#' . $productId]));
 
-            return;
+            return false;
         }
 
-        // WHY: allow-but-warn on oversell (ADR shop-admin_order-stock-parity) — the
-        // line is still added (admin authority); the admin just sees a warning toast.
+        // WHY: unified hard block (ADR shop-admin_order-stock-parity, revised
+        // 2026-08-16) — reject over-stock BEFORE writing the line; admin now blocks
+        // exactly like the storefront. Enable product_buy_out_of_stock to sell
+        // beyond stock.
         if (!$product->hasStockForOrder($qty)) {
-            $this->notify('warning', gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $qty]));
+            $this->notify('error', gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $qty]));
+
+            return false;
         }
 
         // WHY: product name lives on the description relation, so use getName()
@@ -341,6 +362,8 @@ trait HasOrderItems
         // WHY: history is rendered as raw HTML; escape the product-derived name so
         // a crafted name cannot inject markup into the admin timeline.
         $this->logHistory(gp247_language_render('product.add_product') . ': ' . e($name), $order->status);
+
+        return true;
     }
 
     /**

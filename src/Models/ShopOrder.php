@@ -155,8 +155,11 @@ class ShopOrder extends Model
                     throw new \Exception(gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $cartDetail['qty']]));
                 }
 
-                //If product out of stock
-                if (!gp247_config('product_buy_out_of_stock') && $product->stock < $cartDetail['qty']) {
+                //If product out of stock — unified predicate shared with admin
+                // (ADR shop-admin_order-stock-parity, revised 2026-08-16 / modification
+                // 20260816T175134). hasStockForOrder() also honours product_stock, so
+                // this no longer blocks when stock management is off (prior inline bug).
+                if (!$product->hasStockForOrder($cartDetail['qty'])) {
                     throw new \Exception(gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $cartDetail['qty']]));
                 }
                 // WHY: line-level tax on the same basis as the cart total — unit price

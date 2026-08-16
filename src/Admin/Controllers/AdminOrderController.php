@@ -399,7 +399,6 @@ class AdminOrderController extends RootAdminController
         // parity with the storefront ShopOrder::createOrder (US-SADM-order-stock-parity,
         // ADR shop-admin_order-stock-parity). A partial failure must not leave an
         // order/detail/stock in an inconsistent half-written state.
-        $overStockWarnings = [];
         try {
             \DB::connection(GP247_DB_CONNECTION)->beginTransaction();
             $order = AdminOrder::create($dataCreate);
@@ -425,11 +424,14 @@ class AdminOrderController extends RootAdminController
                             $subtotal += $itemSubtotal;
                             $taxTotal += $itemTax;
 
-                            // WHY: admin may oversell (allow-but-warn) — collect exceeding
-                            // lines, do NOT block, unlike the storefront hard block
-                            // (ADR shop-admin_order-stock-parity).
+                            // WHY: unified hard block across front + admin (ADR
+                            // shop-admin_order-stock-parity, revised 2026-08-16 /
+                            // modification 20260816T175134). Reject over-stock BEFORE
+                            // writing the line; the throw rolls back the whole
+                            // transaction so no partial order is left behind. To sell
+                            // beyond stock, enable product_buy_out_of_stock.
                             if (!$product->hasStockForOrder($qty)) {
-                                $overStockWarnings[] = gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $qty]);
+                                throw new \Exception(gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $qty]));
                             }
 
                             // WHY: addNewDetail inserts AND decrements stock/sold (parity with
@@ -493,16 +495,8 @@ class AdminOrderController extends RootAdminController
                 ->with('error', gp247_language_render('action.error') . ' ' . $e->getMessage());
         }
 
-        $redirect = redirect(gp247_route_admin('admin_order.index'))
+        return redirect(gp247_route_admin('admin_order.index'))
             ->with('success', gp247_language_render('action.create_success'));
-
-        // WHY: surface the oversell warning after a successful create — the order is
-        // still created (admin authority), the admin just needs to see it.
-        if (!empty($overStockWarnings)) {
-            $redirect->with('warning', implode(' ', $overStockWarnings));
-        }
-
-        return $redirect;
     }
 
     /**
@@ -706,7 +700,6 @@ class AdminOrderController extends RootAdminController
         $add_tax = request('add_tax');
         $orderId = request('order_id');
         $items = [];
-        $overStockWarnings = [];
 
         $order = AdminOrder::getOrderAdmin($orderId);
 
@@ -717,10 +710,13 @@ class AdminOrderController extends RootAdminController
                 if (!$product) {
                     return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.data_not_found_detail', ['msg' => '#'.$id]), 'detail' => '']);
                 }
-                // WHY: allow-but-warn on oversell in admin, unlike storefront hard
-                // block (ADR shop-admin_order-stock-parity).
+                // WHY: unified hard block across front + admin (ADR
+                // shop-admin_order-stock-parity, revised 2026-08-16). Reject over-stock
+                // BEFORE writing any line — nothing is persisted until after the loop,
+                // so returning here leaves stock/order untouched. Enable
+                // product_buy_out_of_stock to sell beyond stock.
                 if (!$product->hasStockForOrder($add_qty[$key])) {
-                    $overStockWarnings[] = gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $add_qty[$key]]);
+                    return response()->json(['error' => 1, 'msg' => gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $add_qty[$key]])]);
                 }
                 $pAttr = json_encode($add_att[$id] ?? []);
                 $items[] = array(
@@ -755,11 +751,7 @@ class AdminOrderController extends RootAdminController
                 AdminOrder::updateSubTotal($orderId);
 
                 //end update total price
-                $msg = gp247_language_render('action.update_success');
-                if (!empty($overStockWarnings)) {
-                    $msg .= ' ' . implode(' ', $overStockWarnings);
-                }
-                return response()->json(['error' => 0, 'msg' => $msg, 'warning' => !empty($overStockWarnings)]);
+                return response()->json(['error' => 0, 'msg' => gp247_language_render('action.update_success')]);
             } catch (\Throwable $e) {
                 return response()->json(['error' => 1, 'msg' => 'Error: ' . $e->getMessage()]);
             }
@@ -781,6 +773,18 @@ class AdminOrderController extends RootAdminController
             $item = ShopOrderDetail::find($id);
             $fieldOrg = $item->{$field};
             $orderId = $item->order_id;
+
+            // WHY: unified hard block (ADR shop-admin_order-stock-parity, revised
+            // 2026-08-16 / modification 20260816T175134) — when increasing qty beyond
+            // stock, reject BEFORE saving / decrementing stock so no partial change is
+            // applied. Enable product_buy_out_of_stock to sell beyond stock.
+            if ($field == 'qty') {
+                $qtyDelta = $value - $fieldOrg;
+                if ($qtyDelta > 0 && $item->product && !$item->product->hasStockForOrder($qtyDelta)) {
+                    return response()->json(['error' => 1, 'msg' => gp247_language_render('cart.item_over_qty', ['sku' => $item->sku, 'qty' => $value])]);
+                }
+            }
+
             $item->{$field} = $value;
             if ($field == 'qty' || $field == 'price') {
                 $item->total_price = $value * (($field == 'qty') ? $item->price : $item->qty);
@@ -800,18 +804,11 @@ class AdminOrderController extends RootAdminController
             ];
             (new AdminOrder)->addOrderHistory($dataHistory);
 
-            //Update stock
-            $overStockWarning = '';
+            //Update stock (over-stock already rejected above before any write)
             if ($field == 'qty') {
                 $checkQty = $value - $fieldOrg;
                 //Update stock, sold
                 AdminProduct::updateStock($item->product_id, $checkQty);
-
-                // WHY: warn (not block) when the qty increase exceeds stock — admin
-                // authority, allow-but-warn (ADR shop-admin_order-stock-parity).
-                if ($checkQty > 0 && $item->product && !$item->product->hasStockForOrder($checkQty)) {
-                    $overStockWarning = ' ' . gp247_language_render('cart.item_over_qty', ['sku' => $item->sku, 'qty' => $value]);
-                }
             }
 
             //Update total price
@@ -839,8 +836,7 @@ class AdminOrderController extends RootAdminController
                 'item_total_price' => gp247_currency_render_symbol($item->total_price, $item->currency),
                 'item_id'          => $id,
                 'balance'          => $blance,
-            ],'msg' => gp247_language_render('action.update_success') . $overStockWarning,
-                'warning' => $overStockWarning !== '',
+            ],'msg' => gp247_language_render('action.update_success'),
             ];
         } catch (\Throwable $e) {
             $arrayReturn = ['error' => 1, 'msg' => $e->getMessage()];
