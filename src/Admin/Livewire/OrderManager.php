@@ -386,10 +386,31 @@ class OrderManager extends ResourcePanel
     public function resendEmail(): void
     {
         $this->authorizeAction('update');
-        if ($this->editingId !== null && function_exists('gp247_order_process_after_success')) {
+
+        if ($this->editingId === null) {
+            return;
+        }
+
+        // WHY: mirror the guard inside gp247_order_process_after_success() so the
+        // toast tells the truth. That helper silently sends nothing when the master
+        // mail switch is off or no order-success recipient is enabled, yet this
+        // action previously always reported success — misleading the admin (see the
+        // "Send mail" tab in Shop configuration).
+        if (!gp247_config('email_action_mode')) {
+            $this->notify('warning', gp247_language_render('admin.shop.order_email_off'));
+
+            return;
+        }
+        if (!gp247_config('order_success_to_admin') && !gp247_config('order_success_to_customer')) {
+            $this->notify('warning', gp247_language_render('admin.shop.order_email_none_enabled'));
+
+            return;
+        }
+
+        if (function_exists('gp247_order_process_after_success')) {
             gp247_order_process_after_success($this->editingId);
         }
-        $this->notify('success', gp247_language_render('action.update_success'));
+        $this->notify('success', gp247_language_render('admin.shop.order_email_resent'));
     }
 
     /**
