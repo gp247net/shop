@@ -136,7 +136,12 @@ class OrderManager extends ResourcePanel
      */
     protected function baseRoute(): string
     {
-        return 'gp247.shop-admin.order';
+        // WHY: use the cutover (PA-1) clean route space `admin_order.*` at
+        // `/order/...` as canonical — consistent with the admin menu and the
+        // invoice link (`admin_order.invoice`). The ResourcePanel only uses this
+        // to redirect back to the list after save/delete; RBAC is driven by the
+        // separate `$permission = 'admin_order'`, so this does not affect access.
+        return 'admin_order.index';
     }
 
     /**

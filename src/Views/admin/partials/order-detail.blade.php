@@ -11,7 +11,7 @@
 --}}
 <div class="mb-4 flex items-center justify-between">
     <div>
-        <x-gp247::button variant="secondary" href="{{ gp247_route_admin('gp247.shop-admin.order') }}" wire:navigate>
+        <x-gp247::button variant="secondary" href="{{ gp247_route_admin('admin_order.index') }}" wire:navigate>
             <i class="fas fa-arrow-left"></i> {{ gp247_language_render('admin.back') }}
         </x-gp247::button>
         <span class="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-200">#{{ $order['id'] ?? '' }}</span>

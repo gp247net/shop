@@ -234,32 +234,25 @@ class ShopServiceProvider extends ServiceProvider
         // in the same Views/admin tree as the legacy views and resolve under the
         // single `gp247-shop-admin::` namespace already registered above — avoids
         // registering two Blade namespaces for one physical root.
-        \GP247\Core\AdminShell\Infrastructure\AdminShellResourceRegistrar::register(
+        // After the cutover (PA-1), all shop-admin screens are routed via
+        // Routes/Admin/*.php (loaded by core routes.php) under clean `admin_<res>.*`
+        // names at `/<res>/...`, and every manager's `baseRoute()` targets those.
+        // The shared registrar therefore no longer registers any routes here — doing
+        // so only duplicated the same components under an orphaned `/shop-admin/<res>`
+        // URL space.
+        //
+        // What remains essential is the Livewire component namespace: components
+        // resolve as `gp247-shop-admin::<name>` (e.g. gp247-shop-admin::product-manager)
+        // and that name travels in every `livewire/update` round-trip, so the
+        // namespace must stay registered or interactivity breaks. Register it
+        // directly — same pattern as registerStorefrontLivewire().
+        if (!class_exists(\Livewire\Livewire::class)) {
+            return;
+        }
+
+        \Livewire\Livewire::addNamespace(
             'gp247-shop-admin',
-            'GP247\\Shop\\Admin\\Livewire',
-            'shop-admin',
-            [
-                // Two-column managers (form + list on one page, P1): single route each.
-                'brand' => [\GP247\Shop\Admin\Livewire\BrandManager::class],
-                // Bespoke product screen (multilingual + variants + composition…), US-SADM-001.
-                'product' => [\GP247\Shop\Admin\Livewire\ProductManager::class],
-                'supplier' => [\GP247\Shop\Admin\Livewire\SupplierManager::class],
-                'tax' => [\GP247\Shop\Admin\Livewire\TaxManager::class],
-                'currency' => [\GP247\Shop\Admin\Livewire\CurrencyManager::class],
-                'category' => [\GP247\Shop\Admin\Livewire\CategoryManager::class],
-                'subscribe' => [\GP247\Shop\Admin\Livewire\SubscribeManager::class],
-                'customer' => [\GP247\Shop\Admin\Livewire\CustomerManager::class],
-                'attribute_group' => [\GP247\Shop\Admin\Livewire\AttributeGroupManager::class],
-                // Bespoke order screen (list + detail + workflow + line-item), US-SADM-003.
-                'order' => [\GP247\Shop\Admin\Livewire\OrderManager::class],
-                'order_status' => [\GP247\Shop\Admin\Livewire\OrderStatusManager::class],
-                'payment_status' => [\GP247\Shop\Admin\Livewire\PaymentStatusManager::class],
-                'shipping_status' => [\GP247\Shop\Admin\Livewire\ShippingStatusManager::class],
-                // Read-only report dashboard (US-SADM-006).
-                'report' => [\GP247\Shop\Admin\Livewire\ReportManager::class],
-                // Single-page config screen.
-                'config' => [\GP247\Shop\Admin\Livewire\ShopConfigForm::class],
-            ],
+            classNamespace: 'GP247\\Shop\\Admin\\Livewire',
         );
     }
 
