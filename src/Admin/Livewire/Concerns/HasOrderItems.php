@@ -135,7 +135,11 @@ trait HasOrderItems
      */
     public function selectProduct($id): void
     {
-        $product = ShopProduct::find($id);
+        // WHY: mirror productResults() which excludes GROUP containers (kind=2,
+        // non-sellable) — never prefill the form from one (US-SADM-order-line-integrity).
+        $product = ShopProduct::where('id', $id)
+            ->where('kind', '!=', GP247_PRODUCT_GROUP)
+            ->first();
         if ($product === null) {
             return;
         }
@@ -188,10 +192,23 @@ trait HasOrderItems
 
         // WHY: qty format (integer|numeric) is config-driven — product_qty_decimal
         // (modification 20260705T093328, ADR-016); gt:0 stays on top of it.
-        $this->validate([
+        $rules = [
             'itemForm.qty' => 'required|' . gp247_qty_rule() . '|gt:0',
             'itemForm.price' => 'nullable|numeric|min:0',
-        ]);
+        ];
+
+        // WHY: a new line must be tied to a real product — an empty product_id
+        // used to slip through and create a "ghost" line with blank sku/name/0
+        // price (US-SADM-order-line-integrity, regression of the legacy
+        // postAddItem guard). The name is derived from the product in addNewItem
+        // (getName() ?: sku), so it is not a required manual input; the model-level
+        // guard is the final backstop against an empty name. On edit the product
+        // is fixed and the name is not rewritten, so no product_id/name rule there.
+        if ($this->editingItemId === null) {
+            $rules['itemForm.product_id'] = 'required|exists:' . (new ShopProduct)->getTable() . ',id';
+        }
+
+        $this->validate($rules);
 
         $clean = gp247_clean($this->itemForm);
         $qty = (float) $clean['qty'];
@@ -274,14 +291,27 @@ trait HasOrderItems
         $productId = (string) ($clean['product_id'] ?? '');
         $product = $productId !== '' ? ShopProduct::find($productId) : null;
 
+        // WHY: every order line must map to a real, sellable product. Reject a
+        // missing product or a GROUP container (kind=2, non-sellable, price always
+        // 0 — same rule the product picker applies) instead of persisting a ghost
+        // line (US-SADM-order-line-integrity). Validation already blocks this on
+        // the happy path; this is the defensive backstop for the addNewItem path.
+        if ($product === null || (int) $product->kind === GP247_PRODUCT_GROUP) {
+            $this->notify('error', gp247_language_render('admin.data_not_found_detail', ['msg' => '#' . $productId]));
+
+            return;
+        }
+
         // WHY: allow-but-warn on oversell (ADR shop-admin_order-stock-parity) — the
         // line is still added (admin authority); the admin just sees a warning toast.
-        if ($product !== null && !$product->hasStockForOrder($qty)) {
+        if (!$product->hasStockForOrder($qty)) {
             $this->notify('warning', gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $qty]));
         }
 
-        $name = $clean['name'] ?: ($product->name ?? $product->sku ?? '');
-        $sku = $clean['sku'] ?: ($product->sku ?? '');
+        // WHY: product name lives on the description relation, so use getName()
+        // (as selectProduct does) — $product->name is usually null.
+        $name = $clean['name'] ?: ($product->getName() ?: $product->sku);
+        $sku = $clean['sku'] ?: $product->sku;
 
         $row = [
             'id' => gp247_uuid(),

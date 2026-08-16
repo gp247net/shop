@@ -47,35 +47,37 @@
 
         @if (! $editingItemId)
             <div class="relative mb-3">
-                <input type="search" wire:model.live.debounce.300ms="productSearch"
+                <input type="search" wire:model.live.debounce.300ms="productSearch" data-testid="shop-admin-order-item-search"
                     placeholder="{{ gp247_language_render('product.sku') }} / {{ gp247_language_render('admin.search') }}" class="{{ $inputCls }}">
                 @php($results = $this->productResults())
                 @if (is_countable($results) && count($results))
                     <div class="mt-1 rounded-lg border border-gray-200 dark:border-gray-700">
                         @foreach ($results as $p)
-                            <button type="button" wire:click="selectProduct('{{ $p->id }}')"
+                            <button type="button" wire:click="selectProduct('{{ $p->id }}')" data-testid="shop-admin-order-item-result"
                                 class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
                                 <span class="font-medium">{{ $p->sku }}</span> — {{ $p->getName() ?: $p->alias }}
                             </button>
                         @endforeach
                     </div>
                 @endif
+                @error('itemForm.product_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         @endif
 
         <div class="grid grid-cols-2 gap-3">
             <div>
                 <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('product.name') }}</label>
-                <input type="text" wire:model="itemForm.name" class="{{ $inputCls }}">
+                <input type="text" wire:model="itemForm.name" data-testid="shop-admin-order-item-name" class="{{ $inputCls }}">
+                @error('itemForm.name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.price') }}</label>
-                <input type="number" step="0.01" wire:model="itemForm.price" class="{{ $inputCls }}">
+                <input type="number" step="0.01" wire:model="itemForm.price" data-testid="shop-admin-order-item-price" class="{{ $inputCls }}">
                 @error('itemForm.price')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.qty') }}</label>
-                <input type="number" step="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" min="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" wire:model="itemForm.qty" class="{{ $inputCls }}">
+                <input type="number" step="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" min="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" wire:model="itemForm.qty" data-testid="shop-admin-order-item-qty" class="{{ $inputCls }}">
                 @error('itemForm.qty')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
@@ -84,7 +86,7 @@
             @if ($editingItemId)
                 <x-gp247::button variant="secondary" wire:click="newItem">{{ gp247_language_render('admin.cancel') }}</x-gp247::button>
             @endif
-            <x-gp247::button wire:click="saveItem" wire:loading.attr="disabled">
+            <x-gp247::button wire:click="saveItem" wire:loading.attr="disabled" data-testid="shop-admin-order-item-submit">
                 <i class="fas fa-save"></i> {{ gp247_language_render($editingItemId ? 'admin.update' : 'admin.submit') }}
             </x-gp247::button>
         </div>
