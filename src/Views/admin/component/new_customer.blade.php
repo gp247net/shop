@@ -20,7 +20,13 @@
     // plugin is installed — the socialAccount() relation returns null without it,
     // so class_exists must gate every access (getTopCustomer eager-loads it).
     $showEmail = (bool) gp247_config_admin('customer_email');
-    $hasSocialPlugin = class_exists(\App\GP247\Plugins\LoginSocial\Models\SocialAccount::class);
+    // Gate on the real operating condition (plugin class autoloads AND the
+    // social_accounts table exists), not just class presence — the plugin
+    // source ships in app/GP247 so class_exists() is true even when the
+    // plugin is uninstalled and the table is missing.
+    $hasSocialPlugin = $adminCustomer
+        && method_exists($adminCustomer, 'socialAccountEnabled')
+        && $adminCustomer::socialAccountEnabled();
 @endphp
 <x-gp247::card :title="gp247_language_render('admin.dashboard.top_customer_new')">
     <x-gp247::table :empty="$topCustomers->isEmpty() ? gp247_language_render('admin.no_records') : null">

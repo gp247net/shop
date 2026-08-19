@@ -112,7 +112,11 @@ class AdminCustomer extends ShopCustomer
      */
     public static function getTopCustomer()
     {
-        if (class_exists(\App\GP247\Plugins\LoginSocial\Models\SocialAccount::class)) {
+        // Guard on the real operating condition (class autoloads AND the
+        // social_accounts table exists), not just class presence: the plugin
+        // source ships in app/GP247, so class_exists() is true even when the
+        // plugin is uninstalled and the table is missing -> eager-load crash.
+        if (self::socialAccountEnabled()) {
             return \GP247\Shop\Models\ShopCustomer::with('socialAccount')
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
