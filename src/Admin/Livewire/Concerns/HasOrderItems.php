@@ -203,6 +203,9 @@ trait HasOrderItems
         $rules = [
             'itemForm.qty' => 'required|' . gp247_qty_rule() . '|gt:0',
             'itemForm.price' => 'nullable|numeric|min:0',
+            // WHY: the per-line tax is editable again (US-SADM-order-info-edit,
+            // restored from the legacy .edit-item-detail) — never negative.
+            'itemForm.tax' => 'nullable|numeric|min:0',
         ];
 
         // WHY: a new line must be tied to a real product — an empty product_id

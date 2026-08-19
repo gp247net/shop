@@ -90,6 +90,12 @@
                 <input type="number" step="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" min="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" wire:model="itemForm.qty" data-testid="shop-admin-order-item-qty" class="{{ $inputCls }}">
                 @error('itemForm.qty')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
+            <div>
+                {{-- Per-line tax, restored by US-SADM-order-info-edit (legacy .edit-item-detail). --}}
+                <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.totals.tax') }}</label>
+                <input type="number" step="0.01" min="0" wire:model="itemForm.tax" data-testid="shop-admin-order-item-tax" class="{{ $inputCls }}">
+                @error('itemForm.tax')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
         </div>
 
         <div class="mt-3 flex items-center justify-end gap-2">

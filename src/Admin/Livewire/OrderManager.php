@@ -36,9 +36,25 @@ class OrderManager extends ResourcePanel
 
     /** Editable header/status fields surfaced on the detail screen. */
     private const FIELDS = [
-        'email', 'first_name', 'last_name', 'phone', 'country', 'postcode',
-        'address1', 'comment', 'payment_method', 'shipping_method',
+        'email', 'first_name', 'last_name', 'phone', 'company', 'country',
+        'postcode', 'address1', 'comment', 'payment_method', 'shipping_method',
     ];
+
+    /**
+     * Header columns saveOrderInfo() may write — email is deliberately absent
+     * (read-only, parity with the legacy screen), and the whitelist is fixed so
+     * no extra form key can ever reach the UPDATE (US-SADM-order-info-edit).
+     */
+    private const HEADER_FIELDS = [
+        'first_name', 'last_name', 'phone', 'company', 'address1', 'country',
+        'comment', 'payment_method', 'shipping_method',
+    ];
+
+    /**
+     * shop_order_total codes editable via updateTotalRow() — the derived rows
+     * (subtotal/tax/total) are recomputed from line items, never set directly.
+     */
+    private const EDITABLE_TOTAL_CODES = ['shipping', 'discount', 'other_fee', 'received'];
 
     /** @var string Order-status filter (list). */
     public string $filterStatus = '';
@@ -374,6 +390,141 @@ class OrderManager extends ResourcePanel
         return 0;
     }
 
+    // --- Header / totals editing (US-SADM-order-info-edit) ------------------
+
+    /**
+     * Persist the editable order-header fields (customer/shipping info, note,
+     * payment/shipping method) from the form, logging one history row per
+     * changed field — parity with the legacy postOrderUpdate inline edits.
+     * Email is read-only by design and never written.
+     *
+     * @return void
+     * @throws \GP247\Core\AdminShell\Domain\AuthorizationException When denied.
+     * @throws \Illuminate\Validation\ValidationException When a field is invalid.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-info-edit
+     */
+    public function saveOrderInfo(): void
+    {
+        $this->authorizeAction('update');
+
+        $order = $this->currentOrder();
+        if ($order === null) {
+            return;
+        }
+
+        // WHY: required set is first_name/phone/address1/country only — the
+        // legacy screen required all six inline fields, but a whole-form save
+        // must not force values into company/last_name that are legitimately
+        // empty on existing orders (deliberate deviation, see the ADR).
+        $this->validate([
+            'form.first_name' => 'required|string|max:100',
+            'form.last_name' => 'nullable|string|max:100',
+            'form.phone' => 'required|string|max:20',
+            'form.company' => 'nullable|string|max:100',
+            'form.address1' => 'required|string|max:100',
+            'form.country' => 'required|string|max:10',
+            'form.comment' => 'nullable|string|max:300',
+            'form.payment_method' => 'nullable|string|max:100',
+            'form.shipping_method' => 'nullable|string|max:100',
+        ]);
+
+        $clean = gp247_clean($this->form);
+
+        $changes = [];
+        foreach (self::HEADER_FIELDS as $field) {
+            $new = (string) ($clean[$field] ?? '');
+            if ($new !== (string) ($order->{$field} ?? '')) {
+                $changes[$field] = $new;
+            }
+        }
+
+        if ($changes === []) {
+            $this->notify('success', gp247_language_render('action.update_success'));
+
+            return;
+        }
+
+        $old = $order->only(array_keys($changes));
+        $order->update($changes);
+
+        $status = (int) $order->fresh()->status;
+        foreach ($changes as $field => $new) {
+            // WHY: history renders raw HTML — escape the admin-supplied values.
+            $content = 'Change <b>' . $field . "</b> from '" . e((string) ($old[$field] ?? ''))
+                . "' to '" . e($new) . "'";
+            $this->logHistory($content, $status);
+        }
+
+        $this->refreshOrder();
+        $this->notify('success', gp247_language_render('action.update_success'));
+    }
+
+    /**
+     * Update one editable shop_order_total row (shipping/discount/other_fee/
+     * received) and re-sum the order total/balance via the legacy domain method.
+     * The row must belong to the order being edited — the legacy postOrderUpdate
+     * accepted any pk (IDOR), this action scopes it. Raw signed values are kept
+     * (discount/received are stored negative, "(-)" hint in the UI — D2).
+     *
+     * @param int|string $rowId shop_order_total row id.
+     * @param mixed      $value New raw value (numeric, may be negative).
+     * @return void
+     * @throws \GP247\Core\AdminShell\Domain\AuthorizationException When denied.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-info-edit
+     */
+    public function updateTotalRow($rowId, $value): void
+    {
+        $this->authorizeAction('update');
+
+        if ($this->editingId === null) {
+            return;
+        }
+
+        $row = AdminOrder::getRowOrderTotal($rowId);
+        if ($row === null
+            || (string) $row->order_id !== (string) $this->editingId
+            || !in_array((string) $row->code, self::EDITABLE_TOTAL_CODES, true)
+        ) {
+            $this->notify('error', gp247_language_render('admin.display.data_not_found_detail', ['msg' => '#' . $rowId]));
+
+            return;
+        }
+
+        if (!is_numeric($value)) {
+            $this->notify('error', gp247_language_render('validation.numeric', [
+                'attribute' => gp247_language_render('order.totals.' . $row->code),
+            ]));
+
+            return;
+        }
+
+        $old = (float) $row->value;
+        $new = (float) $value;
+        if ($old === $new) {
+            return;
+        }
+
+        $order = $this->currentOrder();
+        AdminOrder::updateRowOrderTotal([
+            'id' => $row->id,
+            'code' => $row->code,
+            'value' => $new,
+            'text' => gp247_currency_render_symbol($new, (string) ($order->currency ?? '')),
+        ]);
+
+        $this->logHistory(
+            'Change <b>' . $row->code . "</b> from '" . $old . "' to '" . $new . "'",
+            (int) ($order->status ?? 0),
+        );
+
+        $this->refreshOrder();
+        $this->notify('success', gp247_language_render('action.update_success'));
+    }
+
     // --- Invoice / email (reuse existing helpers) --------------------------
 
     /**
@@ -500,6 +651,44 @@ class OrderManager extends ResourcePanel
     public function countryOptions(): array
     {
         return (array) (new AdminCountry())->getCodeAll();
+    }
+
+    /**
+     * Payment-extension options (id => label) for the header edit form — the
+     * same source the legacy detail screen used (active:false so the method an
+     * old order was placed with still resolves).
+     *
+     * @return array<string, string>
+     */
+    public function paymentMethodOptions(): array
+    {
+        return $this->extensionOptions('payment');
+    }
+
+    /**
+     * Shipping-extension options (id => label) for the header edit form.
+     *
+     * @return array<string, string>
+     */
+    public function shippingMethodOptions(): array
+    {
+        return $this->extensionOptions('shipping');
+    }
+
+    /**
+     * Extension list of a group as select options (id => rendered label).
+     *
+     * @param string $code Extension group code (payment|shipping).
+     * @return array<string, string>
+     */
+    private function extensionOptions(string $code): array
+    {
+        $options = [];
+        foreach (gp247_extension_get_via_code(code: $code, active: false) as $key => $value) {
+            $options[$key] = (string) gp247_language_render($value->detail);
+        }
+
+        return $options;
     }
 
     /**
