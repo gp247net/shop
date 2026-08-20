@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
 use GP247\Shop\Commands\ShopInstall;
 use GP247\Shop\Commands\ShopUninstall;
+use GP247\Shop\Commands\ShopUpdate;
 use GP247\Shop\Commands\ShopSample;
 use GP247\Shop\Commands\ShopClearCart;
 use GP247\Shop\Middleware\CurrencyMiddleware;
@@ -50,6 +51,7 @@ class ShopServiceProvider extends ServiceProvider
             $this->commands([
                 ShopInstall::class,
                 ShopUninstall::class,
+                ShopUpdate::class,
                 ShopSample::class,
                 ShopClearCart::class,
             ]);

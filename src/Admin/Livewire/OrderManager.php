@@ -37,16 +37,20 @@ class OrderManager extends ResourcePanel
     /** Editable header/status fields surfaced on the detail screen. */
     private const FIELDS = [
         'email', 'first_name', 'last_name', 'phone', 'company', 'country',
-        'postcode', 'address1', 'comment', 'payment_method', 'shipping_method',
+        'postcode', 'city', 'district', 'address1', 'address2', 'address3',
+        'comment', 'payment_method', 'shipping_method',
     ];
 
     /**
      * Header columns saveOrderInfo() may write — email is deliberately absent
      * (read-only, parity with the legacy screen), and the whitelist is fixed so
      * no extra form key can ever reach the UPDATE (US-SADM-order-info-edit).
+     * The full address block (city/district/address1-3/postcode) is editable so
+     * an admin can correct any part of the shipping snapshot (QĐ-6).
      */
     private const HEADER_FIELDS = [
-        'first_name', 'last_name', 'phone', 'company', 'address1', 'country',
+        'first_name', 'last_name', 'phone', 'company', 'city', 'district',
+        'address1', 'address2', 'address3', 'country', 'postcode',
         'comment', 'payment_method', 'shipping_method',
     ];
 
@@ -229,7 +233,19 @@ class OrderManager extends ResourcePanel
             'email' => (string) $model->email,
             'name' => trim($model->first_name . ' ' . $model->last_name),
             'phone' => (string) $model->phone,
-            'address' => trim($model->address1 . ' ' . $model->address2 . ' ' . $model->address3),
+            // Canonical address order: city -> district -> address1/2/3.
+            // array_filter drops empty parts so an order stored before city/district
+            // existed still renders exactly as before.
+            'address' => implode(' ', array_filter([
+                (string) ($model->city ?? ''), (string) ($model->district ?? ''),
+                (string) $model->address1, (string) $model->address2, (string) $model->address3,
+            ])),
+            'city' => (string) ($model->city ?? ''),
+            'district' => (string) ($model->district ?? ''),
+            'address1' => (string) $model->address1,
+            'address2' => (string) $model->address2,
+            'address3' => (string) $model->address3,
+            'postcode' => (string) $model->postcode,
             'country' => (string) $model->country,
             'currency' => (string) $model->currency,
             'subtotal' => (float) $model->subtotal,
@@ -427,7 +443,16 @@ class OrderManager extends ResourcePanel
             'form.last_name' => 'nullable|string|max:100',
             'form.phone' => 'required|string|max:20',
             'form.company' => 'nullable|string|max:100',
+            // City/district are nullable on a whole-form save: an order placed
+            // before these were enabled must not be forced to backfill them.
+            'form.city' => 'nullable|string|max:100',
+            'form.district' => 'nullable|string|max:100',
             'form.address1' => 'required|string|max:100',
+            // address2/3 and postcode are additional, always-optional parts of
+            // the snapshot the admin may correct (QĐ-6).
+            'form.address2' => 'nullable|string|max:100',
+            'form.address3' => 'nullable|string|max:100',
+            'form.postcode' => 'nullable|string|max:20',
             'form.country' => 'required|string|max:10',
             'form.comment' => 'nullable|string|max:300',
             'form.payment_method' => 'nullable|string|max:100',

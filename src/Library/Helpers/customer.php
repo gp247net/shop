@@ -117,6 +117,22 @@ if (!function_exists('gp247_customer_address_mapping') && !in_array('gp247_custo
             $validate['last_name'] = config('validation.customer.last_name_required', 'required|string|max:100');
             $dataAddress['last_name'] = $dataRaw['last_name']??'';
         }
+        // City / district (canonical order: city -> district -> address1/2/3).
+        // Both default OFF, so an unchanged install maps exactly as before.
+        // Honor the customer_<field>_required toggle so the server matches the
+        // form (which only marks the input required when the toggle is on).
+        if (gp247_config('customer_city')) {
+            $validate['city'] = gp247_config('customer_city_required')
+                ? config('validation.customer.city_required', 'required|string|max:100')
+                : config('validation.customer.city_null', 'nullable|string|max:100');
+            $dataAddress['city'] = $dataRaw['city']??'';
+        }
+        if (gp247_config('customer_district')) {
+            $validate['district'] = gp247_config('customer_district_required')
+                ? config('validation.customer.district_required', 'required|string|max:100')
+                : config('validation.customer.district_null', 'nullable|string|max:100');
+            $dataAddress['district'] = $dataRaw['district']??'';
+        }
         if (gp247_config('customer_address2')) {
             $validate['address2'] = config('validation.customer.address2_required', 'required|string|max:100');
             $dataAddress['address2'] = $dataRaw['address2']??'';
@@ -141,6 +157,8 @@ if (!function_exists('gp247_customer_address_mapping') && !in_array('gp247_custo
         $messages = [
             'last_name.required'  => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.last_name')]),
             'first_name.required' => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.first_name')]),
+            'city.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.city')]),
+            'district.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.district')]),
             'address1.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -151,6 +169,8 @@ if (!function_exists('gp247_customer_address_mapping') && !in_array('gp247_custo
             'postcode.min'        => gp247_language_render('validation.min', ['attribute'=> gp247_language_render('customer.postcode')]),
             'country.min'         => gp247_language_render('validation.min', ['attribute'=> gp247_language_render('customer.country')]),
             'first_name.max'      => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.first_name')]),
+            'city.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.city')]),
+            'district.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.district')]),
             'address1.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -213,6 +233,30 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             }
             if (!empty($dataRaw['last_name'])) {
                 $dataInsert['last_name'] = $dataRaw['last_name'];
+            }
+        }
+
+        // City / district precede address1 (canonical order). Both default OFF,
+        // so a register/create form that never enables them behaves as before.
+        if (gp247_config('customer_city')) {
+            if (gp247_config('customer_city_required')) {
+                $validate['city'] = config('validation.customer.city_required', 'required|string|max:100');
+            } else {
+                $validate['city'] = config('validation.customer.city_null', 'nullable|string|max:100');
+            }
+            if (!empty($dataRaw['city'])) {
+                $dataInsert['city'] = $dataRaw['city'];
+            }
+        }
+
+        if (gp247_config('customer_district')) {
+            if (gp247_config('customer_district_required')) {
+                $validate['district'] = config('validation.customer.district_required', 'required|string|max:100');
+            } else {
+                $validate['district'] = config('validation.customer.district_null', 'nullable|string|max:100');
+            }
+            if (!empty($dataRaw['district'])) {
+                $dataInsert['district'] = $dataRaw['district'];
             }
         }
 
@@ -353,6 +397,8 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             'first_name.required'  => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.first_name')]),
             'email.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.email')]),
             'password.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.password')]),
+            'city.required'        => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.city')]),
+            'district.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.district')]),
             'address1.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -369,6 +415,8 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             'country.min'          => gp247_language_render('validation.min', ['attribute'=> gp247_language_render('customer.country')]),
             'first_name.max'       => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.first_name')]),
             'email.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.email')]),
+            'city.max'             => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.city')]),
+            'district.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.district')]),
             'address1.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -444,6 +492,29 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
             }
             if (!empty($dataRaw['last_name'])) {
                 $dataUpdate['last_name'] = $dataRaw['last_name'];
+            }
+        }
+
+        // City / district precede address1 (canonical order); both default OFF.
+        if (gp247_config('customer_city')) {
+            if (gp247_config('customer_city_required')) {
+                $validate['city'] = config('validation.customer.city_required', 'required|string|max:100');
+            } else {
+                $validate['city'] = config('validation.customer.city_null', 'nullable|string|max:100');
+            }
+            if (!empty($dataRaw['city'])) {
+                $dataUpdate['city'] = $dataRaw['city'];
+            }
+        }
+
+        if (gp247_config('customer_district')) {
+            if (gp247_config('customer_district_required')) {
+                $validate['district'] = config('validation.customer.district_required', 'required|string|max:100');
+            } else {
+                $validate['district'] = config('validation.customer.district_null', 'nullable|string|max:100');
+            }
+            if (!empty($dataRaw['district'])) {
+                $dataUpdate['district'] = $dataRaw['district'];
             }
         }
 
@@ -576,6 +647,8 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
             'first_name.required'  => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.first_name')]),
             'email.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.email')]),
             'password.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.password')]),
+            'city.required'        => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.city')]),
+            'district.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.district')]),
             'address1.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -592,6 +665,8 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
             'country.min'          => gp247_language_render('validation.min', ['attribute'=> gp247_language_render('customer.country')]),
             'first_name.max'       => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.first_name')]),
             'email.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.email')]),
+            'city.max'             => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.city')]),
+            'district.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.district')]),
             'address1.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address3')]),

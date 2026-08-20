@@ -41,6 +41,9 @@ class CheckoutWizard extends BaseFrontComponent
     public string $last_name_kana  = '';
     public string $email           = '';
     public string $phone           = '';
+    // City/district precede address1 (canonical order); both default OFF via config.
+    public string $city            = '';
+    public string $district        = '';
     public string $address1        = '';
     public string $address2        = '';
     public string $address3        = '';
@@ -94,6 +97,8 @@ class CheckoutWizard extends BaseFrontComponent
             $this->last_name_kana  = (string) ($address->last_name_kana  ?? '');
             $this->email           = (string) ($customer->email          ?? '');
             $this->phone           = (string) ($address->phone           ?? '');
+            $this->city            = (string) ($address->city            ?? '');
+            $this->district        = (string) ($address->district        ?? '');
             $this->address1        = (string) ($address->address1        ?? '');
             $this->address2        = (string) ($address->address2        ?? '');
             $this->address3        = (string) ($address->address3        ?? '');
@@ -107,6 +112,8 @@ class CheckoutWizard extends BaseFrontComponent
             $this->last_name_kana  = (string) ($customer->last_name_kana  ?? '');
             $this->email           = (string) ($customer->email           ?? '');
             $this->phone           = (string) ($customer->phone           ?? '');
+            $this->city            = (string) ($customer->city            ?? '');
+            $this->district        = (string) ($customer->district        ?? '');
             $this->address1        = (string) ($customer->address1        ?? '');
             $this->address2        = (string) ($customer->address2        ?? '');
             $this->address3        = (string) ($customer->address3        ?? '');
@@ -146,6 +153,8 @@ class CheckoutWizard extends BaseFrontComponent
         $this->first_name_kana = (string) ($address->first_name_kana ?? '');
         $this->last_name_kana  = (string) ($address->last_name_kana  ?? '');
         $this->phone           = (string) ($address->phone           ?? '');
+        $this->city            = (string) ($address->city            ?? '');
+        $this->district        = (string) ($address->district        ?? '');
         $this->address1        = (string) ($address->address1        ?? '');
         $this->address2        = (string) ($address->address2        ?? '');
         $this->address3        = (string) ($address->address3        ?? '');
@@ -292,6 +301,8 @@ class CheckoutWizard extends BaseFrontComponent
                 'last_name_kana'  => $c($this->last_name_kana),
                 'email'           => $c($this->email),
                 'phone'           => $c($this->phone),
+                'city'            => $c($this->city),
+                'district'        => $c($this->district),
                 'address1'        => $c($this->address1),
                 'address2'        => $c($this->address2),
                 'address3'        => $c($this->address3),
@@ -498,6 +509,8 @@ class CheckoutWizard extends BaseFrontComponent
         return [
             'last_name' => $field('customer_lastname'),
             'name_kana' => $field('customer_name_kana'),
+            'city'      => $field('customer_city'),
+            'district'  => $field('customer_district'),
             'address1'  => $field('customer_address1'),
             'address2'  => $field('customer_address2'),
             'address3'  => $field('customer_address3'),

@@ -46,7 +46,7 @@
                     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $order->email }}</td>
                 @endif
                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $order->name }}</td>
-                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($order->address1 . ' ' . $order->address2 . ' ' . $order->address3) }}</td>
+                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($order->city . ' ' . $order->district . ' ' . $order->address1 . ' ' . $order->address2 . ' ' . $order->address3) }}</td>
                 <td class="px-4 py-3 text-sm">
                     <x-gp247::badge color="blue">{{ $order->orderStatus->name ?? $order->status }}</x-gp247::badge>
                 </td>

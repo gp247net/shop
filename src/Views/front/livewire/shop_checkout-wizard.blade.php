@@ -44,7 +44,7 @@
                 <option value="">{{ gp247_language_render('cart.change_address') }}</option>
                 @foreach ($customer->addresses as $addr)
                 <option value="{{ $addr->id }}" @selected($address_process == $addr->id)>
-                    {{ $addr->first_name.' '.$addr->last_name.', '.$addr->address1.' '.$addr->address2.' '.$addr->address3 }}
+                    {{ $addr->first_name.' '.$addr->last_name.', '.trim($addr->city.' '.$addr->district.' '.$addr->address1.' '.$addr->address2.' '.$addr->address3) }}
                 </option>
                 @endforeach
                 <option value="new" @selected($address_process === 'new')>{{ gp247_language_render('cart.add_new_address') }}</option>
@@ -114,6 +114,22 @@
                 <label class="block text-sm font-medium text-ink-700 mb-1">{{ gp247_language_render('cart.postcode') }} @if ($fieldConfig['postcode']['required'])<span class="text-red-500">*</span>@endif</label>
                 <input type="text" wire:model="postcode" class="input @error('postcode') input-error @enderror">
                 @error('postcode')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+            @endif
+            {{-- City / district precede address1 to match the canonical address order
+                 (city -> district -> address1/2/3). Both default OFF via fieldConfig. --}}
+            @if ($fieldConfig['city']['show'])
+            <div>
+                <label class="block text-sm font-medium text-ink-700 mb-1">{{ gp247_language_render('cart.city') }} @if ($fieldConfig['city']['required'])<span class="text-red-500">*</span>@endif</label>
+                <input type="text" wire:model="city" class="input @error('city') input-error @enderror">
+                @error('city')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+            @endif
+            @if ($fieldConfig['district']['show'])
+            <div>
+                <label class="block text-sm font-medium text-ink-700 mb-1">{{ gp247_language_render('cart.district') }} @if ($fieldConfig['district']['required'])<span class="text-red-500">*</span>@endif</label>
+                <input type="text" wire:model="district" class="input @error('district') input-error @enderror">
+                @error('district')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
             </div>
             @endif
             @if ($fieldConfig['address1']['show'])
@@ -242,7 +258,7 @@
             <h3 class="text-sm font-semibold text-ink-500 mb-2">{{ gp247_language_render('cart.checkout') }}</h3>
             <p class="text-sm text-ink-700 leading-relaxed">
                 {{ $first_name }} {{ $last_name }}<br>
-                {{ $address1 }}{{ $address2 ? ', '.$address2 : '' }}{{ $address3 ? ', '.$address3 : '' }}<br>
+                {{ $city ? $city.', ' : '' }}{{ $district ? $district.', ' : '' }}{{ $address1 }}{{ $address2 ? ', '.$address2 : '' }}{{ $address3 ? ', '.$address3 : '' }}<br>
                 {{ $country }} {{ $postcode }}<br>
                 {{ $email }} / {{ $phone }}
             </p>

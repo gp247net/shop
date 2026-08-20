@@ -39,6 +39,12 @@
                 @if (gp247_config('customer_postcode'))
                 <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.postcode') }}</td><td class="py-1 font-medium">{!! $order->postcode !!}</td></tr>
                 @endif
+                @if (gp247_config('customer_city'))
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.city') }}</td><td class="py-1 font-medium">{!! $order->city !!}</td></tr>
+                @endif
+                @if (gp247_config('customer_district'))
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.district') }}</td><td class="py-1 font-medium">{!! $order->district !!}</td></tr>
+                @endif
                 <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.address1') }}</td><td class="py-1 font-medium">{!! $order->address1 !!}</td></tr>
                 @if (gp247_config('customer_address2'))
                 <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.address2') }}</td><td class="py-1 font-medium">{!! $order->address2 !!}</td></tr>

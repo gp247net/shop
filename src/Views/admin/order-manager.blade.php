@@ -78,7 +78,7 @@
                         @if ($showEmail)
                             <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->email }}</td>
                         @endif
-                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($row->address1 . ' ' . $row->address2 . ' ' . $row->address3) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($row->city . ' ' . $row->district . ' ' . $row->address1 . ' ' . $row->address2 . ' ' . $row->address3) }}</td>
                         <td class="px-4 py-3 text-right text-sm text-gray-800 dark:text-gray-100">{{ gp247_currency_render($row->total, '', '', '', false) }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $this->paymentStatusOptions()[$row->payment_status] ?? $row->payment_status }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $this->shippingStatusOptions()[$row->shipping_status] ?? $row->shipping_status }}</td>

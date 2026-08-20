@@ -121,6 +121,28 @@
                         </div>
                         @endif
 
+                        {{-- city / district — config-driven; precede address1 to match
+                             the canonical address order (city -> district -> address1/2/3). --}}
+                        @if (gp247_config_admin('customer_city'))
+                        <div>
+                            <label class="{{ $labelCls }}">{{ gp247_language_render('cart.city') }}{{ gp247_config_admin('customer_city_required') ? ' *' : '' }}</label>
+                            <input type="text" name="city" x-model="fields.city"
+                                {{ gp247_config_admin('customer_city_required') ? 'required' : '' }}
+                                class="{{ $inputCls }}">
+                            @error('city')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        @endif
+
+                        @if (gp247_config_admin('customer_district'))
+                        <div>
+                            <label class="{{ $labelCls }}">{{ gp247_language_render('cart.district') }}{{ gp247_config_admin('customer_district_required') ? ' *' : '' }}</label>
+                            <input type="text" name="district" x-model="fields.district"
+                                {{ gp247_config_admin('customer_district_required') ? 'required' : '' }}
+                                class="{{ $inputCls }}">
+                            @error('district')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        @endif
+
                         {{-- address1 — config-driven --}}
                         @if (gp247_config_admin('customer_address1'))
                         <div class="col-span-2">
@@ -439,6 +461,8 @@ function orderCreate() {
             'email'      => old('email',      ''),
             'phone'      => old('phone',      ''),
             'country'    => old('country',    ''),
+            'city'       => old('city',       ''),
+            'district'   => old('district',   ''),
             'address1'   => old('address1',   ''),
             'address2'   => old('address2',   ''),
             'address3'   => old('address3',   ''),
@@ -470,6 +494,8 @@ function orderCreate() {
             this.fields.email      = u.email      ?? '';
             this.fields.phone      = u.phone      ?? '';
             this.fields.country    = u.country    ?? '';
+            this.fields.city       = u.city       ?? '';
+            this.fields.district   = u.district   ?? '';
             this.fields.address1   = u.address1   ?? '';
             this.fields.address2   = u.address2   ?? '';
             this.fields.address3   = u.address3   ?? '';

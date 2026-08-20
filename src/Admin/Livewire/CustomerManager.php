@@ -35,12 +35,12 @@ class CustomerManager extends ResourcePanel
     private const FIELDS = [
         'email', 'first_name', 'last_name', 'phone', 'country', 'postcode',
         'company', 'sex', 'birthday', 'group', 'first_name_kana', 'last_name_kana',
-        'address1', 'address2', 'address3',
+        'city', 'district', 'address1', 'address2', 'address3',
     ];
 
     /** Address fields (1:N), config-driven, mirroring the legacy address screen. */
     private const ADDRESS_FIELDS = [
-        'first_name', 'last_name', 'address1', 'address2', 'address3',
+        'first_name', 'last_name', 'city', 'district', 'address1', 'address2', 'address3',
         'phone', 'country', 'postcode',
     ];
 

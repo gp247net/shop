@@ -71,6 +71,18 @@
                     wire:model="form.postcode" :error="$errors->first('form.postcode')" />
             @endif
 
+            {{-- City / district precede address1 to match the canonical address order
+                 (city -> district -> address1/2/3). Both default OFF. --}}
+            @if (gp247_config_admin('customer_city'))
+                <x-gp247::input :label="gp247_language_render('customer.city')" name="city"
+                    wire:model="form.city" :error="$errors->first('form.city')" />
+            @endif
+
+            @if (gp247_config_admin('customer_district'))
+                <x-gp247::input :label="gp247_language_render('customer.district')" name="district"
+                    wire:model="form.district" :error="$errors->first('form.district')" />
+            @endif
+
             @if (gp247_config_admin('customer_address1') || true)
                 <x-gp247::input :label="gp247_language_render('customer.address1')" name="address1"
                     wire:model="form.address1" :error="$errors->first('form.address1')" />

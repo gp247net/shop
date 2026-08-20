@@ -97,6 +97,10 @@ return new class extends Migration
                 $table->string('last_name', 100)->nullable();
                 $table->string('first_name_kana', 100)->nullable();
                 $table->string('last_name_kana', 100)->nullable();
+                // WHY: administrative address fields (city/province, district), config-gated
+                // and default-off; snapshot columns on the order (US-CMP-address-city-district-schema).
+                $table->string('city', 100)->nullable();
+                $table->string('district', 100)->nullable();
                 $table->string('address1', 100)->nullable();
                 $table->string('address2', 100)->nullable();
                 $table->string('address3', 100)->nullable();
@@ -334,6 +338,10 @@ return new class extends Migration
                 $table->string('password', 100)->nullable();
                 $table->uuid('address_id')->default(0)->index();
                 $table->string('postcode', 10)->nullable();
+                // WHY: administrative address fields (city/province, district), config-gated
+                // and default-off (US-CMP-address-city-district-schema).
+                $table->string('city', 100)->nullable();
+                $table->string('district', 100)->nullable();
                 $table->string('address1', 100)->nullable();
                 $table->string('address2', 100)->nullable();
                 $table->string('address3', 100)->nullable();
@@ -360,6 +368,10 @@ return new class extends Migration
                 $table->string('first_name_kana', 100)->nullable();
                 $table->string('last_name_kana', 100)->nullable();
                 $table->string('postcode', 10)->nullable();
+                // WHY: administrative address fields (city/province, district), config-gated
+                // and default-off (US-CMP-address-city-district-schema).
+                $table->string('city', 100)->nullable();
+                $table->string('district', 100)->nullable();
                 $table->string('address1', 100)->nullable();
                 $table->string('address2', 100)->nullable();
                 $table->string('address3', 100)->nullable();

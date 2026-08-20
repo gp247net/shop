@@ -288,6 +288,12 @@ class DataShopInitializeSeeder extends Seeder
             ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_address2_required','value' => '0','sort' => '2','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
             ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_address3','value' => '0','sort' => '2','detail' => 'admin.customer.config_manager.address3','store_id' => GP247_STORE_ID_GLOBAL],
             ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_address3_required','value' => '0','sort' => '2','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            // WHY: administrative address fields (city/province, district) default OFF ('0') so
+            // sites that do not use them see no change (QĐ-4, MC-address-city-district-config).
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_city','value' => '0','sort' => '2','detail' => 'admin.customer.config_manager.city','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_city_required','value' => '0','sort' => '2','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_district','value' => '0','sort' => '2','detail' => 'admin.customer.config_manager.district','store_id' => GP247_STORE_ID_GLOBAL],
+            ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_district_required','value' => '0','sort' => '2','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
             ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_company','value' => '0','sort' => '0','detail' => 'admin.customer.config_manager.company','store_id' => GP247_STORE_ID_GLOBAL],
             ['group' => 'gp247_cart','code' => 'customer_config_attribute_required','key' => 'customer_company_required','value' => '0','sort' => '0','detail' => '','store_id' => GP247_STORE_ID_GLOBAL],
             ['group' => 'gp247_cart','code' => 'customer_config_attribute','key' => 'customer_postcode','value' => '0','sort' => '0','detail' => 'admin.customer.config_manager.postcode','store_id' => GP247_STORE_ID_GLOBAL],

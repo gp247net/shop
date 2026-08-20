@@ -233,6 +233,8 @@ class ShopCartController extends RootFrontController
                     'first_name_kana' => $address->first_name_kana,
                     'last_name_kana'  => $address->last_name_kana,
                     'email'           => $customer->email,
+                    'city'            => $address->city,
+                    'district'        => $address->district,
                     'address1'        => $address->address1,
                     'address2'        => $address->address2,
                     'address3'        => $address->address3,
@@ -249,6 +251,8 @@ class ShopCartController extends RootFrontController
                     'first_name_kana' => $customer->first_name_kana,
                     'last_name_kana'  => $customer->last_name_kana,
                     'email'           => $customer->email,
+                    'city'            => $customer->city,
+                    'district'        => $customer->district,
                     'address1'        => $customer->address1,
                     'address2'        => $customer->address2,
                     'address3'        => $customer->address3,
@@ -268,6 +272,8 @@ class ShopCartController extends RootFrontController
                 'postcode'        => '',
                 'company'         => '',
                 'email'           => '',
+                'city'            => '',
+                'district'        => '',
                 'address1'        => '',
                 'address2'        => '',
                 'address3'        => '',
@@ -381,6 +387,8 @@ class ShopCartController extends RootFrontController
                     'last_name_kana'  => request('last_name_kana'),
                     'email'           => request('email'),
                     'country'         => request('country'),
+                    'city'            => request('city'),
+                    'district'        => request('district'),
                     'address1'        => request('address1'),
                     'address2'        => request('address2'),
                     'address3'        => request('address3'),
@@ -602,6 +610,12 @@ class ShopCartController extends RootFrontController
         if (!empty($shippingAddress['last_name_kana'])) {
             $dataOrder['last_name_kana']       = $shippingAddress['last_name_kana'];
         }
+        if (!empty($shippingAddress['city'])) {
+            $dataOrder['city']       = $shippingAddress['city'];
+        }
+        if (!empty($shippingAddress['district'])) {
+            $dataOrder['district']       = $shippingAddress['district'];
+        }
         if (!empty($shippingAddress['address1'])) {
             $dataOrder['address1']       = $shippingAddress['address1'];
         }
@@ -668,6 +682,8 @@ class ShopCartController extends RootFrontController
                 'first_name_kana' => $shippingAddress['first_name_kana'] ?? '',
                 'last_name_kana'  => $shippingAddress['last_name_kana'] ?? '',
                 'postcode'        => $shippingAddress['postcode'] ?? '',
+                'city'            => $shippingAddress['city'] ?? '',
+                'district'        => $shippingAddress['district'] ?? '',
                 'address1'        => $shippingAddress['address1'] ?? '',
                 'address2'        => $shippingAddress['address2'] ?? '',
                 'address3'        => $shippingAddress['address3'] ?? '',

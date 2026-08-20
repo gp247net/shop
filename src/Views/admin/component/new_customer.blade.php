@@ -42,8 +42,8 @@
         </x-slot:head>
         @foreach ($topCustomers as $customer)
             @php
-                // Merge address parts the same way OrderManager does (address1..3).
-                $customerAddress = trim($customer->address1 . ' ' . $customer->address2 . ' ' . $customer->address3);
+                // Merge address parts in canonical order (city -> district -> address1..3).
+                $customerAddress = trim($customer->city . ' ' . $customer->district . ' ' . $customer->address1 . ' ' . $customer->address2 . ' ' . $customer->address3);
                 $socialProvider = $hasSocialPlugin ? optional($customer->socialAccount)->provider : null;
             @endphp
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50" wire:key="cus-{{ $customer->id }}">

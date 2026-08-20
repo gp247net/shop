@@ -53,6 +53,24 @@
         </div>
     @endif
 
+    {{-- City / district precede address1 to match the canonical address order
+         (city -> district -> address1/2/3). Both default OFF. --}}
+    @if (gp247_config('customer_city'))
+        <div>
+            <label class="label">{{ gp247_language_render('customer.city') }}</label>
+            <input type="text" class="input @error('city') input-error @enderror" name="city" @if (gp247_config('customer_city_required')) required @endif value="{{ old('city', $address['city']) }}">
+            @error('city')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+    @endif
+
+    @if (gp247_config('customer_district'))
+        <div>
+            <label class="label">{{ gp247_language_render('customer.district') }}</label>
+            <input type="text" class="input @error('district') input-error @enderror" name="district" @if (gp247_config('customer_district_required')) required @endif value="{{ old('district', $address['district']) }}">
+            @error('district')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+    @endif
+
     <div>
         <label class="label">{{ gp247_language_render('customer.address1') }}</label>
         <input type="text" class="input @error('address1') input-error @enderror" name="address1" required value="{{ old('address1', $address['address1']) }}">

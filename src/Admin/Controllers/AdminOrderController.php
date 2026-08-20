@@ -288,6 +288,21 @@ class AdminOrderController extends RootAdminController
                 $validate['last_name'] = config('validation.customer.last_name_null', 'nullable|string|max:100');
             }
         }
+        // City / district precede address1 (canonical order); both default OFF.
+        if (gp247_config_admin('customer_city')) {
+            if (gp247_config_admin('customer_city_required')) {
+                $validate['city'] = config('validation.customer.city_required', 'required|string|max:100');
+            } else {
+                $validate['city'] = config('validation.customer.city_null', 'nullable|string|max:100');
+            }
+        }
+        if (gp247_config_admin('customer_district')) {
+            if (gp247_config_admin('customer_district_required')) {
+                $validate['district'] = config('validation.customer.district_required', 'required|string|max:100');
+            } else {
+                $validate['district'] = config('validation.customer.district_null', 'nullable|string|max:100');
+            }
+        }
         if (gp247_config_admin('customer_address1')) {
             if (gp247_config_admin('customer_address1_required')) {
                 $validate['address1'] = config('validation.customer.address1_required', 'required|string|max:100');
@@ -341,6 +356,8 @@ class AdminOrderController extends RootAdminController
             'last_name.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.last_name')]),
             'first_name.required'      => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.first_name')]),
             'email.required'           => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.email')]),
+            'city.required'            => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.city')]),
+            'district.required'        => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.district')]),
             'address1.required'        => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.address1')]),
             'address2.required'        => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.address2')]),
             'address3.required'        => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.address3')]),
@@ -356,6 +373,8 @@ class AdminOrderController extends RootAdminController
             'country.min'              => gp247_language_render('validation.min', ['attribute'=> gp247_language_render('cart.country')]),
             'first_name.max'           => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.first_name')]),
             'email.max'                => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.email')]),
+            'city.max'                 => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.city')]),
+            'district.max'             => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.district')]),
             'address1.max'             => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.address1')]),
             'address2.max'             => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.address2')]),
             'address3.max'             => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.address3')]),
@@ -381,6 +400,8 @@ class AdminOrderController extends RootAdminController
             'last_name'       => $data['last_name'] ?? '',
             'status'          => $data['status'],
             'currency'        => $data['currency'],
+            'city'            => $data['city'] ?? '',
+            'district'        => $data['district'] ?? '',
             'address1'        => $data['address1'] ?? '',
             'address2'        => $data['address2'] ?? '',
             'address3'        => $data['address3'] ?? '',
@@ -598,7 +619,12 @@ class AdminOrderController extends RootAdminController
         if ($order) {
             $data                    = array();
             $data['name']            = $order['first_name'] . ' ' . $order['last_name'];
-            $data['address']         = $order['address1'] . ', ' . $order['address2'] . ', ' . $order['address3'].', '.$order['country'];
+            // Canonical order (city -> district -> address1..3 -> country); drop
+            // empty segments so old/optional fields don't leave dangling commas.
+            $data['address']         = implode(', ', array_filter([
+                $order['city'], $order['district'], $order['address1'],
+                $order['address2'], $order['address3'], $order['country'],
+            ]));
             $data['phone']           = $order['phone'];
             $data['email']           = $order['email'];
             $data['comment']         = $order['comment'];

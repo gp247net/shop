@@ -34,7 +34,10 @@ if (!function_exists('gp247_order_process_after_success') && !in_array('gp247_or
                 $dataView = [
                     'orderID' => $orderID,
                     'toname' => $data['first_name'].' '.$data['last_name'],
-                    'address' => $data['address1'] . ' ' . $data['address2'].' '.$data['address3'],
+                    // Canonical address order: city -> district -> address1/2/3.
+                    // array_filter drops empty parts so an install with city/district
+                    // OFF renders the same "address1 address2 address3" string as before.
+                    'address' => implode(' ', array_filter([$data['city'] ?? '', $data['district'] ?? '', $data['address1'], $data['address2'], $data['address3']])),
                     'phone' => $data['phone'],
                     'comment' => $data['comment'],
                     'currency' => $data['currency'],
@@ -94,6 +97,25 @@ if (!function_exists('gp247_order_mapping_validate') && !in_array('gp247_order_m
                 $validate['last_name'] = config('validation.customer.last_name_null', 'nullable|string|max:100');
             }
         }
+        // City / district precede address1 to match the canonical address order
+        // (city -> district -> address1/2/3). Both default OFF, so an install that
+        // never enables them validates exactly as before.
+        if (gp247_config('customer_city')) {
+            if (gp247_config('customer_city_required')) {
+                $validate['city'] = config('validation.customer.city_required', 'required|string|max:100');
+            } else {
+                $validate['city'] = config('validation.customer.city_null', 'nullable|string|max:100');
+            }
+        }
+
+        if (gp247_config('customer_district')) {
+            if (gp247_config('customer_district_required')) {
+                $validate['district'] = config('validation.customer.district_required', 'required|string|max:100');
+            } else {
+                $validate['district'] = config('validation.customer.district_null', 'nullable|string|max:100');
+            }
+        }
+
         if (gp247_config('customer_address1')) {
             if (gp247_config('customer_address1_required')) {
                 $validate['address1'] = config('validation.customer.address1_required', 'required|string|max:100');
@@ -163,6 +185,8 @@ if (!function_exists('gp247_order_mapping_validate') && !in_array('gp247_order_m
             'last_name.required'      => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.last_name')]),
             'first_name.required'     => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.first_name')]),
             'email.required'          => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.email')]),
+            'city.required'           => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.city')]),
+            'district.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.district')]),
             'address1.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.address1')]),
             'address2.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.address2')]),
             'address3.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('cart.address3')]),
@@ -178,6 +202,8 @@ if (!function_exists('gp247_order_mapping_validate') && !in_array('gp247_order_m
             'country.min'             => gp247_language_render('validation.min', ['attribute'=> gp247_language_render('cart.country')]),
             'first_name.max'          => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.first_name')]),
             'email.max'               => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.email')]),
+            'city.max'                => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.city')]),
+            'district.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.district')]),
             'address1.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.address1')]),
             'address2.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.address2')]),
             'address3.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('cart.address3')]),

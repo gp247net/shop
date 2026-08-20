@@ -250,12 +250,16 @@ class ShopConfigForm extends GP247AdminComponent
      */
     private function orderCustomerAttrFields(array $fields): array
     {
+        // WHY: administrative fields (city/district) precede the street address
+        // lines so the tab mirrors the canonical address order (QĐ-3).
         $priority = [
             'customer_firstname' => 1,
             'customer_lastname'  => 2,
-            'customer_address1'  => 3,
-            'customer_address2'  => 4,
-            'customer_address3'  => 5,
+            'customer_city'      => 3,
+            'customer_district'  => 4,
+            'customer_address1'  => 5,
+            'customer_address2'  => 6,
+            'customer_address3'  => 7,
         ];
         usort(
             $fields,

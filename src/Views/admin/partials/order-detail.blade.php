@@ -62,11 +62,56 @@
                     </div>
                 </div>
 
+                {{-- Full address block (QĐ-6): city/district precede address1 to
+                     match the canonical order (city -> district -> address1/2/3),
+                     then address2/3 and postcode are also editable so the admin can
+                     correct any part of the shipping snapshot. Each part is gated by
+                     its own config toggle. --}}
+                @if (gp247_config_admin('customer_city'))
+                <div>
+                    <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.city') }}</label>
+                    <input type="text" wire:model="form.city" data-testid="shop-admin-order-info-city" class="{{ $inputCls }}">
+                    @error('form.city')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @endif
+
+                @if (gp247_config_admin('customer_district'))
+                <div>
+                    <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.district') }}</label>
+                    <input type="text" wire:model="form.district" data-testid="shop-admin-order-info-district" class="{{ $inputCls }}">
+                    @error('form.district')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @endif
+
                 <div>
                     <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.address1') }}</label>
                     <input type="text" wire:model="form.address1" data-testid="shop-admin-order-info-address1" class="{{ $inputCls }}">
                     @error('form.address1')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
+
+                @if (gp247_config_admin('customer_address2'))
+                <div>
+                    <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.address2') }}</label>
+                    <input type="text" wire:model="form.address2" data-testid="shop-admin-order-info-address2" class="{{ $inputCls }}">
+                    @error('form.address2')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @endif
+
+                @if (gp247_config_admin('customer_address3'))
+                <div>
+                    <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.address3') }}</label>
+                    <input type="text" wire:model="form.address3" data-testid="shop-admin-order-info-address3" class="{{ $inputCls }}">
+                    @error('form.address3')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @endif
+
+                @if (gp247_config_admin('customer_postcode'))
+                <div>
+                    <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.postcode') }}</label>
+                    <input type="text" wire:model="form.postcode" data-testid="shop-admin-order-info-postcode" class="{{ $inputCls }}">
+                    @error('form.postcode')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @endif
 
                 <div>
                     <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.country') }}</label>
