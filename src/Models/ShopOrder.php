@@ -181,12 +181,15 @@ class ShopOrder extends Model
                 if (!$product->hasStockForOrder($cartDetail['qty'])) {
                     throw new \Exception(gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $cartDetail['qty']]));
                 }
-                // WHY: line-level tax on the same basis as the cart total — unit price
-                // incl. option surcharges, in order currency — so shop_order.tax equals
-                // Σ shop_order_detail.tax (ADR shop-admin_tax-standardization, D2/D4). The
-                // old per-unit formula ignored option surcharges, drifting from the cart.
-                $priceWithOptions = $cartDetail['price'] + gp247_currency_value(gp247_cart_options_price($cartDetail['attribute'] ?? []));
-                $tax = gp247_line_tax($priceWithOptions, $cartDetail['qty'], $product->getTaxValue());
+                // WHY: line-level tax on the same basis as the cart total, so
+                // shop_order.tax equals Σ shop_order_detail.tax (ADR
+                // shop-admin_tax-standardization, D2/D4). Since modification
+                // 20260820T232338 the incoming price IS the effective unit price
+                // (attribute surcharges included — ADR
+                // storefront_order-line-effective-price), so the old re-add of
+                // option prices from the attribute JSON is gone: the JSON is
+                // descriptive only and re-adding it would double-count.
+                $tax = gp247_line_tax($cartDetail['price'], $cartDetail['qty'], $product->getTaxValue());
 
                 $cartDetail['order_id'] = $orderID;
                 $cartDetail['currency'] = $currency;

@@ -297,6 +297,26 @@
                                              x-text="fmt(item.qty * item.price)"></div>
                                     </div>
                                 </div>
+
+                                {{-- Attribute selection (one <select> per group) — mandatory when
+                                     the product has attributes; add_price rebuilt server-side on
+                                     save. US-SADM-order-item-attribute-select. --}}
+                                <div x-show="item.attributeGroups && item.attributeGroups.length"
+                                     class="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
+                                    <template x-for="g in item.attributeGroups" :key="g.group_id">
+                                        <div>
+                                            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400" x-text="g.group_name"></label>
+                                            <select x-model="item.attributes[g.group_id]" @change="changeAttr(idx)"
+                                                    :name="'products[' + idx + '][attributes][' + g.group_id + ']'"
+                                                    :data-testid="'shop-admin-order-create-attr-' + g.group_id"
+                                                    class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                                                <template x-for="(o, oidx) in g.options" :key="oidx">
+                                                    <option :value="o.name" x-text="o.add_price > 0 ? (o.name + ' (+' + fmt(o.add_price) + ')') : o.name"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </template>
 
@@ -504,7 +524,7 @@ function orderCreate() {
         },
 
         addProduct() {
-            this.products.push({ product_id: '', name: '', sku: '', qty: 1, price: 0, tax: 0, search: '', results: [], open: false });
+            this.products.push({ product_id: '', name: '', sku: '', qty: 1, price: 0, tax: 0, search: '', results: [], open: false, attributeGroups: [], attributes: {} });
         },
 
         removeProduct(idx) {
@@ -529,10 +549,45 @@ function orderCreate() {
             this.products[idx].product_id = r.id;
             this.products[idx].name  = r.name;
             this.products[idx].sku   = r.sku;
-            this.products[idx].price = parseFloat(r.price ?? 0);
             this.products[idx].search = r.sku + ' — ' + r.name;
             this.products[idx].results = [];
             this.products[idx].open = false;
+
+            // WHY: preselect the first option of every attribute group (parity with
+            // the legacy radio default) and suggest an effective price = base price
+            // + selected surcharges. The admin can still override the price.
+            const groups = Array.isArray(r.attributes) ? r.attributes : [];
+            this.products[idx].attributeGroups = groups;
+            const selection = {};
+            groups.forEach(g => { if (g.options && g.options.length) selection[g.group_id] = g.options[0].name; });
+            this.products[idx].attributes = selection;
+            const add = this.sumAddPrice(idx);
+            this.products[idx]._lastAddPrice = add;
+            this.products[idx].price = parseFloat(r.price ?? 0) + add;
+            this.recalc();
+        },
+
+        // Sum add_price of the currently selected option in each group (authoritative
+        // source = attributeGroups from the server, never free-typed input).
+        sumAddPrice(idx) {
+            const p = this.products[idx];
+            let sum = 0;
+            (p.attributeGroups || []).forEach(g => {
+                const chosen = p.attributes[g.group_id];
+                const opt = (g.options || []).find(o => o.name === chosen);
+                if (opt) sum += parseFloat(opt.add_price || 0);
+            });
+            return sum;
+        },
+
+        // Re-select an option: adjust the suggested price by the delta so the
+        // effective price stays correct without compounding.
+        changeAttr(idx) {
+            const p = this.products[idx];
+            const base = parseFloat(p.price || 0) - (p._lastAddPrice ?? 0);
+            const add = this.sumAddPrice(idx);
+            p._lastAddPrice = add;
+            p.price = base + add;
             this.recalc();
         },
 

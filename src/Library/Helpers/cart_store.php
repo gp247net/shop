@@ -81,6 +81,61 @@ if (!function_exists('gp247_cart_options_canonicalize') && !in_array('gp247_cart
     }
 }
 
+/**
+ * Canonicalize AND require a complete attribute selection for an admin order line.
+ *
+ * WHY: the admin order screens (add/edit line, create order) let staff pick one
+ * option per attribute group. Like the storefront we never trust a client-sent
+ * add_price — we rebuild it from shop_product_attribute (via
+ * gp247_cart_options_canonicalize). On top of that, an admin line for a product
+ * that HAS attributes must cover EVERY group (US-SADM-order-item-attribute-select,
+ * ADR shop-admin_order-item-attribute-select): a partial/empty selection is
+ * rejected instead of silently persisting a line missing its variant.
+ *
+ * A product with no attributes yields [] (no selection required). Any option that
+ * does not belong to the product, or a missing group, returns false so the caller
+ * blocks the save.
+ *
+ * @param  int|string $productId Product id the line is being added for.
+ * @param  array      $formAttr  Admin selection: ["<group_id>" => "<name>", ...]
+ *                               (name only; any add_price segment is ignored).
+ * @return array|false Canonical options with DB add_price, or false when the
+ *                     selection is incomplete or contains an option not on the product.
+ *
+ * @aidlc-unit shop-admin
+ * @aidlc-story US-SADM-order-item-attribute-select
+ * @aidlc-adr shop-admin_order-item-attribute-select
+ */
+if (!function_exists('gp247_cart_options_complete') && !in_array('gp247_cart_options_complete', config('gp247_functions_except', []))) {
+    function gp247_cart_options_complete($productId, $formAttr)
+    {
+        // The attribute groups this product actually offers.
+        $groupIds = \GP247\Shop\Models\ShopProductAttribute::where('product_id', $productId)
+            ->pluck('attribute_group_id')
+            ->unique()
+            ->values();
+
+        // No attributes → nothing to select; an empty options set is valid.
+        if ($groupIds->isEmpty()) {
+            return [];
+        }
+
+        $formAttr = is_array($formAttr) ? $formAttr : [];
+
+        // Every offered group must be chosen (mandatory selection).
+        foreach ($groupIds as $groupId) {
+            $picked = $formAttr[$groupId] ?? '';
+            if ($picked === '' || $picked === null) {
+                return false;
+            }
+        }
+
+        // Rebuild each option's add_price from the DB (server-authoritative); an
+        // option not owned by the product makes canonicalize return false.
+        return gp247_cart_options_canonicalize($productId, $formAttr);
+    }
+}
+
 
 // Process data cart
 if (!function_exists('gp247_cart_process_data') && !in_array('gp247_cart_process_data', config('gp247_functions_except', []))) {

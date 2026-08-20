@@ -183,30 +183,6 @@ class AdminProduct extends ShopProduct
     
 
     /**
-     * Render html option price in admin
-     *
-     * @param   [type]$currency  [$currency description]
-     * @param   nul   $rate      [$rate description]
-     * @param   null             [ description]
-     *
-     * @return  [type]           [return description]
-     */
-    public function renderAttributeDetailsAdmin($currency = null, $rate = null)
-    {
-        $html = '';
-        $details = $this->attributes()->get()->groupBy('attribute_group_id');
-        $groups = ShopAttributeGroup::getListAll();
-        foreach ($details as $groupId => $detailsGroup) {
-            $html .= '<br><b><label>' . $groups[$groupId] . '</label></b>: ';
-            foreach ($detailsGroup as $k => $detail) {
-                $valueOption = $detail->name.'__'.$detail->add_price;
-                $html .= '<label class="radio-inline"><input ' . (($k == 0) ? "checked" : "") . ' type="radio" name="add_att[' . $this->id . '][' . $groupId . ']" value="' . $valueOption . '">' . gp247_render_option_price($valueOption, $currency, $rate) . '</label> ';
-            }
-        }
-        return $html;
-    }
-
-    /**
      * Get list category id from product id
      *
      * @param [array] $arrProductId

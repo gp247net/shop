@@ -25,7 +25,19 @@
         @foreach ($items as $item)
             <tr wire:key="item-{{ $item['id'] }}" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $item['sku'] }}</td>
-                <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-100">{{ $item['name'] }}</td>
+                <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-100">
+                    {{ $item['name'] }}
+                    {{-- Selected product attributes (name + surcharge), read-only. US-SADM-order-attribute-display.
+                         $att['value'] is markup from gp247_render_option_price (safe: name is admin-managed,
+                         add_price is server-authoritative — RISK-TECH-order-attribute-render-xss). --}}
+                    @if (! empty($item['attributes']))
+                        <div class="mt-1 space-y-0.5" data-testid="shop-admin-order-item-attribute">
+                            @foreach ($item['attributes'] as $att)
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $att['name'] }}: {!! $att['value'] !!}</div>
+                            @endforeach
+                        </div>
+                    @endif
+                </td>
                 <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-300">{{ gp247_currency_render($item['price'], '', '', '', false) }}</td>
                 <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-300">{{ gp247_qty_format($item['qty']) }}</td>
                 <td class="px-4 py-3 text-right text-sm font-medium text-gray-800 dark:text-gray-100">{{ gp247_currency_render($item['total_price'], '', '', '', false) }}</td>
@@ -97,6 +109,28 @@
                 @error('itemForm.tax')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
+
+        {{-- Attribute selection (one <select> per group) — mandatory when the
+             product has attributes. add_price is rebuilt server-side on save;
+             the price field only carries the suggested effective price.
+             US-SADM-order-item-attribute-select. --}}
+        @if (! empty($itemAttrGroups))
+            <div class="mt-3 grid grid-cols-2 gap-3">
+                @foreach ($itemAttrGroups as $group)
+                    <div>
+                        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ $group['name'] }}</label>
+                        <select wire:change="setItemAttribute('{{ $group['id'] }}', $event.target.value)"
+                            data-testid="shop-admin-order-item-attr-{{ $group['id'] }}" class="{{ $inputCls }}">
+                            @foreach ($group['options'] as $option)
+                                <option value="{{ $option['name'] }}" @selected(($itemForm['attributes'][$group['id']] ?? '') === $option['name'])>
+                                    {{ $option['name'] }}@if ($option['add_price'] > 0) (+{{ gp247_currency_render($option['add_price'], '', '', '', false) }})@endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
         <div class="mt-3 flex items-center justify-end gap-2">
             <x-gp247::button variant="secondary" wire:click="newItem">{{ gp247_language_render('admin.cancel') }}</x-gp247::button>

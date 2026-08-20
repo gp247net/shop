@@ -8,6 +8,7 @@ use GP247\Shop\Models\ShopCurrency;
 use GP247\Shop\Models\ShopOrderDetail;
 use GP247\Shop\Models\ShopOrderStatus;
 use GP247\Shop\Models\ShopProduct;
+use GP247\Shop\Models\ShopProductAttribute;
 use GP247\Shop\Models\ShopPaymentStatus;
 use GP247\Shop\Models\ShopShippingStatus;
 use GP247\Shop\Admin\Models\AdminCustomer;
@@ -438,9 +439,18 @@ class AdminOrderController extends RootAdminController
                             $price = (float)($item['price'] ?? 0);
                             $tax = (float)($item['tax'] ?? 0);
 
+                            // WHY: the form field is a tax RATE (%) for convenient entry,
+                            // but the persisted line must follow the shared contract
+                            // (domain model shop_order-line-item / NFR-MAINT-order-line-truth):
+                            // detail.tax is an AMOUNT and total_price excludes tax —
+                            // otherwise AdminOrder::updateSubTotal (which sums total_price
+                            // as subtotal and tax as amount) double-counts tax and reads
+                            // the percent as money on the first later edit.
+                            // @aidlc-unit shop-admin
+                            // @aidlc-story US-SADM-order-create-line-normalization
+                            // @aidlc-adr storefront_order-line-effective-price
                             $itemSubtotal = $qty * $price;
                             $itemTax = $itemSubtotal * $tax / 100;
-                            $totalPrice = $itemSubtotal + $itemTax;
 
                             $subtotal += $itemSubtotal;
                             $taxTotal += $itemTax;
@@ -455,6 +465,19 @@ class AdminOrderController extends RootAdminController
                                 throw new \Exception(gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $qty]));
                             }
 
+                            // WHY: rebuild the attribute selection server-side (add_price
+                            // from the DB, never client input) and require a complete
+                            // selection when the product has attributes — a missing/partial
+                            // pick throws and rolls back the whole order, so no line lands
+                            // without its variant (US-SADM-order-item-attribute-select,
+                            // NFR-SEC-attribute-price-integrity). A product with no
+                            // attributes yields [] and stores null (unchanged behaviour).
+                            $options = gp247_cart_options_complete($item['product_id'], $item['attributes'] ?? []);
+                            if ($options === false) {
+                                throw new \Exception(gp247_language_render('product.please_select_attribute'));
+                            }
+                            $attribute = $options === [] ? null : json_encode($options);
+
                             // WHY: addNewDetail inserts AND decrements stock/sold (parity with
                             // storefront createOrder + postAddItem). The previous
                             // ShopOrderDetail::create() left stock untouched → oversell
@@ -467,9 +490,9 @@ class AdminOrderController extends RootAdminController
                                 'sku' => $product->sku,
                                 'price' => $price,
                                 'qty' => $qty,
-                                'total_price' => $totalPrice,
-                                'tax' => $tax,
-                                'attribute' => null,
+                                'total_price' => $itemSubtotal,
+                                'tax' => $itemTax,
+                                'attribute' => $attribute,
                                 'currency' => $data['currency'],
                                 'exchange_rate' => $data['exchange_rate'],
                                 'created_at' => gp247_time_now(),
@@ -532,23 +555,36 @@ class AdminOrderController extends RootAdminController
     }
 
     /**
-     * [getInfoProduct description]
-     * @param   [description]
-     * @return [type]           [description]
+     * Build the attribute groups + options a product offers, for the create-order
+     * picker JSON (one <select> per group on the Alpine screen).
+     *
+     * @param int|string $productId
+     * @param \Illuminate\Support\Collection<int|string, string> $groupNames Attribute-group id => name map.
+     * @return array<int, array{group_id: int|string, group_name: string, options: array<int, array{name: string, add_price: float}>}>
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-item-attribute-select
      */
-    public function getInfoProduct()
+    private function productAttributeGroups($productId, $groupNames): array
     {
-        $id = request('id');
-        $orderId = request('order_id');
-        $oder = AdminOrder::getOrderAdmin($orderId);
-        $product = AdminProduct::getProductAdmin($id);
-        if (!$product) {
-            return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.display.data_not_found_detail', ['msg' => '#product:'.$id]), 'detail' => '']);
+        $rows = ShopProductAttribute::where('product_id', $productId)->orderBy('id')->get();
+        if ($rows->isEmpty()) {
+            return [];
         }
-        $arrayReturn = $product->toArray();
-        $arrayReturn['renderAttDetails'] = $product->renderAttributeDetailsAdmin($oder->currency, $oder->exchange_rate);
-        $arrayReturn['price_final'] = $product->getFinalPrice();
-        return response()->json($arrayReturn);
+
+        $groups = [];
+        foreach ($rows->groupBy('attribute_group_id') as $groupId => $options) {
+            $groups[] = [
+                'group_id' => $groupId,
+                'group_name' => (string) ($groupNames[$groupId] ?? ('#' . $groupId)),
+                'options' => $options->map(static fn ($o): array => [
+                    'name' => (string) $o->name,
+                    'add_price' => (float) $o->add_price,
+                ])->values()->all(),
+            ];
+        }
+
+        return $groups;
     }
 
     /**
@@ -566,8 +602,12 @@ class AdminOrderController extends RootAdminController
         $term = (string) request('term', '');
         $products = ShopProduct::searchForAdminOrderPicker($term);
 
+        // WHY: preload attribute group names once so building each product's
+        // attribute groups stays a single query (not N per result).
+        $groupNames = ShopAttributeGroup::pluck('name', 'id');
+
         return response()->json(
-            $products->map(function ($product) {
+            $products->map(function ($product) use ($groupNames) {
                 return [
                     'id' => (string) $product->id,
                     'sku' => (string) $product->sku,
@@ -578,6 +618,11 @@ class AdminOrderController extends RootAdminController
                     // WHY: display-only on-hand stock beside the name — pre-formatted
                     // (gp247_qty_format) to match the edit-order picker exactly.
                     'stock' => gp247_qty_format((float) $product->stock),
+                    // WHY: ship the attribute groups + options so the Alpine create
+                    // screen can render one <select> per group and suggest the
+                    // effective price (US-SADM-order-item-attribute-select). add_price
+                    // is authoritative here but rebuilt from the DB again on save.
+                    'attributes' => $this->productAttributeGroups($product->id, $groupNames),
                 ];
             })->all()
         );

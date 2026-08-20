@@ -650,13 +650,26 @@ class ShopCartController extends RootFrontController
             if (!$product) {
                 continue;
             }
+            // WHY: the order line stores the EFFECTIVE unit price — final price plus
+            // canonical attribute surcharges — converted to the order currency in one
+            // pass (same rounding path as ShopCurrency::sumCartCheckout), so that
+            // sum(total_price) equals shop_order.subtotal to the cent and downstream
+            // consumers never re-derive money from the attribute JSON (which stays
+            // descriptive only). Contract: domain model shop_order-line-item /
+            // NFR-MAINT-order-line-truth.
+            // @aidlc-unit storefront
+            // @aidlc-story US-LW-order-line-effective-price
+            // @aidlc-adr storefront_order-line-effective-price
+            $effectivePrice = gp247_currency_value(
+                $product->getFinalPrice() + gp247_cart_options_price($cartItem->options)
+            );
             $arrDetail['product_id']  = $cartItem->id;
             $arrDetail['name']        = $cartItem->name;
-            $arrDetail['price']       = gp247_currency_value($product->getFinalPrice());
+            $arrDetail['price']       = $effectivePrice;
             $arrDetail['qty']         = $cartItem->qty;
             $arrDetail['store_id']    = $cartItem->storeId;
             $arrDetail['attribute']   = ($cartItem->options) ? $cartItem->options : null;
-            $arrDetail['total_price'] = gp247_currency_value($product->getFinalPrice()) * $cartItem->qty;
+            $arrDetail['total_price'] = $effectivePrice * $cartItem->qty;
             $arrCartDetail[]          = $arrDetail;
         }
         //Create new order
