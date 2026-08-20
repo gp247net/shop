@@ -172,7 +172,7 @@
                                                 <td class="px-4 py-2">
                                                     @if ($reqField)
                                                         <div class="flex justify-center">
-                                                            <x-gp247::checkbox wire:model="values.{{ $reqField['key'] }}" value="1" />
+                                                            <x-gp247::checkbox wire:model="values.{{ $reqField['key'] }}" value="1" :disabled="(bool) ($reqField['disabled'] ?? false)" />
                                                         </div>
                                                     @endif
                                                 </td>

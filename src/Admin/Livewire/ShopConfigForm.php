@@ -101,10 +101,21 @@ class ShopConfigForm extends GP247AdminComponent
         foreach ($load('customer_config', $global) as $c) {
             $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'basic');
         }
+
+        // First name has no config key — it is always used and always required
+        // (hardcoded in the register/checkout forms), so it never appeared here.
+        // Surface it as a read-only informational row so admins see every field.
+        $attrFields = [$this->customerFirstNameField('attribute')];
         foreach ($load('customer_config_attribute', $global) as $c) {
             // customer_address1 is always-on in the legacy screen (disabled).
-            $fields[] = $this->field($c, 'checkbox', 'global', [], $c->key === 'customer_address1', '', 'attribute');
+            $attrFields[] = $this->field($c, 'checkbox', 'global', [], $c->key === 'customer_address1', '', 'attribute');
         }
+        // Explicit display order overrides the fragile legacy sort DESC from the DB.
+        foreach ($this->orderCustomerAttrFields($attrFields) as $f) {
+            $fields[] = $f;
+        }
+
+        $fields[] = $this->customerFirstNameField('attribute_required');
         foreach ($load('customer_config_attribute_required', $global) as $c) {
             $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'attribute_required');
         }
@@ -195,6 +206,63 @@ class ShopConfigForm extends GP247AdminComponent
             // Optional help text (language code) rendered under the field.
             'note' => $note,
         ];
+    }
+
+    /**
+     * Build the synthetic, read-only "first name" row for the customer tab.
+     *
+     * First name has no AdminConfig key: it is always used and always required
+     * (hardcoded in the register/checkout forms). This informational row lets the
+     * admin see it alongside the configurable fields. Pre-checked (value=1) and
+     * disabled, so save() skips it — nothing is written to AdminConfig.
+     *
+     * @param string $section 'attribute' (Value column) or 'attribute_required'.
+     * @return array<string, mixed> Field metadata, shaped like field().
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-005
+     */
+    private function customerFirstNameField(string $section): array
+    {
+        $key = $section === 'attribute_required' ? 'customer_firstname_required' : 'customer_firstname';
+        $row = (object) [
+            'key' => $key,
+            'detail' => 'admin.customer.config_manager.first_name',
+            'value' => '1',
+        ];
+
+        return $this->field($row, 'checkbox', 'global', [], true, '', $section);
+    }
+
+    /**
+     * Order the customer attribute (Value-column) fields for display.
+     *
+     * The legacy screen orders by config `sort` DESC, which is fragile. Impose an
+     * explicit order — first name, last name, then address 1..3 — and keep every
+     * other field in its original (incoming) order after them. Relies on PHP 8.0+
+     * stable usort so unlisted fields are not reshuffled.
+     *
+     * @param array<int, array<string, mixed>> $fields Attribute-section fields.
+     * @return array<int, array<string, mixed>> Fields in display order.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-005
+     */
+    private function orderCustomerAttrFields(array $fields): array
+    {
+        $priority = [
+            'customer_firstname' => 1,
+            'customer_lastname'  => 2,
+            'customer_address1'  => 3,
+            'customer_address2'  => 4,
+            'customer_address3'  => 5,
+        ];
+        usort(
+            $fields,
+            static fn ($a, $b): int => ($priority[$a['key']] ?? PHP_INT_MAX) <=> ($priority[$b['key']] ?? PHP_INT_MAX),
+        );
+
+        return $fields;
     }
 
     /**
