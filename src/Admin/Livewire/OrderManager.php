@@ -144,7 +144,11 @@ class OrderManager extends ResourcePanel
      */
     protected function pageTitle(): string
     {
-        return gp247_language_render('order.order_detail');
+        // WHY: one ResourcePanel serves both faces; branch on $editingId so the
+        // LIST shows "order list" instead of the detail title (fixed mislabel).
+        return $this->editingId
+            ? gp247_language_render('order.order_detail')
+            : gp247_language_render('admin.order.list');
     }
 
     /**

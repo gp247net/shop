@@ -44,11 +44,18 @@
                     placeholder="{{ gp247_language_render('admin.to_date') }}" />
             </div>
 
+            {{-- Config-driven customer columns (mirror component/new_customer.blade.php):
+                 name always shows, email is optional, address merges address1..3. --}}
+            @php($showEmail = (bool) gp247_config_admin('customer_email'))
             <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.no_records') : null">
                 <x-slot:head>
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.id') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.email') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.name') }}</th>
+                        @if ($showEmail)
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.email') }}</th>
+                        @endif
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.address1') }}</th>
                         <th class="cursor-pointer px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" wire:click="setSort('total')">
                             {{ gp247_language_render('order.totals.total') }} @if ($sortField === 'total')<span class="text-xs">{{ $sortDir === 'asc' ? '▲' : '▼' }}</span>@endif
                         </th>
@@ -67,7 +74,11 @@
                 @foreach ($rows as $row)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50" wire:key="order-{{ $row->id }}">
                         <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">{{ $row->id }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->email }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->name }}</td>
+                        @if ($showEmail)
+                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->email }}</td>
+                        @endif
+                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($row->address1 . ' ' . $row->address2 . ' ' . $row->address3) }}</td>
                         <td class="px-4 py-3 text-right text-sm text-gray-800 dark:text-gray-100">{{ gp247_currency_render($row->total, '', '', '', false) }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $this->paymentStatusOptions()[$row->payment_status] ?? $row->payment_status }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $this->shippingStatusOptions()[$row->shipping_status] ?? $row->shipping_status }}</td>

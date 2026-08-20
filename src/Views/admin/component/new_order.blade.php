@@ -15,13 +15,20 @@
         ? $adminOrder::getTopOrder()
         : collect();
     $orderDetailRoute = \Illuminate\Support\Facades\Route::has('admin_order.detail') ? 'admin_order.detail' : null;
+    // Config-driven customer columns (mirror the "latest customers" block /
+    // component.new_customer): email is optional, name + address always render.
+    $showEmail = (bool) gp247_config_admin('customer_email');
 @endphp
 <x-gp247::card :title="gp247_language_render('admin.dashboard.top_order_new')">
     <x-gp247::table :empty="$topOrders->isEmpty() ? gp247_language_render('admin.no_records') : null">
         <x-slot:head>
             <tr>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">ID</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.email') }}</th>
+                @if ($showEmail)
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.email') }}</th>
+                @endif
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.name') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.address1') }}</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.status') }}</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('admin.created_at') }}</th>
             </tr>
@@ -35,7 +42,11 @@
                         <span class="text-gray-700 dark:text-gray-200">#{{ $order->id }}</span>
                     @endif
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $order->email }}</td>
+                @if ($showEmail)
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $order->email }}</td>
+                @endif
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $order->name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($order->address1 . ' ' . $order->address2 . ' ' . $order->address3) }}</td>
                 <td class="px-4 py-3 text-sm">
                     <x-gp247::badge color="blue">{{ $order->orderStatus->name ?? $order->status }}</x-gp247::badge>
                 </td>

@@ -34,7 +34,9 @@
         <x-gp247::card :title="gp247_language_render('order.customer')">
             {{-- Header edit form (US-SADM-order-info-edit) — email is read-only. --}}
             <div class="space-y-3 text-sm">
-                <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.email') }}</span><span class="text-gray-800 dark:text-gray-100">{{ $order['email'] ?? '' }}</span></div>
+                @if (gp247_config_admin('customer_email'))
+                    <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.email') }}</span><span class="text-gray-800 dark:text-gray-100">{{ $order['email'] ?? '' }}</span></div>
+                @endif
                 <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.created_at') }}</span><span class="text-gray-800 dark:text-gray-100">{{ $order['created_at'] ?? '' }}</span></div>
 
                 <div class="grid grid-cols-2 gap-3">

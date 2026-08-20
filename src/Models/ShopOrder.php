@@ -47,6 +47,25 @@ class ShopOrder extends Model
     {
         return $this->hasMany(ShopOrderHistory::class, 'order_id', 'id');
     }
+
+    /**
+     * Full customer name on the order, merging first and last name.
+     *
+     * Mirrors ShopCustomer::getNameAttribute so admin screens can render a
+     * unified `$order->name` (last name is merged only when present). Trimmed
+     * to avoid a trailing space when last_name is empty/disabled by config.
+     * Not a DB column and not appended to array/JSON output.
+     *
+     * @return string Merged "first_name last_name" (trimmed).
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-003
+     */
+    public function getNameAttribute(): string
+    {
+        return trim($this->first_name . ' ' . $this->last_name);
+    }
+
     protected static function boot()
     {
         parent::boot();
