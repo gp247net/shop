@@ -592,7 +592,7 @@ class AdminOrderController extends RootAdminController
      * sellable products matching sku / alias / name (current locale) as JSON,
      * mirroring the edit-order (Livewire) picker via the shared query.
      *
-     * @return \Illuminate\Http\JsonResponse List of {id, sku, name, price}.
+     * @return \Illuminate\Http\JsonResponse List of {id, sku, name, price, stock, stock_raw, attributes}.
      *
      * @aidlc-unit shop-admin
      * @aidlc-story US-SADM-003
@@ -618,6 +618,11 @@ class AdminOrderController extends RootAdminController
                     // WHY: display-only on-hand stock beside the name — pre-formatted
                     // (gp247_qty_format) to match the edit-order picker exactly.
                     'stock' => gp247_qty_format((float) $product->stock),
+                    // WHY: raw numeric stock so the create screen can warn client-side
+                    // when qty > stock before submit (US-SADM-order-create-stock-feedback).
+                    // The formatted 'stock' above may carry a thousands separator and is
+                    // not safe to compare numerically.
+                    'stock_raw' => (float) $product->stock,
                     // WHY: ship the attribute groups + options so the Alpine create
                     // screen can render one <select> per group and suggest the
                     // effective price (US-SADM-order-item-attribute-select). add_price

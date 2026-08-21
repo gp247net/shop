@@ -251,7 +251,11 @@
                                                     <button type="button" @click="pickProduct(idx, r)"
                                                             class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
                                                         <span class="font-medium" x-text="r.sku"></span> — <span x-text="r.name"></span>
-                                                        <span class="ml-1 text-xs text-gray-400 dark:text-gray-500">({{ gp247_language_render('product.stock') }}: <span x-text="r.stock"></span>)</span>
+                                                        <span class="ml-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                                              :class="r.stock_raw > 0
+                                                                  ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'
+                                                                  : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'"
+                                                              x-text="(r.stock_raw > 0 ? @js(gp247_language_render('product.in_stock')) : @js(gp247_language_render('product.out_stock'))) + ': ' + r.stock"></span>
                                                     </button>
                                                 </template>
                                             </div>
@@ -296,6 +300,18 @@
                                         <div class="rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700 dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-200"
                                              x-text="fmt(item.qty * item.price)"></div>
                                     </div>
+                                </div>
+
+                                {{-- Client-side over-stock pre-warning (QĐ-2/PA-Yes,
+                                     US-SADM-order-create-stock-feedback). Surfaces the same
+                                     cart.item_over_qty message the server would throw, before
+                                     submit — a UX layer only; the server hard-block in
+                                     postCreate remains the authority. --}}
+                                <div x-show="lineBlocked(item)" x-cloak
+                                     :data-testid="'shop-admin-order-create-stock-warning-' + idx"
+                                     class="mt-2 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                    <span x-text="overQtyMsg(item)"></span>
                                 </div>
 
                                 {{-- Attribute selection (one <select> per group) — mandatory when
@@ -457,7 +473,10 @@
                 {{ gp247_language_render('admin.cancel') }}
             </a>
             <button type="submit"
-                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                data-testid="shop-admin-order-create-submit"
+                :disabled="hasBlockedLine()"
+                :class="hasBlockedLine() ? 'cursor-not-allowed opacity-50' : 'hover:bg-blue-700'"
+                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <i class="fas fa-save text-xs"></i>
                 {{ gp247_language_render('admin.submit') }}
             </button>
@@ -471,7 +490,17 @@ function orderCreate() {
     const userInfoUrl = '{{ gp247_route_admin("admin_order.user_info") }}';
     const productSearchUrl = '{{ gp247_route_admin("admin_order.product_search") }}';
 
+    // WHY: mirror ShopProduct::hasStockForOrder's config gate so the client can warn
+    // BEFORE submit. The server remains the hard-block authority (over-stock lines are
+    // thrown + rolled back in postCreate); this is a UX pre-warning only, never a
+    // substitute for the server predicate (US-SADM-order-create-stock-feedback).
+    const stockGuard = {!! json_encode(!empty(gp247_config('product_stock')) && empty(gp247_config('product_buy_out_of_stock'))) !!};
+    // WHY: reuse the same message key the server uses; pass literal :sku/:qty so the
+    // placeholders survive for client-side substitution per line.
+    const overQtyTpl = {!! json_encode(gp247_language_render('cart.item_over_qty', ['sku' => ':sku', 'qty' => ':qty'])) !!};
+
     return {
+        stockGuard,
         customerId: {!! json_encode(old('customer_id', '')) !!},
         currency: {!! json_encode(old('currency', $currencies->first()?->code ?? 'USD')) !!},
         exchangeRate: {!! json_encode(old('exchange_rate')) !!},
@@ -524,7 +553,7 @@ function orderCreate() {
         },
 
         addProduct() {
-            this.products.push({ product_id: '', name: '', sku: '', qty: 1, price: 0, tax: 0, search: '', results: [], open: false, attributeGroups: [], attributes: {} });
+            this.products.push({ product_id: '', name: '', sku: '', qty: 1, price: 0, tax: 0, stock: null, search: '', results: [], open: false, attributeGroups: [], attributes: {} });
         },
 
         removeProduct(idx) {
@@ -552,6 +581,9 @@ function orderCreate() {
             this.products[idx].search = r.sku + ' — ' + r.name;
             this.products[idx].results = [];
             this.products[idx].open = false;
+            // WHY: raw numeric stock (not the formatted `r.stock` shown in the picker)
+            // so lineBlocked() can compare qty > stock. null = unknown → never blocks.
+            this.products[idx].stock = (r.stock_raw === undefined || r.stock_raw === null) ? null : parseFloat(r.stock_raw);
 
             // WHY: preselect the first option of every attribute group (parity with
             // the legacy radio default) and suggest an effective price = base price
@@ -606,6 +638,31 @@ function orderCreate() {
         },
 
         fmt(v) { return parseFloat(v || 0).toFixed(2); },
+
+        // WHY: client mirror of ShopProduct::hasStockForOrder — only when the store
+        // both tracks stock AND forbids overselling (stockGuard), a picked product has
+        // a known numeric stock, and the requested qty exceeds it. A line with unknown
+        // stock (never picked yet, or server sent null) is never blocked here; the
+        // server postCreate hard-block stays the sole authority (QĐ-2/PA-Yes, UX only).
+        lineBlocked(item) {
+            if (!this.stockGuard) return false;
+            if (item.stock === null || item.stock === undefined) return false;
+            return (item.qty || 0) > item.stock;
+        },
+
+        // WHY: gate the submit button — any over-stock line means the server would
+        // reject the whole order, so warn and block the round-trip up front.
+        hasBlockedLine() {
+            return this.products.some(p => this.lineBlocked(p));
+        },
+
+        // WHY: reuse the exact server message (cart.item_over_qty). :qty is the placed
+        // quantity (server semantics), :sku the product SKU.
+        overQtyMsg(item) {
+            return overQtyTpl
+                .replace(':sku', item.sku || '')
+                .replace(':qty', item.qty ?? 0);
+        },
 
     };
 }

@@ -77,7 +77,8 @@
                             <button type="button" wire:click="selectProduct('{{ $p->id }}')" data-testid="shop-admin-order-item-result"
                                 class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
                                 <span class="font-medium">{{ $p->sku }}</span> — {{ $p->getName() ?: $p->alias }}
-                                <span class="ml-1 text-xs text-gray-400 dark:text-gray-500">({{ gp247_language_render('product.stock') }}: {{ gp247_qty_format($p->stock) }})</span>
+                                @php($inStock = (float) $p->stock > 0)
+                                <x-gp247::badge :color="$inStock ? 'green' : 'red'" class="ml-1">{{ $inStock ? gp247_language_render('product.in_stock') : gp247_language_render('product.out_stock') }}: {{ gp247_qty_format($p->stock) }}</x-gp247::badge>
                             </button>
                         @endforeach
                     </div>
