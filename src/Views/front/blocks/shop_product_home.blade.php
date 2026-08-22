@@ -32,14 +32,22 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         @foreach ($productsNew as $productNew)
             @php
-                $badgeKey = match ((int) $productNew->kind) {
-                    GP247_PRODUCT_GROUP => 'front.products_group',
-                    GP247_PRODUCT_BUILD => 'front.products_bundle',
-                    default => 'front.products_new',
+                // WHY: Only bundle/group products carry a kind label so shoppers can
+                // tell composite products apart; single products are the default and
+                // need no ribbon (a "new" badge here was noise — every card in this
+                // block is already a newest-arrival). Each kind gets its own colour
+                // class (badge-bundle amber / badge-group emerald) so the two are
+                // distinguishable at a glance, not just by text.
+                [$badgeKey, $badgeClass] = match ((int) $productNew->kind) {
+                    GP247_PRODUCT_GROUP => ['front.products_group', 'badge-group'],
+                    GP247_PRODUCT_BUILD => ['front.products_bundle', 'badge-bundle'],
+                    default => [null, null],
                 };
             @endphp
             <div class="relative">
-                <span class="badge-accent absolute top-2 start-2 z-10 uppercase">{{ gp247_language_render($badgeKey) }}</span>
+                @if ($badgeKey)
+                <span class="{{ $badgeClass }} absolute top-2 start-2 z-10 uppercase">{{ gp247_language_render($badgeKey) }}</span>
+                @endif
                 @livewire('gp247-shop-front::product-card', ['productId' => $productNew->id], key('product-card-'.$productNew->id))
             </div>
         @endforeach
