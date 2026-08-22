@@ -6,9 +6,17 @@
     $productSearch, $inputCls.
 
     @aidlc-unit shop-admin
-    @aidlc-story US-SADM-003
-    @aidlc-adr ADR-006, ADR-007
+    @aidlc-story US-SADM-003, US-SADM-order-currency-display
+    @aidlc-adr ADR-006, ADR-007, shop_currency-display-precision
 --}}
+{{-- Money renders in the ORDER's snapshotted currency ($order->currency) via
+     onlyRender (gp247_currency_render_symbol) so its precision is honored — admin
+     never runs CurrencyMiddleware, so the active-currency static props stay at the
+     class default (precision 2). onlyRender formats WITHOUT re-converting: stored
+     order amounts are already in the order currency (converted at checkout).
+     Empty currency (legacy orders) falls back to the active default, no crash.
+     US-SADM-order-currency-display, mod 20260822T102808. --}}
+@php($cur = $order['currency'] ?? '')
 <x-gp247::card :title="gp247_language_render('order.product')">
     <x-gp247::table :empty="empty($items) ? gp247_language_render('admin.no_records') : null">
         <x-slot:head>
@@ -38,9 +46,9 @@
                         </div>
                     @endif
                 </td>
-                <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-300">{{ gp247_currency_render($item['price'], '', '', '', false) }}</td>
+                <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-300">{{ gp247_currency_render_symbol($item['price'], $cur, false, false) }}</td>
                 <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-300">{{ gp247_qty_format($item['qty']) }}</td>
-                <td class="px-4 py-3 text-right text-sm font-medium text-gray-800 dark:text-gray-100">{{ gp247_currency_render($item['total_price'], '', '', '', false) }}</td>
+                <td class="px-4 py-3 text-right text-sm font-medium text-gray-800 dark:text-gray-100">{{ gp247_currency_render_symbol($item['total_price'], $cur, false, false) }}</td>
                 <td class="px-4 py-3">
                     <div class="flex items-center justify-end gap-1">
                         <x-gp247::button size="sm" variant="ghost" wire:click="editItem('{{ $item['id'] }}')"><i class="fas fa-edit"></i></x-gp247::button>
@@ -124,7 +132,7 @@
                             data-testid="shop-admin-order-item-attr-{{ $group['id'] }}" class="{{ $inputCls }}">
                             @foreach ($group['options'] as $option)
                                 <option value="{{ $option['name'] }}" @selected(($itemForm['attributes'][$group['id']] ?? '') === $option['name'])>
-                                    {{ $option['name'] }}@if ($option['add_price'] > 0) (+{{ gp247_currency_render($option['add_price'], '', '', '', false) }})@endif
+                                    {{ $option['name'] }}@if ($option['add_price'] > 0) (+{{ gp247_currency_render_symbol($option['add_price'], $cur, false, false) }})@endif
                                 </option>
                             @endforeach
                         </select>

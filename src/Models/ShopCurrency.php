@@ -130,18 +130,37 @@ class ShopCurrency extends Model
     }
 
     /**
-     * [format description]
-     * @param  float  $money [description]
-     * @return float
+     * Format a money value as a display string.
+     *
+     * Precision follows the CURRENCY being rendered (its `precision`), not the
+     * value — so every amount of one currency shows the same number of decimals
+     * (the ecommerce minor-unit convention), instead of the legacy value-conditional
+     * behaviour where whole numbers dropped the decimals and fractional numbers kept
+     * them (inconsistent within a single currency).
+     *
+     * The optional $precision/$thousands args let render()/onlyRender() format a
+     * TARGET currency other than the active one; when omitted they default to the
+     * active currency's static props, keeping every existing caller
+     * (gp247_currency_*, all Blade) backward-compatible. The decimal separator is
+     * always derived from the effective thousands separator, the same rule setCode()
+     * uses, so a passed $thousands never mismatches a stale self::$decimal.
+     *
+     * @param  float    $money     Amount to format (already converted to the target currency).
+     * @param  int|null $precision Decimals to show; null → active currency precision.
+     * @param  string|null $thousands Thousands separator; null → active currency separator.
+     * @return string Formatted money string.
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-storefront-currency-display-precision
+     * @aidlc-adr shop_currency-display-precision
      */
-    public static function format(float $money)
+    public static function format(float $money, $precision = null, $thousands = null)
     {
-        if ($money - floor($money)) {
-            $precision = self::$precision;
-        } else {
-            $precision = 0;
-        }
-        return number_format($money, $precision, self::$decimal, self::$thousands);
+        $precision = ($precision === null) ? self::$precision : $precision;
+        $thousands = ($thousands === null) ? self::$thousands : $thousands;
+        $decimal   = ($thousands == '.') ? ',' : '.';
+
+        return number_format($money, (int) $precision, $decimal, $thousands);
     }
 
     /**
@@ -171,14 +190,19 @@ class ShopCurrency extends Model
 
         $symbol = ($includeSymbol) ? $dataCurrency['symbol'] : '';
 
+        // Format with the TARGET currency's precision/thousands (not the active
+        // currency's static props), so a non-active $currency renders correctly.
+        $p = $dataCurrency['precision'];
+        $t = $dataCurrency['thousands'];
+
         if ($dataCurrency['symbol_first']) {
             if ($money < 0) {
-                return '-' . $symbol . $space_symbol . self::format(abs($value));
+                return '-' . $symbol . $space_symbol . self::format(abs($value), $p, $t);
             } else {
-                return $symbol . $space_symbol . self::format($value);
+                return $symbol . $space_symbol . self::format($value, $p, $t);
             }
         } else {
-            return self::format($value) . $space_symbol . $symbol;
+            return self::format($value, $p, $t) . $space_symbol . $symbol;
         }
     }
 
@@ -199,14 +223,18 @@ class ShopCurrency extends Model
 
         $space_symbol  = ($space_between_symbol) ? ' ' : '';
         $symbol        = ($includeSymbol) ? ($checkCurrency['symbol'] ?? '') : '';
+        // Format with the passed currency's precision/thousands; null falls back
+        // to the active currency's static props inside format() when absent.
+        $p = $checkCurrency['precision'] ?? null;
+        $t = $checkCurrency['thousands'] ?? null;
         if (($checkCurrency['symbol_first'] ?? false)) {
             if ($money < 0) {
-                return '-' . $symbol . $space_symbol . self::format(abs($money));
+                return '-' . $symbol . $space_symbol . self::format(abs($money), $p, $t);
             } else {
-                return $symbol . $space_symbol . self::format($money);
+                return $symbol . $space_symbol . self::format($money, $p, $t);
             }
         } else {
-            return self::format($money) . $space_symbol . $symbol;
+            return self::format($money, $p, $t) . $space_symbol . $symbol;
         }
     }
 
