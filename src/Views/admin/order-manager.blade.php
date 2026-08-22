@@ -79,7 +79,13 @@
                             <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->email }}</td>
                         @endif
                         <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($row->city . ' ' . $row->district . ' ' . $row->address1 . ' ' . $row->address2 . ' ' . $row->address3) }}</td>
-                        <td class="px-4 py-3 text-right text-sm text-gray-800 dark:text-gray-100">{{ gp247_currency_render($row->total, '', '', '', false) }}</td>
+                        {{-- @aidlc-story US-SADM-order-currency-display (A4) @aidlc-adr shop_currency-display-precision --}}
+                        {{-- Render each order's total in the order's OWN snapshot currency (shop_order.currency),
+                             format-only (onlyRender, no exchange_rate re-conversion — the stored total is already
+                             in the order currency). Symbol shown (includeSymbol=true) because this list mixes
+                             currencies in one column with no separate currency column. Old orders with an empty
+                             currency fall back to the active-default currency (no crash). --}}
+                        <td class="px-4 py-3 text-right text-sm text-gray-800 dark:text-gray-100">{{ gp247_currency_render_symbol($row->total, $row->currency, false, true) }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $this->paymentStatusOptions()[$row->payment_status] ?? $row->payment_status }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $this->shippingStatusOptions()[$row->shipping_status] ?? $row->shipping_status }}</td>
                         <td class="px-4 py-3"><x-gp247::badge :color="$this->statusBadgeColor($row->status)">{{ $this->orderStatusOptions()[$row->status] ?? $row->status }}</x-gp247::badge></td>
