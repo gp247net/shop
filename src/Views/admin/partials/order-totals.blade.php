@@ -13,6 +13,13 @@
     default (precision 2). onlyRender formats without re-converting (stored order
     amounts are already in the order currency). US-SADM-order-currency-display.
 
+    The card also shows the order's currency unit (code + name) and its
+    exchange_rate snapshot (read-only) at the top, so the admin sees which
+    currency the amounts below are in and the rate used at checkout. Both are
+    hidden for legacy orders with no currency snapshot. data-testid:
+    shop-admin-order-currency, shop-admin-order-exchange-rate.
+    Variables: $order (incl. currency, exchange_rate), $totals, $inputCls.
+
     @aidlc-unit shop-admin
     @aidlc-story US-SADM-003, US-SADM-order-info-edit, US-SADM-order-currency-display
     @aidlc-adr ADR-006, ADR-007, shop_currency-display-precision
@@ -21,8 +28,23 @@
 @php($balance = (float) ($order['balance'] ?? 0))
 @php($balanceCls = $balance < 0 ? 'text-red-600' : ($balance == 0 ? 'text-green-600' : 'text-gray-800 dark:text-gray-100'))
 @php($rowByCode = collect($totals)->keyBy('code'))
+{{-- Resolve the order's snapshot currency code to its display name; fall back to
+     the bare code so an order in a currency later removed still shows something. --}}
+@php($curName = $cur !== '' ? (\GP247\Shop\Models\ShopCurrency::getCodeAll()[$cur] ?? '') : '')
+@php($curLabel = $cur !== '' ? ($curName !== '' ? $cur . ' — ' . $curName : $cur) : '')
+@php($exchangeRate = (float) ($order['exchange_rate'] ?? 0))
 <x-gp247::card :title="gp247_language_render('order.totals.total')">
     <dl class="space-y-3 text-sm">
+        {{-- Currency unit + exchange rate of the order (read-only): tells the admin
+             which currency every amount below is expressed in and the rate used at
+             checkout. Hidden when the order carries no snapshot (legacy orders). --}}
+        @if ($cur !== '')
+            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.currency') }}</dt><dd class="text-gray-800 dark:text-gray-100" data-testid="shop-admin-order-currency">{{ $curLabel }}</dd></div>
+            @if ($exchangeRate > 0)
+                <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.exchange_rate') }}</dt><dd class="text-gray-800 dark:text-gray-100" data-testid="shop-admin-order-exchange-rate">{{ rtrim(rtrim(number_format($exchangeRate, 4, '.', ','), '0'), '.') }}</dd></div>
+            @endif
+            <div class="border-t border-gray-200 dark:border-gray-700"></div>
+        @endif
         <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.totals.sub_total') }}</dt><dd class="text-gray-800 dark:text-gray-100">{{ gp247_currency_render_symbol($order['subtotal'] ?? 0, $cur, false, false) }}</dd></div>
         <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.totals.tax') }}</dt><dd class="text-gray-800 dark:text-gray-100">{{ gp247_currency_render_symbol($order['tax'] ?? 0, $cur, false, false) }}</dd></div>
 

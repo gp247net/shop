@@ -248,6 +248,10 @@ class OrderManager extends ResourcePanel
             'postcode' => (string) $model->postcode,
             'country' => (string) $model->country,
             'currency' => (string) $model->currency,
+            // Exchange rate snapshotted at checkout, surfaced read-only on the
+            // order-detail totals card so the admin sees the order's currency unit
+            // and the rate used. US-SADM-order-currency-display.
+            'exchange_rate' => (float) $model->exchange_rate,
             'subtotal' => (float) $model->subtotal,
             'tax' => (float) $model->tax,
             'shipping' => (float) $model->shipping,
