@@ -307,11 +307,49 @@ class ShopCurrency extends Model
         return $query->orderBy($sortBy, $sortOrder);
     }
 
+    /**
+     * Determine whether this currency may be deleted, returning a business
+     * reason key when deletion must be blocked, or null when it is safe.
+     *
+     * The invariant is derived from live data and keyed on the portable
+     * business key `code` (never the surrogate id): a currency is protected
+     * when it is the store default, is referenced by any order, or is the last
+     * active currency.
+     *
+     * WHY gp247_store_info('currency') rather than self::getCode(): the admin
+     * area does not run CurrencyMiddleware, so getCode() would return the class
+     * default instead of the configured store currency. gp247_store_info reads
+     * the same config source the middleware reads.
+     *
+     * @return string|null One of 'default'|'in_use'|'last_active', or null when deletable.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-currency-delete-guard
+     * @aidlc-adr ADR-007
+     */
+    public function deleteBlockReason(): ?string
+    {
+        if ($this->code === gp247_store_info('currency')) {
+            return 'default';
+        }
+        if (ShopOrder::where('currency', $this->code)->exists()) {
+            return 'in_use';
+        }
+        // Direct count avoids getCodeActive()'s static cache going stale within
+        // a request after a status toggle.
+        if ((int) $this->status === 1 && self::where('status', 1)->count() <= 1) {
+            return 'last_active';
+        }
+        return null;
+    }
+
     protected static function boot()
     {
         parent::boot();
+        // Defense-in-depth: block deletion of a protected currency on ANY path
+        // (Livewire, seeder, tinker, future callers), not only the admin screen.
         static::deleting(function ($model) {
-            if (in_array($model->id, GP247_GUARD_CURRENCY)) {
+            if ($model->deleteBlockReason() !== null) {
                 return false;
             }
         });

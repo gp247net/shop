@@ -176,4 +176,35 @@ class CurrencyManager extends ResourcePanel
             $model->delete();
         }
     }
+
+    /**
+     * Delete a currency, first enforcing the deletion invariant and surfacing a
+     * concrete reason as an error toast instead of the base success feedback.
+     *
+     * WHY override delete() rather than deleteModel(): the base ResourcePanel
+     * unconditionally shows a success notice after deleteModel() returns, so a
+     * silently-skipped delete would still look successful. Intercepting here
+     * lets a blocked delete report why and skip the success path entirely; the
+     * model boot guard remains the defense-in-depth backstop.
+     *
+     * @param int|string $id
+     * @return void
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-currency-delete-guard
+     * @aidlc-adr ADR-007
+     */
+    public function delete($id): void
+    {
+        $this->authorizeAction('delete');
+
+        $model = $this->baseQuery()->find($id);
+        if ($model !== null && ($reason = $model->deleteBlockReason()) !== null) {
+            $this->notify('error', gp247_language_render('admin.currency.delete_blocked_' . $reason));
+
+            return;
+        }
+
+        parent::delete($id);
+    }
 }
