@@ -64,7 +64,12 @@ return new class extends Migration
                 $table->string('name', 255);
                 $table->string('code', 10)->unique();
                 $table->string('symbol', 10);
-                $table->float('exchange_rate');
+                // WHY: decimal(16,6) unifies exchange_rate across all three tables
+                // (this, shop_order, shop_order_detail) and keeps rates as small as
+                // ~0.00004 exactly — a large currency priced against a small-unit base
+                // (e.g. VND base). float was imprecise; shop_order was decimal(15,2)
+                // which truncated such rates to 0.00 (ADR compat-foundation_exchange-rate-precision).
+                $table->decimal('exchange_rate',16,6);
                 $table->tinyInteger('precision')->default(2);
                 $table->tinyInteger('symbol_first')->default(0);
                 $table->string('thousands')->default(',');
@@ -90,7 +95,11 @@ return new class extends Migration
                 $table->decimal('other_fee',15,2)->nullable()->default(0);
                 $table->decimal('total',15,2)->nullable()->default(0);
                 $table->string('currency', 10);
-                $table->decimal('exchange_rate',15,2)->nullable();
+                // WHY: decimal(16,6), not the former decimal(15,2), so a small
+                // snapshot rate (large currency vs small-unit base, ~0.00004) is not
+                // truncated to 0.00 — the order would otherwise lose its exchange rate
+                // permanently (RISK-TECH-exchange-rate-truncation, ADR compat-foundation_exchange-rate-precision).
+                $table->decimal('exchange_rate',16,6)->nullable();
                 $table->decimal('received',15,2)->nullable()->default(0);
                 $table->decimal('balance',15,2)->nullable()->default(0);
                 $table->string('first_name', 100);
@@ -135,7 +144,10 @@ return new class extends Migration
                 $table->decimal('tax',15,2)->default(0);
                 $table->string('sku', 50);
                 $table->string('currency', 10);
-                $table->float('exchange_rate')->nullable();
+                // WHY: decimal(16,6) to match shop_order / shop_currency — one exact
+                // type for exchange_rate everywhere (NFR-MAINT-exchange-rate-type-consistency,
+                // ADR compat-foundation_exchange-rate-precision).
+                $table->decimal('exchange_rate',16,6)->nullable();
                 // WHY: stores json_encode(options) whose length grows with the number of
                 // attribute groups / long names — a fixed varchar(100) truncates it
                 // (RISK-TECH-order-attribute-truncation, ADR storefront_attribute-price-integrity).

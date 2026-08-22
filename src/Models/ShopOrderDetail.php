@@ -13,6 +13,15 @@ class ShopOrderDetail extends Model
     protected $table = GP247_DB_PREFIX.'shop_order_detail';
     protected $connection = GP247_DB_CONNECTION;
     protected $guarded = [];
+
+    /**
+     * Cast the decimal(16,6) exchange_rate line snapshot to a number (Laravel
+     * hands a raw decimal column back as a string), so consumers do arithmetic
+     * on a numeric value (ADR compat-foundation_exchange-rate-precision).
+     *
+     * @var array<string, string>
+     */
+    protected $casts = ['exchange_rate' => 'float'];
     public function order()
     {
         return $this->belongsTo(ShopOrder::class, 'order_id', 'id');

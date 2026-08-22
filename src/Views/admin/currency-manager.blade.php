@@ -22,7 +22,12 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <x-gp247::input :label="gp247_language_render('admin.currency.symbol')" name="symbol"
                     wire:model="form.symbol" :error="$errors->first('form.symbol')" required />
-                <x-gp247::input type="number" step="0.0001" :label="gp247_language_render('admin.currency.exchange_rate')"
+                {{-- WHY: step="any" (not a fixed 0.0001) so a small snapshot rate such as
+                     0.00004 (a large currency vs a small-unit base) can be typed — a fixed step
+                     rejects values that are not its multiple. Matches decimal(16,6) storage;
+                     server validation (numeric, gt:0) enforces correctness.
+                     ADR compat-foundation_exchange-rate-precision / US-CMP-exchange-rate-precision. --}}
+                <x-gp247::input type="number" step="any" :label="gp247_language_render('admin.currency.exchange_rate')"
                     name="exchange_rate" wire:model="form.exchange_rate" :error="$errors->first('form.exchange_rate')" required />
                 <x-gp247::input type="number" min="0" max="8" :label="gp247_language_render('admin.currency.precision')"
                     name="precision" wire:model="form.precision" :error="$errors->first('form.precision')" required />

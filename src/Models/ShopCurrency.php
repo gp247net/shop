@@ -28,6 +28,17 @@ class ShopCurrency extends Model
     protected $guarded                  = [];
     protected $connection = GP247_DB_CONNECTION;
 
+    /**
+     * WHY float, not decimal:6: exchange_rate is stored as decimal(16,6) (exact)
+     * but Laravel hands a raw decimal column back as a STRING. getValue()
+     * (money * rate) and every consumer expect a number, so cast to float —
+     * matching how this column already behaved when it was a float column, while
+     * the DB keeps full precision (ADR compat-foundation_exchange-rate-precision).
+     *
+     * @var array<string, string>
+     */
+    protected $casts = ['exchange_rate' => 'float'];
+
     public static function getListAll()
     {
         if (!self::$list) {

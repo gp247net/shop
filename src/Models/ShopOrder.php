@@ -19,6 +19,16 @@ class ShopOrder extends Model
     protected $guarded = [];
     protected $connection = GP247_DB_CONNECTION;
 
+    /**
+     * Cast the decimal(16,6) exchange_rate snapshot to a number: Laravel returns
+     * a raw decimal column as a string, but this rate is multiplied against money
+     * to convert an order back to base, so consumers need a numeric value
+     * (ADR compat-foundation_exchange-rate-precision).
+     *
+     * @var array<string, string>
+     */
+    protected $casts = ['exchange_rate' => 'float'];
+
     protected $gp247_customer_id = null;
     public $gp247_status = null;
     
