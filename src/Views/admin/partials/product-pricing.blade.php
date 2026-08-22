@@ -17,7 +17,7 @@
             <x-gp247::checkbox :label="gp247_language_render('product.promotion')" wire:model.live="form.promotion_use" value="1" />
             @if (! empty($form['promotion_use']))
                 <div class="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                    <x-gp247::input type="number" step="0.01" :label="gp247_language_render('product.price_promotion')" name="price_promotion" wire:model="form.price_promotion" />
+                    <x-gp247::input type="number" step="0.01" :label="gp247_language_render('product.price_promotion')" name="price_promotion" wire:model="form.price_promotion" :help="gp247_money_hint()" />
                     <div></div>
                     <x-gp247::input type="date" :label="gp247_language_render('product.date_start')" name="price_promotion_start" wire:model="form.price_promotion_start" />
                     <x-gp247::input type="date" :label="gp247_language_render('product.date_end')" name="price_promotion_end" wire:model="form.price_promotion_end" />

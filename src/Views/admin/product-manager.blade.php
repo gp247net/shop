@@ -78,10 +78,10 @@
 
                     <div class="grid grid-cols-2 gap-3">
                         @if (($isSingle || $isBuild) && $this->productFieldEnabled('product_price'))
-                            <x-gp247::input type="number" step="0.01" :label="gp247_language_render('product.price')" name="price" wire:model="form.price" :error="$errors->first('form.price')" />
+                            <x-gp247::input type="number" step="0.01" :label="gp247_language_render('product.price')" name="price" wire:model="form.price" :error="$errors->first('form.price')" :help="gp247_money_hint()" />
                         @endif
                         @if ($isSingle && $this->productFieldEnabled('product_cost'))
-                            <x-gp247::input type="number" step="0.01" :label="gp247_language_render('product.cost')" name="cost" wire:model="form.cost" :error="$errors->first('form.cost')" />
+                            <x-gp247::input type="number" step="0.01" :label="gp247_language_render('product.cost')" name="cost" wire:model="form.cost" :error="$errors->first('form.cost')" :help="gp247_money_hint()" />
                         @endif
                         @if (($isSingle || $isBuild) && $this->productFieldEnabled('product_stock'))
                             <x-gp247::input type="number" min="0" :step="gp247_qty_decimal_enabled() ? '0.01' : '1'" :label="gp247_language_render('product.stock')" name="stock" wire:model="form.stock" :error="$errors->first('form.stock')" />

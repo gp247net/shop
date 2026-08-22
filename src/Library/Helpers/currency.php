@@ -108,3 +108,47 @@ if (!function_exists('gp247_currency_all_active') && !in_array('gp247_currency_a
         return ShopCurrency::getCodeActive();
     }
 }
+
+if (!function_exists('gp247_base_currency_code') && !in_array('gp247_base_currency_code', config('gp247_functions_except', []))) {
+    /**
+     * Get the base (functional) currency code — the unit product prices/cost/promotion
+     * are stored in. Single source for the admin money-input hint.
+     *
+     * @return string|null Base currency code, or null when it cannot be resolved.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-money-input-currency-hint
+     * @aidlc-adr shop-admin_money-input-currency-hint
+     */
+    function gp247_base_currency_code(): ?string
+    {
+        return ShopCurrency::getBaseCode();
+    }
+}
+
+if (!function_exists('gp247_money_hint') && !in_array('gp247_money_hint', config('gp247_functions_except', []))) {
+    /**
+     * Build the context-aware currency-code hint shown beside a money input.
+     *
+     * Products pass no code (base currency is resolved); order screens pass the
+     * order's own currency (edit) or the selected currency (create). When no code
+     * can be resolved, falls back to the configurable i18n label product.base_unit_hint.
+     *
+     * @param string|null $code Explicit currency code for the context; null → base currency.
+     * @return string Display hint, e.g. "(VND)" or the i18n fallback label.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-money-input-currency-hint
+     * @aidlc-adr shop-admin_money-input-currency-hint
+     */
+    function gp247_money_hint($code = null): string
+    {
+        if (empty($code)) {
+            $code = gp247_base_currency_code();
+        }
+        if (!empty($code)) {
+            return '(' . $code . ')';
+        }
+        return gp247_language_render('product.base_unit_hint');
+    }
+}

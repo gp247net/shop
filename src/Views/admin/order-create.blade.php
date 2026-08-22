@@ -277,7 +277,7 @@
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">
-                                            {{ gp247_language_render('product.price') }}
+                                            {{ gp247_language_render('product.price') }} <span class="text-gray-400" x-text="'(' + currency + ')'"></span>
                                         </label>
                                         <input type="number" :name="'products[' + idx + '][price]'"
                                                x-model.number="item.price" min="0" step="0.01"
@@ -430,7 +430,7 @@
                         </div>
                         <div class="flex items-center gap-3 border-t border-gray-100 pt-3 dark:border-gray-700">
                             <span class="w-28 shrink-0 text-sm text-gray-500 dark:text-gray-400">
-                                {{ gp247_language_render('order.totals.shipping') }}
+                                {{ gp247_language_render('order.totals.shipping') }} <span class="text-gray-400" x-text="'(' + currency + ')'"></span>
                             </span>
                             <input type="number" name="shipping" x-model.number="shipping" min="0" step="0.01"
                                    @input="recalc"
@@ -438,7 +438,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="w-28 shrink-0 text-sm text-gray-500 dark:text-gray-400">
-                                {{ gp247_language_render('order.totals.discount') }}
+                                {{ gp247_language_render('order.totals.discount') }} <span class="text-gray-400" x-text="'(' + currency + ')'"></span>
                             </span>
                             <input type="number" name="discount" x-model.number="discount" min="0" step="0.01"
                                    @input="recalc"
@@ -450,7 +450,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="w-28 shrink-0 text-sm text-gray-500 dark:text-gray-400">
-                                {{ gp247_language_render('order.totals.received') }}
+                                {{ gp247_language_render('order.totals.received') }} <span class="text-gray-400" x-text="'(' + currency + ')'"></span>
                             </span>
                             <input type="number" name="received" x-model.number="received" min="0" step="0.01"
                                    @input="recalc"

@@ -102,7 +102,7 @@
                 @error('itemForm.name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
-                <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.price') }}</label>
+                <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.price') }} {{ gp247_money_hint($cur) }}</label>
                 <input type="number" step="0.01" wire:model="itemForm.price" data-testid="shop-admin-order-item-price" class="{{ $inputCls }}">
                 @error('itemForm.price')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
@@ -113,7 +113,7 @@
             </div>
             <div>
                 {{-- Per-line tax, restored by US-SADM-order-info-edit (legacy .edit-item-detail). --}}
-                <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.totals.tax') }}</label>
+                <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.totals.tax') }} {{ gp247_money_hint($cur) }}</label>
                 <input type="number" step="0.01" min="0" wire:model="itemForm.tax" data-testid="shop-admin-order-item-tax" class="{{ $inputCls }}">
                 @error('itemForm.tax')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>

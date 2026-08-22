@@ -61,7 +61,7 @@
                         </dd>
                     </div>
                     <div x-show="editing" x-cloak>
-                        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ $label }}</label>
+                        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ $label }} {{ gp247_money_hint($cur) }}</label>
                         <input type="number" step="0.01" x-model="val" data-testid="shop-admin-order-total-{{ $code }}-input" class="{{ $inputCls }}">
                         <div class="mt-3 flex items-center justify-end gap-2">
                             <x-gp247::button size="sm" variant="secondary" x-on:click="editing = false">{{ gp247_language_render('admin.cancel') }}</x-gp247::button>
@@ -91,7 +91,7 @@
                         </dd>
                     </div>
                     <div x-show="editing" x-cloak>
-                        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ $label }}</label>
+                        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ $label }} {{ gp247_money_hint($cur) }}</label>
                         <input type="number" step="0.01" x-model="val" data-testid="shop-admin-order-total-{{ $code }}-input" class="{{ $inputCls }}">
                         <div class="mt-3 flex items-center justify-end gap-2">
                             <x-gp247::button size="sm" variant="secondary" x-on:click="editing = false">{{ gp247_language_render('admin.cancel') }}</x-gp247::button>

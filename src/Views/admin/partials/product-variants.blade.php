@@ -15,7 +15,7 @@
                 @foreach ($this->attributeGroupOptions() as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach
             </select>
             <input type="text" wire:model="variants.{{ $index }}.name" placeholder="{{ gp247_language_render('product.name') }}" class="{{ $inputCls }}">
-            <input type="number" step="0.01" wire:model="variants.{{ $index }}.add_price" placeholder="{{ gp247_language_render('product.price') }}" class="{{ $inputCls }}">
+            <input type="number" step="0.01" wire:model="variants.{{ $index }}.add_price" placeholder="{{ gp247_language_render('product.price') }} {{ gp247_money_hint() }}" class="{{ $inputCls }}">
             <div class="flex items-center justify-end">
                 <x-gp247::button size="sm" variant="ghost" wire:click="removeVariant({{ $index }})"><i class="fas fa-trash-alt text-red-600"></i></x-gp247::button>
             </div>
