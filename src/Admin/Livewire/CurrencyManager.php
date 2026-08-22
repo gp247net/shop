@@ -5,6 +5,7 @@ namespace GP247\Shop\Admin\Livewire;
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
 use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Models\ShopCurrency;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 /**
@@ -23,6 +24,29 @@ class CurrencyManager extends ResourcePanel
     use HasValidationLabels;
 
     protected ?string $permission = 'admin_currency';
+
+    /**
+     * Code of the currency the admin wants to promote to base (rebase modal).
+     *
+     * @var string
+     */
+    public string $rebaseTarget = '';
+
+    /**
+     * New exchange_rate to give the OUTGOING base once it loses base status.
+     * Pre-filled with the value-preserving suggestion (1 / target's current rate)
+     * when a target is picked; the admin may override it deliberately.
+     *
+     * @var string
+     */
+    public string $rebaseOldRate = '';
+
+    /**
+     * Whether the admin has ticked "I understand the impact" — gates the submit.
+     *
+     * @var bool
+     */
+    public bool $rebaseConfirmed = false;
 
     /**
      * @return \Illuminate\Database\Eloquent\Builder
@@ -206,5 +230,155 @@ class CurrencyManager extends ResourcePanel
         }
 
         parent::delete($id);
+    }
+
+    /**
+     * Load a record into the edit form, but never the base currency: the base is
+     * locked from editing (its rate/status are invariant and it is changed only
+     * via the rebase flow). Mirrors the hidden Edit control in the list; the model
+     * saving() guard is the deeper backstop.
+     *
+     * @param int|string $id
+     * @return void
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-CMP-base-currency-explicit
+     * @aidlc-adr currency-base-system-scope
+     */
+    public function editRow($id): void
+    {
+        $model = $this->baseQuery()->find($id);
+        if ($model !== null && (bool) $model->is_base === true) {
+            $this->notify('error', gp247_language_render('admin.currency.base_locked'));
+
+            return;
+        }
+
+        parent::editRow($id);
+    }
+
+    /**
+     * Persist the form, but refuse to save changes to the base currency even when
+     * an edit form was reached directly by URL — the base is edit-locked (only the
+     * rebase flow may change it). Non-base saves proceed unchanged.
+     *
+     * @return void
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-CMP-base-currency-explicit
+     * @aidlc-adr currency-base-system-scope
+     */
+    public function save(): void
+    {
+        if ($this->editingId !== null) {
+            $model = $this->baseQuery()->find($this->editingId);
+            if ($model !== null && (bool) $model->is_base === true) {
+                $this->notify('error', gp247_language_render('admin.currency.base_locked'));
+
+                return;
+            }
+        }
+
+        parent::save();
+    }
+
+    /**
+     * When the rebase target changes, pre-fill the outgoing base's new rate with
+     * the value-preserving suggestion: 1 / (target's current rate). Because the
+     * current base has rate 1, this equals oldRate(OLD)/oldRate(NEW) and keeps
+     * every displayed price unchanged when accepted (ADR currency-rebase-value-preserving).
+     *
+     * @param string $value The newly selected target currency code.
+     * @return void
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-currency-rebase-ui
+     * @aidlc-adr currency-rebase-value-preserving
+     */
+    public function updatedRebaseTarget($value): void
+    {
+        $this->rebaseConfirmed = false;
+
+        $target = ShopCurrency::where('code', $value)->where('is_base', 0)->first();
+        if ($target === null || (float) $target->exchange_rate <= 0) {
+            $this->rebaseOldRate = '';
+
+            return;
+        }
+
+        // Round to the exchange_rate column scale (6) so the suggestion is a value
+        // the column can store exactly, then render it as a PLAIN decimal string:
+        // (string) on a small float yields scientific notation ("4.0E-5" for a VND
+        // target), which reads wrong to the admin and is fragile in a number input.
+        // sprintf('%.6F', ...) forces fixed-point, and the rtrim drops the padding
+        // zeros so "0.000040" shows as "0.00004".
+        $suggested = round(1 / (float) $target->exchange_rate, 6);
+        $this->rebaseOldRate = rtrim(rtrim(sprintf('%.6F', $suggested), '0'), '.');
+    }
+
+    /**
+     * Change the base currency (value-preserving), driven by the rebase modal.
+     *
+     * Validates the target and the outgoing base's new rate, requires the explicit
+     * "I understand" confirmation, then delegates the atomic rescale to
+     * ShopCurrency::rebase(). A domain validation error is surfaced as a toast
+     * without leaving the screen; success flashes and reloads so the list, form
+     * and currency hints all read the new base.
+     *
+     * @return void
+     * @throws \Illuminate\Validation\ValidationException When the modal input is invalid.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-currency-rebase-ui
+     * @aidlc-adr currency-rebase-value-preserving
+     */
+    public function rebase(): void
+    {
+        $this->authorizeAction('update');
+
+        $table = (new ShopCurrency())->getTable();
+        $validated = $this->validate(
+            [
+                // Target must be an existing, active, non-base currency.
+                'rebaseTarget' => ['required', 'string', Rule::exists($table, 'code')->where('status', 1)->where('is_base', 0)],
+                // The outgoing base must be given a real rate (> 0 and != 1).
+                'rebaseOldRate' => ['required', 'numeric', 'gt:0', 'not_in:1'],
+                'rebaseConfirmed' => ['accepted'],
+            ],
+            [],
+            [
+                'rebaseTarget' => gp247_language_render('admin.currency.rebase_target'),
+                'rebaseOldRate' => gp247_language_render('admin.currency.rebase_old_rate'),
+                'rebaseConfirmed' => gp247_language_render('admin.currency.rebase_confirm'),
+            ]
+        );
+
+        try {
+            ShopCurrency::rebase($validated['rebaseTarget'], (float) $validated['rebaseOldRate']);
+        } catch (\InvalidArgumentException $e) {
+            // WHY log: the message is a developer-facing invariant breach; the admin
+            // only needs a generic failure notice, not the internal reason.
+            Log::warning('[GP247 currency] rebase rejected: ' . $e->getMessage());
+            $this->notify('error', gp247_language_render('admin.currency.rebase_failed'));
+
+            return;
+        }
+
+        session()->flash('gp247_admin_success', gp247_language_render('admin.currency.rebase_success'));
+        $this->redirect(route($this->baseRoute()), navigate: true);
+    }
+
+    /**
+     * Inject the current base currency and the eligible rebase targets (active,
+     * non-base) into the panel view for the "Change base" modal.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function render(): \Illuminate\Contracts\View\View
+    {
+        return parent::render()->with([
+            'baseCurrency' => ShopCurrency::where('is_base', 1)->first(),
+            'rebaseCandidates' => ShopCurrency::where('is_base', 0)->where('status', 1)->sort()->get(),
+        ]);
     }
 }

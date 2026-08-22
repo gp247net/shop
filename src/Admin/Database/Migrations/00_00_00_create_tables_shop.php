@@ -74,6 +74,11 @@ return new class extends Migration
                 $table->tinyInteger('symbol_first')->default(0);
                 $table->string('thousands')->default(',');
                 $table->tinyInteger('status')->default(0);
+                // WHY: base (functional) currency is explicit — exactly one row has
+                // is_base=1 and every product price/cost/promotion is stored in that
+                // unit. Replaces the fragile implicit "exchange_rate=1 means base"
+                // convention (ADR currency-base-system-scope).
+                $table->tinyInteger('is_base')->default(0);
                 $table->integer('sort')->default(0);
                 $table->timestamps();
             }
