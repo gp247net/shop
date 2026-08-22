@@ -438,22 +438,30 @@ class OrderManager extends ResourcePanel
         // legacy screen required all six inline fields, but a whole-form save
         // must not force values into company/last_name that are legitimately
         // empty on existing orders (deliberate deviation, see the ADR).
+        //
+        // The detail form now hides a customer field when its admin config
+        // toggle is off (parity with the create-order screen, order-detail.blade.php).
+        // A field the UI hides must not stay hard-required here, or an order
+        // placed under a leaner config could never be saved. So phone/address1/
+        // country keep their required rule only while their toggle shows them,
+        // and drop to a lenient nullable rule when hidden — mirroring how
+        // AdminOrderController::postCreate() gates the same fields by config.
         $this->validate([
             'form.first_name' => 'required|string|max:100',
             'form.last_name' => 'nullable|string|max:100',
-            'form.phone' => 'required|string|max:20',
+            'form.phone' => gp247_config_admin('customer_phone') ? 'required|string|max:20' : 'nullable|string|max:20',
             'form.company' => 'nullable|string|max:100',
             // City/district are nullable on a whole-form save: an order placed
             // before these were enabled must not be forced to backfill them.
             'form.city' => 'nullable|string|max:100',
             'form.district' => 'nullable|string|max:100',
-            'form.address1' => 'required|string|max:100',
+            'form.address1' => gp247_config_admin('customer_address1') ? 'required|string|max:100' : 'nullable|string|max:100',
             // address2/3 and postcode are additional, always-optional parts of
             // the snapshot the admin may correct (QĐ-6).
             'form.address2' => 'nullable|string|max:100',
             'form.address3' => 'nullable|string|max:100',
             'form.postcode' => 'nullable|string|max:20',
-            'form.country' => 'required|string|max:10',
+            'form.country' => gp247_config_admin('customer_country') ? 'required|string|max:10' : 'nullable|string|max:10',
             'form.comment' => 'nullable|string|max:300',
             'form.payment_method' => 'nullable|string|max:100',
             'form.shipping_method' => 'nullable|string|max:100',
@@ -488,6 +496,90 @@ class OrderManager extends ResourcePanel
 
         $this->refreshOrder();
         $this->notify('success', gp247_language_render('action.update_success'));
+    }
+
+    /**
+     * Map each editable order-header field to its localized label, REUSING the
+     * existing customer.* and order.* language keys already shown on the form — no
+     * new keys are invented. Used to name fields in validation messages so the
+     * user sees e.g. "Address" instead of the raw "form.address1" path.
+     *
+     * @return array<string, string>
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-info-edit
+     */
+    private function attributeLabels(): array
+    {
+        return [
+            'form.first_name' => $this->label('customer.first_name'),
+            'form.last_name' => $this->label('customer.last_name'),
+            'form.phone' => $this->label('customer.phone'),
+            'form.company' => $this->label('customer.company'),
+            'form.city' => $this->label('customer.city'),
+            'form.district' => $this->label('customer.district'),
+            'form.address1' => $this->label('customer.address1'),
+            'form.address2' => $this->label('customer.address2'),
+            'form.address3' => $this->label('customer.address3'),
+            'form.postcode' => $this->label('customer.postcode'),
+            'form.country' => $this->label('customer.country'),
+            'form.comment' => $this->label('order.note'),
+            'form.payment_method' => $this->label('order.payment_method'),
+            'form.shipping_method' => $this->label('order.shipping_method'),
+        ];
+    }
+
+    /**
+     * Render an order field label as PLAIN TEXT for use as a validator attribute.
+     *
+     * WHY: some language strings embed presentational markup for the form label,
+     * which would leak as raw HTML into the validation message. Strip tags/entities
+     * so the message reads the clean field name only. The keys are unchanged (existing i18n).
+     *
+     * @param string $key Language key (e.g. 'customer.address1').
+     * @return string Tag-free, trimmed label.
+     */
+    private function label(string $key): string
+    {
+        $rendered = (string) gp247_language_render($key);
+
+        return trim(strip_tags(html_entity_decode($rendered, ENT_QUOTES)));
+    }
+
+    /**
+     * Friendly attribute names for every rule (Livewire hook). Makes messages of
+     * rules we do not override in messages() (max/string/…) show the localized
+     * field name instead of the raw "form.*" path.
+     *
+     * @return array<string, string>
+     */
+    public function validationAttributes(): array
+    {
+        return $this->attributeLabels();
+    }
+
+    /**
+     * Localized validator messages, built from the shared validation.* language keys
+     * (parity with ProductManager). Every rule used by saveOrderInfo() is routed
+     * through gp247_language_render so it reads the DB translation (falling back to
+     * the framework message) — otherwise non-required rules would bypass the DB and
+     * always render in English. Rule-specific placeholders (:max) are left for the
+     * framework's replacers to fill after :attribute is substituted here.
+     *
+     * @return array<string, string>
+     */
+    protected function messages(): array
+    {
+        // Rules referenced by saveOrderInfo() that carry a user-facing message.
+        $rules = ['required', 'string', 'max'];
+        $messages = [];
+        foreach ($this->attributeLabels() as $field => $label) {
+            foreach ($rules as $rule) {
+                $messages[$field . '.' . $rule] = gp247_language_render('validation.' . $rule, ['attribute' => $label]);
+            }
+        }
+
+        return $messages;
     }
 
     /**

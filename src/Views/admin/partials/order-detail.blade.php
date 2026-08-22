@@ -1,7 +1,9 @@
 ﻿{{--
-    Order detail (group E, US-SADM-003): customer info + status workflow + totals
-    on the left, items + history on the right. Status selects auto-save on
-    change (wire:change → change*Status), parity with the legacy inline editing.
+    Order detail (group E, US-SADM-003): customer info + line items (products) on
+    the left, order settings (status workflow) + totals + history on the right —
+    mirroring the create-order screen layout (order-create.blade.php). Status
+    selects auto-save on change (wire:change → change*Status), parity with the
+    legacy inline editing.
     The customer card is an edit form (saveOrderInfo — header fields, note and
     payment/shipping method restored by US-SADM-order-info-edit; email stays
     read-only). UI text via gp247_language_render. Variables: $order, $form,
@@ -29,7 +31,7 @@
 </div>
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    {{-- Left: customer + status workflow --}}
+    {{-- Left: customer info + line items (products) — mirror the create-order screen. --}}
     <div class="space-y-6">
         <x-gp247::card :title="gp247_language_render('order.customer')">
             {{-- Header edit form (US-SADM-order-info-edit) — email is read-only. --}}
@@ -39,27 +41,37 @@
                 @endif
                 <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.created_at') }}</span><span class="text-gray-800 dark:text-gray-100">{{ $order['created_at'] ?? '' }}</span></div>
 
+                {{-- Customer fields are gated by the same admin config toggles the
+                     create-order screen uses (order-create.blade.php): first_name is
+                     always shown, the rest render only when their toggle is on, so
+                     both screens stay consistent with the DB config. --}}
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.first_name') }}</label>
                         <input type="text" wire:model="form.first_name" data-testid="shop-admin-order-info-first-name" class="{{ $inputCls }}">
                         @error('form.first_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
+                    @if (gp247_config_admin('customer_lastname'))
                     <div>
                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.last_name') }}</label>
                         <input type="text" wire:model="form.last_name" data-testid="shop-admin-order-info-last-name" class="{{ $inputCls }}">
                         @error('form.last_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
+                    @endif
+                    @if (gp247_config_admin('customer_phone'))
                     <div>
                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.phone') }}</label>
                         <input type="text" wire:model="form.phone" data-testid="shop-admin-order-info-phone" class="{{ $inputCls }}">
                         @error('form.phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
+                    @endif
+                    @if (gp247_config_admin('customer_company'))
                     <div>
                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.company') }}</label>
                         <input type="text" wire:model="form.company" data-testid="shop-admin-order-info-company" class="{{ $inputCls }}">
                         @error('form.company')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
+                    @endif
                 </div>
 
                 {{-- Full address block (QĐ-6): city/district precede address1 to
@@ -83,11 +95,13 @@
                 </div>
                 @endif
 
+                @if (gp247_config_admin('customer_address1'))
                 <div>
                     <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.address1') }}</label>
                     <input type="text" wire:model="form.address1" data-testid="shop-admin-order-info-address1" class="{{ $inputCls }}">
                     @error('form.address1')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
+                @endif
 
                 @if (gp247_config_admin('customer_address2'))
                 <div>
@@ -113,6 +127,7 @@
                 </div>
                 @endif
 
+                @if (gp247_config_admin('customer_country'))
                 <div>
                     <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.country') }}</label>
                     <select wire:model="form.country" data-testid="shop-admin-order-info-country" class="{{ $inputCls }}">
@@ -123,11 +138,23 @@
                     </select>
                     @error('form.country')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
+                @endif
 
+                {{-- Payment / shipping method are shown only when methods exist,
+                     matching the create-order screen (order-create.blade.php gates
+                     each block by !empty($paymentMethod)/!empty($shippingMethod)).
+                     A stored value keeps its block visible on the edit form so an
+                     order placed with a method that was later uninstalled still
+                     shows it. --}}
+                @php($paymentOptions = $this->paymentMethodOptions())
+                @php($shippingOptions = $this->shippingMethodOptions())
+                @php($showPayment = !empty($paymentOptions) || ($form['payment_method'] ?? '') !== '')
+                @php($showShipping = !empty($shippingOptions) || ($form['shipping_method'] ?? '') !== '')
+                @if ($showPayment || $showShipping)
                 <div class="grid grid-cols-2 gap-3">
+                    @if ($showPayment)
                     <div>
                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.payment_method') }}</label>
-                        @php($paymentOptions = $this->paymentMethodOptions())
                         <select wire:model="form.payment_method" data-testid="shop-admin-order-info-payment-method" class="{{ $inputCls }}">
                             <option value=""></option>
                             {{-- Keep the stored value selectable even when its extension is gone. --}}
@@ -139,9 +166,10 @@
                             @endforeach
                         </select>
                     </div>
+                    @endif
+                    @if ($showShipping)
                     <div>
                         <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.shipping_method') }}</label>
-                        @php($shippingOptions = $this->shippingMethodOptions())
                         <select wire:model="form.shipping_method" data-testid="shop-admin-order-info-shipping-method" class="{{ $inputCls }}">
                             <option value=""></option>
                             @if (($form['shipping_method'] ?? '') !== '' && !array_key_exists($form['shipping_method'], $shippingOptions))
@@ -152,7 +180,9 @@
                             @endforeach
                         </select>
                     </div>
+                    @endif
                 </div>
+                @endif
 
                 <div>
                     <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.note') }}</label>
@@ -168,6 +198,13 @@
             </div>
         </x-gp247::card>
 
+        {{-- Line items (products) sit on the left, directly under the customer
+             info — same position as the products block in order-create.blade.php. --}}
+        @include('gp247-shop-admin::partials.order-items', ['inputCls' => $inputCls])
+    </div>
+
+    {{-- Right: order settings (status workflow) + totals + history. --}}
+    <div class="space-y-6">
         <x-gp247::card :title="gp247_language_render('order.status')">
             <div class="space-y-4">
                 <div>
@@ -198,11 +235,6 @@
         </x-gp247::card>
 
         @include('gp247-shop-admin::partials.order-totals')
-    </div>
-
-    {{-- Right: items + history --}}
-    <div class="space-y-6">
-        @include('gp247-shop-admin::partials.order-items', ['inputCls' => $inputCls])
         @include('gp247-shop-admin::partials.order-history')
     </div>
 </div>
