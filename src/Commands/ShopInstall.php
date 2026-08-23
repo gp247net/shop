@@ -2,12 +2,17 @@
 
 namespace GP247\Shop\Commands;
 
-use Illuminate\Console\Command;
-use Throwable;
-use DB;
-use Illuminate\Support\Facades\Storage;
+use GP247\Core\Console\GP247Command;
 
-class ShopInstall extends Command
+/**
+ * Install the GP247 shop (ecommerce) module: uninstall the old shop, recreate
+ * tables, seed initialize + root-store defaults, publish shop front views.
+ *
+ * @aidlc-unit system-cli
+ * @aidlc-story US-CLI-005
+ * @aidlc-adr system-cli_output-contract
+ */
+class ShopInstall extends GP247Command
 {
     /**
      * The name and signature of the console command.
@@ -26,34 +31,28 @@ class ShopInstall extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return int Exit code.
      */
-    public function handle()
+    protected function handleGp247(): int
     {
         // Uninstall gp247 shop before install
-        $this->call('gp247:shop-uninstall');
-        
+        $this->runArtisan('gp247:shop-uninstall');
+
         // Install gp247 shop
         \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '00_00_00_create_tables_shop')->delete();
 
-        $this->call('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/00_00_00_create_tables_shop.php']);
+        $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/00_00_00_create_tables_shop.php']);
         $this->info('---------------> Migrate schema Shop default done!');
 
-        $this->call('db:seed', ['--class' => '\GP247\Shop\Admin\Database\Seeders\DataShopInitializeSeeder', '--force' => true]);
+        $this->runArtisan('db:seed', ['--class' => '\GP247\Shop\Admin\Database\Seeders\DataShopInitializeSeeder', '--force' => true]);
         $this->info('---------------> Seeding database Shop default done!');
 
-        $this->call('db:seed', ['--class' => '\GP247\Shop\Admin\Database\Seeders\DataShopDefaultSeeder', '--force' => true]);
+        $this->runArtisan('db:seed', ['--class' => '\GP247\Shop\Admin\Database\Seeders\DataShopDefaultSeeder', '--force' => true]);
         $this->info('---------------> Seeding database for store root done!');
 
         // Copy template default
-        $this->call('vendor:publish', ['--tag' => 'gp247:shop-view-front']);
+        $this->runArtisan('vendor:publish', ['--tag' => 'gp247:shop-view-front']);
 
-        $this->welcome();
+        return $this->respondSuccess(['installed' => true]);
     }
-
-    private function welcome()
-    {
-        return Command::SUCCESS;
-    }
-
 }

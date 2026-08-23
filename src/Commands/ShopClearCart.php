@@ -2,11 +2,19 @@
 
 namespace GP247\Shop\Commands;
 
-use Illuminate\Console\Command;
+use GP247\Core\Console\GP247Command;
 use GP247\Shop\Models\ShopCart;
 use Carbon\Carbon;
 
-class ShopClearCart extends Command
+/**
+ * Remove expired cart / wishlist / compare entries based on the configured
+ * expiry days. Suitable for a daily scheduler/cron.
+ *
+ * @aidlc-unit system-cli
+ * @aidlc-story US-CLI-005
+ * @aidlc-adr system-cli_output-contract
+ */
+class ShopClearCart extends GP247Command
 {
     /**
      * The name and signature of the console command.
@@ -25,15 +33,24 @@ class ShopClearCart extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return int Exit code.
      */
-    public function handle()
+    protected function handleGp247(): int
     {
-        ShopCart::where('instance', 'default')->where('updated_at', '<', Carbon::now()->subDays(config('gp247-config.shop.cart_expire.cart')))->delete();
-        ShopCart::where('instance', 'wishlist')->where('updated_at', '<', Carbon::now()->subDays(config('gp247-config.shop.cart_expire.wishlist')))->delete();
-        ShopCart::where('instance', 'compare')->where('updated_at', '<', Carbon::now()->subDays(config('gp247-config.shop.cart_expire.compare')))->delete();
+        $deleted = [];
+        $deleted['cart'] = ShopCart::where('instance', 'default')
+            ->where('updated_at', '<', Carbon::now()->subDays(config('gp247-config.shop.cart_expire.cart')))
+            ->delete();
+        $deleted['wishlist'] = ShopCart::where('instance', 'wishlist')
+            ->where('updated_at', '<', Carbon::now()->subDays(config('gp247-config.shop.cart_expire.wishlist')))
+            ->delete();
+        $deleted['compare'] = ShopCart::where('instance', 'compare')
+            ->where('updated_at', '<', Carbon::now()->subDays(config('gp247-config.shop.cart_expire.compare')))
+            ->delete();
+
         \Log::info('Clear cart success!');
         $this->info('Clear cart success!');
-        exit;
+
+        return $this->respondSuccess(['deleted' => $deleted]);
     }
 }

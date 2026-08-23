@@ -2,7 +2,7 @@
 
 namespace GP247\Shop\Commands;
 
-use Illuminate\Console\Command;
+use GP247\Core\Console\GP247Command;
 use Throwable;
 
 /**
@@ -15,10 +15,10 @@ use Throwable;
  * the operator to refresh language rows via gp247:language-update.
  *
  * @aidlc-unit compat-foundation
- * @aidlc-story US-CMP-address-city-district-schema
- * @aidlc-adr shop-admin_address-city-district
+ * @aidlc-story US-CLI-005
+ * @aidlc-adr system-cli_output-contract
  */
-class ShopUpdate extends Command
+class ShopUpdate extends GP247Command
 {
     /**
      * The name and signature of the console command.
@@ -37,22 +37,21 @@ class ShopUpdate extends Command
     /**
      * Execute the console command.
      *
-     * @return int
+     * @return int Exit code.
      */
-    public function handle()
+    protected function handleGp247(): int
     {
         try {
             // WHY: run only the upgrade/ folder, never the sibling create-tables
             // migration which would wipe the database.
-            $this->call('migrate', [
+            $this->runArtisan('migrate', [
                 '--path'  => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade',
                 '--force' => true,
             ]);
             $this->info('---------------> Shop upgrade migrations done!');
         } catch (Throwable $e) {
             gp247_report($e->getMessage());
-            $this->error('Shop upgrade failed: '.$e->getMessage());
-            return Command::FAILURE;
+            return $this->respondFailure('upgrade_failed', 'Shop upgrade failed: '.$e->getMessage());
         }
 
         // Relabeled + new address labels are refreshed here rather than in the
@@ -61,6 +60,9 @@ class ShopUpdate extends Command
         $this->line('');
         $this->info('Next step: run "php artisan gp247:language-update" to refresh address labels (city/district + renamed address1/2/3).');
 
-        return Command::SUCCESS;
+        return $this->respondSuccess([
+            'upgraded'  => true,
+            'next_step' => 'gp247:language-update',
+        ]);
     }
 }

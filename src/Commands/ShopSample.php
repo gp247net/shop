@@ -2,7 +2,7 @@
 
 namespace GP247\Shop\Commands;
 
-use Illuminate\Console\Command;
+use GP247\Core\Console\GP247Command;
 use Throwable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +17,16 @@ use GP247\Shop\Models\ShopProductGroup;
 use GP247\Shop\Models\ShopProductBuild;
 use Carbon\Carbon;
 
-class ShopSample extends Command
+/**
+ * Create demo catalog data (categories, brands, suppliers, single/bundle/group
+ * products, sample promotions). Truncates existing shop tables first — dev/demo
+ * only, never on a live site.
+ *
+ * @aidlc-unit system-cli
+ * @aidlc-story US-CLI-005
+ * @aidlc-adr system-cli_output-contract
+ */
+class ShopSample extends GP247Command
 {
     /**
      * The name and signature of the console command.
@@ -38,7 +47,29 @@ class ShopSample extends Command
      *
      * @return mixed
      */
-    public function handle()
+    protected function handleGp247(): int
+    {
+        // WHY: sample data spans many tables + bundles/groups; wrap in one
+        // transaction so a mid-run failure never leaves a half-populated
+        // catalog. (MySQL truncate is DDL/implicit-commit, so the clear phase
+        // is not itself rolled back; a failure during creation leaves the
+        // tables empty, never partially seeded.)
+        DB::connection(GP247_DB_CONNECTION)->transaction(function () {
+            $this->seed();
+        });
+
+        return $this->respondSuccess(['msg' => 'Created sample data successfully!']);
+    }
+
+    /**
+     * Populate the store with demo catalog data.
+     *
+     * @return void
+     *
+     * @aidlc-unit system-cli
+     * @aidlc-story US-CLI-005
+     */
+    private function seed(): void
     {
             // Clear existing data
             $this->info('Clearing existing data...');
