@@ -26,6 +26,16 @@ class CurrencyManager extends ResourcePanel
     protected ?string $permission = 'admin_currency';
 
     /**
+     * Keep list state (page/keyword/sort) and the edited record on screen when
+     * editing/saving, instead of remounting via route navigation.
+     *
+     * @var bool
+     * @aidlc-story US-AUI-two-panel-state-preservation
+     * @aidlc-adr ADR-admin-shell-rbac-two-panel-state-preservation
+     */
+    protected bool $keepStateOnSave = true;
+
+    /**
      * Code of the currency the admin wants to promote to base (rebase modal).
      *
      * @var string

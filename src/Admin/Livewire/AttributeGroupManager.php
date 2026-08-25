@@ -23,6 +23,16 @@ class AttributeGroupManager extends ResourcePanel
 
     protected ?string $permission = 'admin_attribute_group';
 
+    /**
+     * Keep list state (page/keyword/sort) and the edited record on screen when
+     * editing/saving, instead of remounting via route navigation.
+     *
+     * @var bool
+     * @aidlc-story US-AUI-two-panel-state-preservation
+     * @aidlc-adr ADR-admin-shell-rbac-two-panel-state-preservation
+     */
+    protected bool $keepStateOnSave = true;
+
     /** Attribute-group input types, mirroring the legacy form (radio/select). */
     private const TYPES = ['radio', 'select'];
 

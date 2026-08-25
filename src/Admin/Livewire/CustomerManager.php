@@ -31,6 +31,16 @@ class CustomerManager extends ResourcePanel
 
     protected ?string $permission = 'admin_customer';
 
+    /**
+     * Keep list state (page/keyword/sort) and the edited record on screen when
+     * editing/saving, instead of remounting via route navigation.
+     *
+     * @var bool
+     * @aidlc-story US-AUI-two-panel-state-preservation
+     * @aidlc-adr ADR-admin-shell-rbac-two-panel-state-preservation
+     */
+    protected bool $keepStateOnSave = true;
+
     /** Scalar customer fields edited on this screen (config-driven visibility). */
     private const FIELDS = [
         'email', 'first_name', 'last_name', 'phone', 'country', 'postcode',
@@ -214,6 +224,7 @@ class CustomerManager extends ResourcePanel
 
         if ($this->editingId !== null) {
             ShopCustomer::updateInfo($mapping['dataUpdate'], $this->editingId);
+            $savedId = (string) $this->editingId;
         } else {
             $insert = $mapping['dataInsert'];
             // WHY: createCustomer does not set store_id; scope to the admin store
@@ -223,6 +234,21 @@ class CustomerManager extends ResourcePanel
             if (function_exists('gp247_customer_created_by_admin')) {
                 gp247_customer_created_by_admin($customer);
             }
+            $savedId = (string) $customer->id;
+        }
+
+        // Opted-in (keepStateOnSave): stay in place — re-fill the form from the
+        // saved record and keep the list state — instead of redirecting.
+        if ($this->keepStateOnSave) {
+            $this->editingId = $savedId;
+            $model = $this->baseQuery()->find($savedId);
+            if ($model !== null) {
+                $this->form = $this->fillForm($model);
+            }
+            $this->syncEditUrl($savedId);
+            $this->notify('success', gp247_language_render('admin.save_success'));
+
+            return;
         }
 
         session()->flash('gp247_admin_success', gp247_language_render('admin.save_success'));

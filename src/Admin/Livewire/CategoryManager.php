@@ -36,6 +36,16 @@ class CategoryManager extends ResourcePanel
     protected ?string $permission = 'admin_category';
 
     /**
+     * Keep the list panel (page/keyword/sort) and the just-saved category on
+     * screen when editing/saving, instead of remounting via route navigation.
+     *
+     * @var bool
+     * @aidlc-story US-AUI-two-panel-state-preservation
+     * @aidlc-adr ADR-admin-shell-rbac-two-panel-state-preservation
+     */
+    protected bool $keepStateOnSave = true;
+
+    /**
      * @return array<int, string>
      */
     protected function multilingualFields(): array
@@ -223,6 +233,10 @@ class CategoryManager extends ResourcePanel
         } else {
             $category = ShopCategory::create($attributes);
         }
+
+        // WHY: keepStateOnSave — expose the persisted id (incl. after create) so
+        // ResourcePanel::save() can re-fill the form and keep it on screen.
+        $this->editingId = (string) $category->id;
 
         $this->saveDescriptions($category->id);
 

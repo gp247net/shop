@@ -45,6 +45,16 @@ class ProductManager extends ResourcePanel
 
     protected ?string $permission = 'admin_product';
 
+    /**
+     * Keep the list panel (page/keyword/sort) and the just-saved product on
+     * screen when editing/saving, instead of remounting via route navigation.
+     *
+     * @var bool
+     * @aidlc-story US-AUI-two-panel-state-preservation
+     * @aidlc-adr ADR-admin-shell-rbac-two-panel-state-preservation
+     */
+    protected bool $keepStateOnSave = true;
+
     /** Scalar product columns edited on this screen. */
     private const STRING_FIELDS = ['sku', 'alias', 'image', 'brand_id', 'supplier_id', 'tax_id', 'product_type', 'weight_class', 'length_class'];
 
@@ -446,6 +456,10 @@ class ProductManager extends ResourcePanel
             } else {
                 $product = AdminProduct::createProductAdmin($attributes);
             }
+
+            // WHY: keepStateOnSave — expose the persisted id (incl. after create)
+            // so ResourcePanel::save() can re-fill the form and keep it on screen.
+            $this->editingId = (string) $product->id;
 
             $this->saveDescriptions($product->id);
 
