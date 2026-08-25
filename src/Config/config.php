@@ -32,8 +32,10 @@ return [
             'GP247_PREFIX_MEMBER_CHANGE_INFO' => env('GP247_PREFIX_MEMBER_CHANGE_INFO', 'change-infomation'),
         ],
 
-        //Product Tag config
-        'product_tag' => env('GP247_PRODUCT_TAG', 'digital,physical,download'),
+        // Product delivery-type valid values (formerly 'product_tag'). Renamed to
+        // 'product_type' alongside the shop_product.tag -> product_type column rename
+        // (compat-foundation_product-type-rename). Distinct from the new keyword-tag feature.
+        'product_type' => env('GP247_PRODUCT_TYPE', env('GP247_PRODUCT_TAG', 'digital,physical,download')),
 
         //Product weight unit
         'product_weight_unit' => env('GP247_PRODUCT_WEIGHT_UNIT', 'g,kg,lb,oz'),

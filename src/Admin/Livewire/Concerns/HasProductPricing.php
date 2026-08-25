@@ -8,7 +8,7 @@ use GP247\Shop\Models\ShopProductDownload;
  * Product promotion + download editing for the shop-admin ProductManager
  * (group F, US-SADM-001). The promotion price (1:1 ShopProductPromotion) applies
  * to single/bundle products; the download path (ShopProductDownload) applies when
- * the product tag is "download". Both are persisted delete-then-recreate (parity
+ * the product_type is "download". Both are persisted delete-then-recreate (parity
  * with the legacy product controller). Physical dimensions/weight are plain
  * product columns handled by the manager's attribute mapping.
  *
@@ -98,8 +98,8 @@ trait HasProductPricing
     {
         ShopProductDownload::where('product_id', $product->id)->delete();
 
-        $downloadTag = defined('GP247_TAG_DOWNLOAD') ? GP247_TAG_DOWNLOAD : 'download';
-        if (($data['tag'] ?? '') === $downloadTag && !empty($data['download_path'])) {
+        $downloadType = defined('GP247_PRODUCT_TYPE_DOWNLOAD') ? GP247_PRODUCT_TYPE_DOWNLOAD : 'download';
+        if (($data['product_type'] ?? '') === $downloadType && !empty($data['download_path'])) {
             // WHY: ShopProductDownload declares a composite primaryKey array, so its
             // creating-boot ($model->{getKeyName()}) breaks on create(); insert()
             // with an explicit uuid bypasses it (parity with the legacy controller).

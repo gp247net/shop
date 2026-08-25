@@ -7,6 +7,7 @@ use GP247\Shop\Models\ShopProductCategory;
 use GP247\Shop\Models\ShopProductDescription;
 use GP247\Shop\Models\ShopProductGroup;
 use GP247\Shop\Models\ShopProductPromotion;
+use GP247\Shop\Models\ShopProductTag;
 use GP247\Shop\Models\ShopTax;
 use GP247\Core\Models\AdminStore;
 use GP247\Shop\Models\ShopProductStore;
@@ -34,6 +35,7 @@ class ShopProduct extends Model
     protected $gp247_brand = []; // array brand id
     protected $gp247_supplier = []; // array supplier id
     protected $gp247_range_price = null; // min__max
+    protected $gp247_tag_keyword = null; // keyword-tag alias filter (US-SFRONT-product-tags)
     protected static $storeCode = null;
 
     
@@ -84,6 +86,26 @@ class ShopProduct extends Model
     public function downloadPath()
     {
         return $this->hasOne(ShopProductDownload::class, 'product_id', 'id');
+    }
+
+    /**
+     * Keyword tags attached to this product (many-to-many via shop_product_tag_pivot).
+     * Applies to every product kind, including combos (pivot keys on product_id only).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-product-tag-schema
+     * @aidlc-adr shop-admin_product-tag-storage
+     */
+    public function tags()
+    {
+        return $this->belongsToMany(
+            ShopProductTag::class,
+            GP247_DB_PREFIX.'shop_product_tag_pivot',
+            'product_id',
+            'tag_id'
+        );
     }
 
     //Function get text description
@@ -314,6 +336,7 @@ class ShopProduct extends Model
                 $product->builds()->delete();
                 $product->categories()->detach();
                 $product->stores()->detach();
+                $product->tags()->detach();
 
                 // Custom field type key is canonically Model::getTable() (prefixed),
                 // not the unprefixed 'shop_product' literal — keep this cleanup query
@@ -543,6 +566,24 @@ class ShopProduct extends Model
     }
 
     /**
+     * Filter the builder to products carrying a keyword tag, identified by the tag's
+     * alias (business key). Only active tags match, so a disabled tag hides its
+     * products from the storefront (US-SFRONT-product-tags).
+     *
+     * @param string $alias Canonical tag alias.
+     * @return $this
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-SFRONT-product-tags
+     * @aidlc-adr shop-admin_product-tag-storage
+     */
+    private function setTagKeyword($alias)
+    {
+        $this->gp247_tag_keyword = $alias;
+        return $this;
+    }
+
+    /**
      * Set array category store
      *
      * @param   [array|int]  $category
@@ -705,6 +746,22 @@ class ShopProduct extends Model
     }
 
     /**
+     * Get products carrying a keyword tag (by the tag's alias). Storefront entry point
+     * for the /tag/<alias> listing (US-SFRONT-product-tags).
+     *
+     * @param string $alias Canonical tag alias.
+     * @return $this
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-SFRONT-product-tags
+     */
+    public function getProductToTag($alias)
+    {
+        $this->setTagKeyword($alias);
+        return $this;
+    }
+
+    /**
      * Get product to array Supplier
      * @param   [array|int]  $arrSupplier
      */
@@ -847,9 +904,20 @@ class ShopProduct extends Model
             $subQuery = $subQuery->whereIn($this->getTable().'.kind', $this->gp247_kind);
         }
 
-        //Filter with tag
+        //Filter with delivery type (formerly the "tag" column, renamed to product_type)
         if ($this->gp247_tag !== 'all') {
-            $subQuery = $subQuery->where($this->getTable().'.tag', $this->gp247_tag);
+            $subQuery = $subQuery->where($this->getTable().'.product_type', $this->gp247_tag);
+        }
+        //Filter with keyword tag (US-SFRONT-product-tags): join pivot + tag, active tags only.
+        // The subquery is de-duplicated by product id below, so the join fan-out is harmless.
+        if (!empty($this->gp247_tag_keyword)) {
+            $tablePivot = GP247_DB_PREFIX.'shop_product_tag_pivot';
+            $tableTag = (new ShopProductTag)->getTable();
+            $subQuery = $subQuery
+                ->join($tablePivot, $tablePivot.'.product_id', $this->getTable().'.id')
+                ->join($tableTag, $tableTag.'.id', $tablePivot.'.tag_id')
+                ->where($tableTag.'.alias', $this->gp247_tag_keyword)
+                ->where($tableTag.'.status', 1);
         }
         //Filter with brand
         if (count($this->gp247_brand)) {

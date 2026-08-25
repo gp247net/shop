@@ -45,18 +45,18 @@
         @endif
     </div>
 
-    {{-- Tag + download (product_tag) --}}
-    @if ($this->productFieldEnabled('product_tag'))
+    {{-- Delivery type + download (product_type, formerly "tag") --}}
+    @if ($this->productFieldEnabled('product_type'))
         <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <div>
                 <label class="{{ $labelCls }}">{{ gp247_language_render('product.tag') }}</label>
-                <select wire:model.live="form.tag" class="{{ $inputCls }}">
+                <select wire:model.live="form.product_type" class="{{ $inputCls }}">
                     <option value="">--</option>
                     <option value="physical">{{ gp247_language_render('product.tag_physical') }}</option>
                     <option value="download">{{ gp247_language_render('product.tag_download') }}</option>
                 </select>
             </div>
-            @if (($form['tag'] ?? '') === 'download')
+            @if (($form['product_type'] ?? '') === 'download')
                 <x-gp247::input :label="gp247_language_render('product.download_path')" name="download_path" wire:model="form.download_path" />
             @endif
         </div>

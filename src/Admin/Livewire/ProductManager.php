@@ -9,6 +9,7 @@ use GP247\Core\Models\AdminLanguage;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductComposition;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductImages;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductPricing;
+use GP247\Shop\Admin\Livewire\Concerns\HasProductTags;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductVariants;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Admin\Models\AdminProduct;
@@ -40,11 +41,12 @@ class ProductManager extends ResourcePanel
     use HasProductVariants;
     use HasProductComposition;
     use HasProductPricing;
+    use HasProductTags;
 
     protected ?string $permission = 'admin_product';
 
     /** Scalar product columns edited on this screen. */
-    private const STRING_FIELDS = ['sku', 'alias', 'image', 'brand_id', 'supplier_id', 'tax_id', 'tag', 'weight_class', 'length_class'];
+    private const STRING_FIELDS = ['sku', 'alias', 'image', 'brand_id', 'supplier_id', 'tax_id', 'product_type', 'weight_class', 'length_class'];
 
     /** Numeric product columns. */
     private const NUMERIC_FIELDS = ['price', 'cost', 'stock', 'minimum', 'weight', 'length', 'width', 'height'];
@@ -205,7 +207,7 @@ class ProductManager extends ResourcePanel
             $defaults[$field] = 0;
         }
 
-        return array_merge($defaults, $this->pricingDefaults());
+        return array_merge($defaults, $this->pricingDefaults(), $this->tagsDefaults());
     }
 
     /**
@@ -252,7 +254,7 @@ class ProductManager extends ResourcePanel
             $form[$field] = (float) ($model->{$field} ?? 0);
         }
 
-        return array_merge($form, $this->pricingFormFrom($model));
+        return array_merge($form, $this->pricingFormFrom($model), $this->tagsFormFrom($model));
     }
 
     /**
@@ -306,7 +308,7 @@ class ProductManager extends ResourcePanel
         // config key => form field (required-by-config when both flags are truthy).
         $gated = [
             'product_price' => 'price', 'product_cost' => 'cost', 'product_stock' => 'stock',
-            'product_brand' => 'brand_id', 'product_supplier' => 'supplier_id', 'product_tag' => 'tag',
+            'product_brand' => 'brand_id', 'product_supplier' => 'supplier_id', 'product_type' => 'product_type',
         ];
         if (function_exists('gp247_config_admin')) {
             foreach ($gated as $cfg => $field) {
@@ -342,7 +344,7 @@ class ProductManager extends ResourcePanel
             'form.stock' => $this->label('product.stock'),
             'form.brand_id' => $this->label('product.brand'),
             'form.supplier_id' => $this->label('product.supplier'),
-            'form.tag' => $this->label('product.tag'),
+            'form.product_type' => $this->label('product.tag'),
             'form.sort' => $this->label('product.sort'),
             'form.minimum' => $this->label('product.minimum'),
             'desc.*.name' => $this->label('product.name'),
@@ -458,6 +460,7 @@ class ProductManager extends ResourcePanel
             $this->persistVariants($product);
             $this->persistComposition($product);
             $this->persistPricing($product, $data);
+            $this->persistTags($product, $data);
         });
     }
 

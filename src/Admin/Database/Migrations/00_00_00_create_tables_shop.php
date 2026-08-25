@@ -231,7 +231,7 @@ return new class extends Migration
                 $table->decimal('width',15,2)->nullable()->default(0);
                 $table->decimal('height',15,2)->nullable()->default(0);
                 $table->tinyInteger('kind')->nullable()->default(0)->comment('0:single, 1:bundle, 2:group')->index();
-                $table->string('tag', 50)->nullable()->default('physical')->index();
+                $table->string('product_type', 50)->nullable()->default('physical')->index();
                 $table->string('tax_id', 50)->nullable()->default(0)->comment('0:No-tax, auto: Use tax default')->index();
                 $table->tinyInteger('status')->default(0)->index();
                 $table->tinyInteger('approve')->default(1)->index();
@@ -291,6 +291,31 @@ return new class extends Migration
                 $table->uuid('product_id');
                 $table->uuid('category_id');
                 $table->primary(['product_id', 'category_id']);
+            }
+        );
+
+        // Keyword tag taxonomy (US-CMP-product-tag-schema, ADR product-tag-storage):
+        // first-class tag entity + product<->tag pivot. Independent of `kind` so tags
+        // apply to every product type, including combos.
+        $schema->create(
+            GP247_DB_PREFIX.'shop_product_tag',
+            function (Blueprint $table) {
+                $table->increments('id');
+                $table->string('name', 100);
+                $table->string('alias', 120)->unique();
+                $table->tinyInteger('status')->default(1)->index();
+                $table->integer('sort')->default(0);
+                $table->timestamps();
+            }
+        );
+
+        $schema->create(
+            GP247_DB_PREFIX.'shop_product_tag_pivot',
+            function (Blueprint $table) {
+                $table->uuid('product_id');
+                $table->unsignedInteger('tag_id');
+                $table->unique(['product_id', 'tag_id']);
+                $table->index('tag_id');
             }
         );
 
@@ -522,6 +547,8 @@ return new class extends Migration
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_attribute_group');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_group');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_category');
+        $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_tag_pivot');
+        $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_tag');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_shipping_status');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_shoppingcart');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_promotion');

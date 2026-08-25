@@ -593,7 +593,7 @@ class ShopSample extends GP247Command
                         'width' => 10,
                         'height' => 10,
                         'kind' => 0, // Single product
-                        'tag' => 0, // Physical product
+                        'product_type' => 0, // Physical product
                         'tax_id' => 0,
                         'status' => 1,
                         'sort' => 0,
@@ -692,7 +692,7 @@ class ShopSample extends GP247Command
                 'width' => 10,
                 'height' => 10,
                 'kind' => GP247_PRODUCT_BUILD,
-                'tag' => 0, // Physical product
+                'product_type' => 0, // Physical product
                 'tax_id' => 0,
                 'status' => 1,
                 'sort' => 0,
@@ -790,7 +790,7 @@ class ShopSample extends GP247Command
                 'width' => 10,
                 'height' => 10,
                 'kind' => GP247_PRODUCT_GROUP,
-                'tag' => 0, // Physical product
+                'product_type' => 0, // Physical product
                 'tax_id' => 0,
                 'status' => 1,
                 'sort' => 0,
