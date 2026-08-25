@@ -25,17 +25,25 @@
                     @foreach ($results as $p)
                         <button type="button" wire:click="{{ $isBuild ? 'addBuildItem' : 'addGroupItem' }}('{{ $p->id }}')"
                             class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
-                            <span class="font-medium">{{ $p->sku }}</span> — {{ $p->alias }}
+                            <span class="font-medium">{{ $p->getName() }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $p->sku }}</span>
                         </button>
                     @endforeach
                 </div>
             @endif
         </div>
 
+        @php($compositionProducts = $this->compositionProducts())
         @if ($isBuild)
             @forelse ($buildItems as $index => $item)
+                @php($info = $compositionProducts[$item['product_id']] ?? null)
                 <div class="flex items-center gap-2" wire:key="build-{{ $index }}">
-                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-200">{{ $item['product_id'] }}</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate text-sm font-medium text-gray-800 dark:text-gray-100">{{ $info['name'] ?? $item['product_id'] }}</div>
+                        @if ($info)
+                            <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $info['sku'] }}</div>
+                        @endif
+                    </div>
                     <input type="number" step="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" min="{{ gp247_qty_decimal_enabled() ? '0.01' : '1' }}" wire:model="buildItems.{{ $index }}.quantity" class="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
                     <x-gp247::button size="sm" variant="ghost" wire:click="removeBuildItem({{ $index }})"><i class="fas fa-trash-alt text-red-600"></i></x-gp247::button>
                 </div>
@@ -45,8 +53,14 @@
             @error('buildItems')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
         @else
             @forelse ($groupItems as $index => $item)
+                @php($info = $compositionProducts[$item['product_id']] ?? null)
                 <div class="flex items-center gap-2" wire:key="group-{{ $index }}">
-                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-200">{{ $item['product_id'] }}</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate text-sm font-medium text-gray-800 dark:text-gray-100">{{ $info['name'] ?? $item['product_id'] }}</div>
+                        @if ($info)
+                            <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $info['sku'] }}</div>
+                        @endif
+                    </div>
                     <x-gp247::button size="sm" variant="ghost" wire:click="removeGroupItem({{ $index }})"><i class="fas fa-trash-alt text-red-600"></i></x-gp247::button>
                 </div>
             @empty

@@ -78,6 +78,37 @@ trait HasProductComposition
     }
 
     /**
+     * Resolve display info (sku + localized name) for the products currently
+     * referenced by build/group items, keyed by product id. Batched into a
+     * single query to avoid an N+1 while rendering the composition list, and
+     * so the list can show a human-readable name instead of the raw id.
+     *
+     * @return array<string, array{sku: string, name: string}>
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-001
+     */
+    public function compositionProducts(): array
+    {
+        $ids = array_filter(
+            array_merge(
+                array_column($this->buildItems, 'product_id'),
+                array_column($this->groupItems, 'product_id')
+            ),
+            static fn ($id): bool => $id !== '' && $id !== null
+        );
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return ShopProduct::whereIn('id', $ids)->get()
+            ->mapWithKeys(static function ($p): array {
+                return [(string) $p->id => ['sku' => (string) $p->sku, 'name' => (string) $p->getName()]];
+            })->all();
+    }
+
+    /**
      * Add a bundle component (default quantity 1).
      *
      * @param int|string $id Product id.
