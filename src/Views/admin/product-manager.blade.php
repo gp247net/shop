@@ -167,7 +167,7 @@
                 {{-- ---- Variants (SINGLE only, legacy parity; gated by product_attribute config) ---- --}}
                 @if ($isSingle && $this->productFieldEnabled('product_attribute'))
                     <div x-show="tab === 'variants'" x-cloak>
-                        @include('gp247-shop-admin::partials.product-variants', ['inputCls' => $inputCls])
+                        @include('gp247-shop-admin::partials.product-variants', ['inputCls' => $inputCls, 'labelCls' => $labelCls])
                     </div>
                 @endif
 

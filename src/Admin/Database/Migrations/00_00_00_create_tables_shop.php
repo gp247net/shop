@@ -339,6 +339,10 @@ return new class extends Migration
                 $table->integer('attribute_group_id');
                 $table->uuid('product_id');
                 $table->decimal('add_price',15,2)->default(0);
+                // Optional per-variant slug (kebab-case, allows duplicates, no unique) —
+                // authored in the admin product form, snapshotted into orders as the 3rd
+                // '__' segment (mod 20260825T135923; US-CMP-product-attribute-slug).
+                $table->string('slug', 255)->default('');
                 $table->integer('sort')->default(0);
                 $table->tinyInteger('status')->default(1);
                 $table->index(['product_id', 'attribute_group_id']);

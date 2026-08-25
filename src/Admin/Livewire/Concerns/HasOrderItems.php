@@ -221,11 +221,13 @@ trait HasOrderItems
      *
      * @param  string|null  $raw     Raw shop_order_detail.attribute JSON value.
      * @param  \Illuminate\Support\Collection<int|string, string>  $groups  Attribute-group id => name map.
-     * @return array<int, array{name: string, value: string}>  Group label + rendered "name (+price)".
+     * @return array<int, array{name: string, value: string, slug: string}>  Group label + rendered "name (+price)" + snapshot slug.
      *
      * @aidlc-unit shop-admin
      * @aidlc-story US-SADM-order-attribute-display
+     * @aidlc-story US-SADM-order-attribute-slug
      * @aidlc-adr shop-admin_order-attribute-display
+     * @aidlc-adr storefront_order-attribute-slug-encoding
      */
     private function renderItemAttributes(?string $raw, $groups): array
     {
@@ -245,6 +247,9 @@ trait HasOrderItems
             $out[] = [
                 'name' => (string) ($groups[$groupId] ?? ('#' . $groupId)),
                 'value' => gp247_render_option_price((string) $optionValue),
+                // Snapshot slug (3rd '__' segment), empty-safe for legacy 2-segment
+                // orders (US-SADM-order-attribute-slug, mod 20260825T135923).
+                'slug' => explode('__', (string) $optionValue)[2] ?? '',
             ];
         }
 

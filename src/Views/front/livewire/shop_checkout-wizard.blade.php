@@ -290,7 +290,7 @@
                             {{ $row['process_product_name'] }}
                             @if ($row['process_attributes'])
                             @foreach ($row['process_attributes'] as $opt)
-                            <br><span class="text-xs text-ink-400">{{ $opt['name'] }}: {!! $opt['value'] !!}</span>
+                            <br><span class="text-xs text-ink-400">{{ $opt['name'] }}: {!! $opt['value'] !!}@if (!empty($opt['slug'])) <span class="text-ink-300" data-testid="storefront-confirm-attribute-slug">({{ $opt['slug'] }})</span>@endif</span>
                             @endforeach
                             @endif
                         </td>

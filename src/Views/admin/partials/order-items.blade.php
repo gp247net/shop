@@ -41,7 +41,7 @@
                     @if (! empty($item['attributes']))
                         <div class="mt-1 space-y-0.5" data-testid="shop-admin-order-item-attribute">
                             @foreach ($item['attributes'] as $att)
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $att['name'] }}: {!! $att['value'] !!}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $att['name'] }}: {!! $att['value'] !!}@if (! empty($att['slug'])) <span class="text-gray-400 dark:text-gray-500" data-testid="shop-admin-order-item-attribute-slug">({{ $att['slug'] }})</span>@endif</div>
                             @endforeach
                         </div>
                     @endif

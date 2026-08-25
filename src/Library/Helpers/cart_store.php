@@ -44,13 +44,22 @@ if (!function_exists('gp247_cart_options_price') && !in_array('gp247_cart_option
  * as tampering/UI error and rejects the whole add (returns false) rather than silently
  * dropping it (ADR storefront_attribute-price-integrity, decision 2).
  *
+ * The canonical string carries an optional 3rd segment name__add_price__slug: the
+ * variant slug is likewise resolved server-side from shop_product_attribute (never
+ * from the client) and appended when non-empty, so the whole cart→confirm→order
+ * pipeline snapshots the slug without any write-site change (ADR
+ * storefront_order-attribute-slug-encoding, mod 20260825T135923). An empty slug keeps
+ * the legacy 2-segment form, so old orders and the '__'[1] price parsers are untouched.
+ *
  * @param  int|string $productId Product UUID/id the options are being added for.
  * @param  array      $formAttr  Raw client options: ["<group_id>" => "name__add_price", ...].
- * @return array|false Canonical options with DB add_price, or false if any option is invalid.
+ * @return array|false Canonical options with DB add_price[__slug], or false if any option is invalid.
  *
  * @aidlc-unit storefront
  * @aidlc-story US-LW-004
+ * @aidlc-story US-LW-attribute-slug-order
  * @aidlc-adr storefront_attribute-price-integrity
+ * @aidlc-adr storefront_order-attribute-slug-encoding
  */
 if (!function_exists('gp247_cart_options_canonicalize') && !in_array('gp247_cart_options_canonicalize', config('gp247_functions_except', []))) {
     function gp247_cart_options_canonicalize($productId, $formAttr)
@@ -59,11 +68,14 @@ if (!function_exists('gp247_cart_options_canonicalize') && !in_array('gp247_cart
             return [];
         }
 
-        // Index the product's real attributes by "<group_id>||<name>" → add_price.
+        // Index the product's real attributes by "<group_id>||<name>" → add_price and slug.
         $attributes = \GP247\Shop\Models\ShopProductAttribute::where('product_id', $productId)->get();
         $priceByKey = [];
+        $slugByKey  = [];
         foreach ($attributes as $attribute) {
-            $priceByKey[$attribute->attribute_group_id . '||' . $attribute->name] = $attribute->add_price;
+            $mapKey = $attribute->attribute_group_id . '||' . $attribute->name;
+            $priceByKey[$mapKey] = $attribute->add_price;
+            $slugByKey[$mapKey]  = (string) ($attribute->slug ?? '');
         }
 
         $clean = [];
@@ -75,7 +87,14 @@ if (!function_exists('gp247_cart_options_canonicalize') && !in_array('gp247_cart
                 // Group/name not owned by this product → reject the whole add.
                 return false;
             }
-            $clean[$groupId] = $name . '__' . $priceByKey[$key];
+            $encoded = $name . '__' . $priceByKey[$key];
+            // Append the server-resolved slug as a 3rd segment only when set, so
+            // empty-slug variants stay backward-compatible 2-segment strings.
+            $slug = $slugByKey[$key] ?? '';
+            if ($slug !== '') {
+                $encoded .= '__' . $slug;
+            }
+            $clean[$groupId] = $encoded;
         }
         return $clean;
     }
@@ -157,6 +176,10 @@ if (!function_exists('gp247_cart_process_data') && !in_array('gp247_cart_process
                 $processOptions[] = [
                     'name' => $attributesGroup[$groupAtt],
                     'value' => gp247_render_option_price($att),
+                    // Snapshot slug (3rd '__' segment), empty-safe for legacy 2-segment
+                    // options; surfaced so the checkout confirm step can display it
+                    // (US-LW-attribute-slug-order, mod 20260825T135923).
+                    'slug' => explode('__', (string) $att)[2] ?? '',
                 ];
             }
             $dataFinal[] = [

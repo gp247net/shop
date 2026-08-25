@@ -91,7 +91,14 @@
                                 if ($item->attribute && is_array(json_decode($item->attribute, true))) {
                                     $array = json_decode($item->attribute, true);
                                     foreach ($array as $key => $element) {
-                                        $html .= '<br><span class="text-xs text-ink-400">'.$attributesGroup[$key].': '.$element.'</span>';
+                                        // WHY: render the option through gp247_render_option_price so
+                                        // the raw "name__add_price" string never leaks (bug fix, DT-4);
+                                        // append the snapshot slug (3rd segment, escaped) when present.
+                                        $slug = explode('__', (string) $element)[2] ?? '';
+                                        $slugHtml = $slug !== ''
+                                            ? ' <span class="text-ink-300" data-testid="storefront-account-order-attribute-slug">('.e($slug).')</span>'
+                                            : '';
+                                        $html .= '<br><span class="text-xs text-ink-400">'.e($attributesGroup[$key]).': '.gp247_render_option_price($element, $order->currency).$slugHtml.'</span>';
                                     }
                                 }
                             @endphp

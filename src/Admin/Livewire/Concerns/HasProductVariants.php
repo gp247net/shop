@@ -43,6 +43,7 @@ trait HasProductVariants
                 'attribute_group_id' => (string) $row->attribute_group_id,
                 'name' => (string) $row->name,
                 'add_price' => (float) $row->add_price,
+                'slug' => (string) $row->slug,
                 'sort' => (int) $row->sort,
                 'status' => (int) $row->status,
             ];
@@ -56,7 +57,7 @@ trait HasProductVariants
      */
     public function addVariant(): void
     {
-        $this->variants[] = ['attribute_group_id' => '', 'name' => '', 'add_price' => 0, 'sort' => 0, 'status' => 1];
+        $this->variants[] = ['attribute_group_id' => '', 'name' => '', 'add_price' => 0, 'slug' => '', 'sort' => 0, 'status' => 1];
     }
 
     /**
@@ -97,6 +98,17 @@ trait HasProductVariants
                 'attribute_group_id' => $groupId,
                 'name' => $name,
                 'add_price' => (float) ($variant['add_price'] ?? 0),
+                // Normalize to kebab-case on write via the existing Vietnamese-aware
+                // helper; duplicates are allowed (no unique). Whitelisted explicitly
+                // here so no raw request value reaches the slug column
+                // (NFR-SEC-product-attribute-slug, mod 20260825T135923).
+                // WHY the pre-str_replace: cart options encode a variant as
+                // "name__add_price__slug" and read the slug as explode('__', ...)[2];
+                // gp247_word_format_url does NOT strip "_", so a slug with "__" would
+                // survive and corrupt that split. Fold "_" → "-" first so the helper's
+                // own "[-…]+ → -" collapse guarantees the stored slug can never contain
+                // the "__" separator (gp247_cart_options_canonicalize).
+                'slug' => gp247_word_format_url(str_replace('_', '-', trim((string) ($variant['slug'] ?? '')))),
                 'sort' => (int) ($variant['sort'] ?? 0),
                 'status' => empty($variant['status']) ? 0 : 1,
             ]));
@@ -111,5 +123,32 @@ trait HasProductVariants
     public function attributeGroupOptions(): array
     {
         return ShopAttributeGroup::pluck('name', 'id')->all();
+    }
+
+    /**
+     * Distinct non-empty slugs already used within one attribute group, for the
+     * variant slug datalist (pick an existing per-group slug or type a new one).
+     * Scoped per group so, e.g., "Color" slugs never mix into "Size" (ADR
+     * shop-admin_product-attribute-slug, decision 2).
+     *
+     * @param  int|string $groupId Attribute group id of the variant row; empty/0 → none.
+     * @return array<int, string> Distinct slugs, ascending.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-product-attribute-slug
+     * @aidlc-adr shop-admin_product-attribute-slug
+     */
+    public function attributeSlugOptions($groupId): array
+    {
+        if ($groupId === '' || $groupId === null) {
+            return [];
+        }
+
+        return ShopProductAttribute::where('attribute_group_id', $groupId)
+            ->where('slug', '<>', '')
+            ->distinct()
+            ->orderBy('slug')
+            ->pluck('slug')
+            ->all();
     }
 }

@@ -705,6 +705,13 @@ class AdminOrderController extends RootAdminController
                         $htmlAtt = '';
                         foreach ($arrAtt as $groupAtt => $att) {
                             $htmlAtt .= $attributesGroup[$groupAtt] .':'.gp247_render_option_price($att, $order['currency'], $order['exchange_rate']);
+                            // Append the snapshot slug (3rd '__' segment) when present so the
+                            // invoice line carries it too (US-SADM-order-attribute-slug, mod
+                            // 20260825T135923); empty-safe for legacy 2-segment orders.
+                            $slug = explode('__', (string) $att)[2] ?? '';
+                            if ($slug !== '') {
+                                $htmlAtt .= ' ('.$slug.')';
+                            }
                         }
                         $name = $detail->name.'('.strip_tags($htmlAtt).')';
                     } else {
