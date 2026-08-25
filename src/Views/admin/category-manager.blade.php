@@ -35,10 +35,12 @@
 
                 {{-- ---- General ---- --}}
                 <div x-show="tab === 'general'" class="space-y-4">
+                    @php($rootLabel = 'ROOT')
                     <x-gp247::searchable-select
                         model="form.parent"
                         :label="gp247_language_render('admin.category.parent')"
-                        :options="collect(['' => 'ROOT'] + $this->parentOptions())->reject(fn ($title, $id) => $id !== '' && (string) $id === (string) $editingId)->map(fn ($title, $id) => ['id' => (string) $id, 'label' => $title])->values()->all()"
+                        :pin-first="true"
+                        :options="collect(['' => $rootLabel] + $this->parentOptions())->reject(fn ($title, $id) => $id !== '' && (string) $id === (string) $editingId)->map(fn ($title, $id) => ['id' => (string) $id, 'label' => (string) $id === '' ? $rootLabel : $rootLabel . ' → ' . $title])->values()->all()"
                     />
 
                     <x-gp247::media-input :label="gp247_language_render('admin.category.image')" name="image" type="category"
