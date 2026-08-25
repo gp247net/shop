@@ -264,7 +264,15 @@
             </p>
         </div>
 
-        @if ($cartItems && count($cartItems))
+        @if ($processedItems && count($processedItems))
+        {{-- WHY: render per-line price + attributes from gp247_cart_process_data()
+             (provided as $processedItems), the single source shared with the
+             cart-manager view. CartItem has no price property and keeps options
+             as raw "name__add_price" strings, so the old per-line expression
+             produced 0 and the attribute leaked "Xanh__100.00". Process data
+             gives the effective price (incl. option surcharge) and a rendered
+             attribute value, keeping Σ(line) == subtotal
+             (mod 20260825T104547, RISK-TECH-checkout-confirm-price-display-zero). --}}
         <div class="card p-5">
             <h3 class="text-sm font-semibold text-ink-500 mb-3">{{ gp247_language_render('cart.cart_title') }}</h3>
             <table class="w-full text-sm">
@@ -276,18 +284,18 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-ink-100">
-                    @foreach ($cartItems as $item)
+                    @foreach ($processedItems as $row)
                     <tr>
                         <td class="py-2">
-                            {{ $item->name }}
-                            @if ($item->options)
-                            @foreach ($item->options as $attrId => $attrValue)
-                            <br><span class="text-xs text-ink-400">{{ $attributesGroup[$attrId] ?? $attrId }}: {{ $attrValue }}</span>
+                            {{ $row['process_product_name'] }}
+                            @if ($row['process_attributes'])
+                            @foreach ($row['process_attributes'] as $opt)
+                            <br><span class="text-xs text-ink-400">{{ $opt['name'] }}: {!! $opt['value'] !!}</span>
                             @endforeach
                             @endif
                         </td>
-                        <td class="py-2 text-right">{{ $item->qty }}</td>
-                        <td class="py-2 text-right price">{{ gp247_currency_format($item->price * $item->qty) }}</td>
+                        <td class="py-2 text-right">{{ gp247_qty_format($row['process_qty']) }}</td>
+                        <td class="py-2 text-right price">{{ gp247_currency_render($row['process_product_price_subtotal']) }}</td>
                     </tr>
                     @endforeach
                 </tbody>

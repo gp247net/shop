@@ -480,7 +480,18 @@ class CheckoutWizard extends BaseFrontComponent
             // WHY: session('dataCheckout') comes back as plain arrays instead of
             // CartItem instances when session.serialization = json; rehydrate so
             // the view can keep using $item->id/$item->options etc.
-            'cartItems'       => collect(session('dataCheckout') ?? [])->map(fn ($item) => CartItem::hydrate($item)),
+            'cartItems'       => $cartItems = collect(session('dataCheckout') ?? [])->map(fn ($item) => CartItem::hydrate($item)),
+            // WHY: CartItem has no `price` property and stores options as raw
+            // "name__add_price" strings, so the confirm view cannot render a
+            // per-line price or a formatted attribute from it directly (bug:
+            // line price rendered as 0 and attribute leaked "Xanh__100.00").
+            // gp247_cart_process_data() is the single source shared with the
+            // cart-manager view / ShopCurrency::sumCartCheckout(): it resolves
+            // the effective price (getFinalPrice() + option surcharge) × qty and
+            // renders each attribute via gp247_render_option_price(). Reusing it
+            // here keeps Σ(line price) == subtotal (mod 20260825T104547,
+            // RISK-TECH-checkout-confirm-price-display-zero).
+            'processedItems'  => $this->step === 'confirm' ? gp247_cart_process_data($cartItems) : [],
             'attributesGroup' => ShopAttributeGroup::pluck('name', 'id')->all(),
             'customer'        => customer()->user(),
             'countries'       => AdminCountry::getCodeAll(),
