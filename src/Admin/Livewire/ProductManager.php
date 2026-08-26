@@ -286,13 +286,12 @@ class ProductManager extends ResourcePanel
             'desc.*.description' => 'nullable|string|max:500',
         ];
 
-        // WHY: content is required for single/bundle but not for a group (parity).
-        // When structure type is disabled, effective kind is always SINGLE — require content.
-        $useStructureType = self::structureTypeEnabled();
-        $effectiveKind = $useStructureType ? (int) ($this->form['kind'] ?? 0) : (defined('GP247_PRODUCT_SINGLE') ? GP247_PRODUCT_SINGLE : 0);
-        if ($effectiveKind !== (defined('GP247_PRODUCT_GROUP') ? GP247_PRODUCT_GROUP : 2)) {
-            $rules['desc.*.content'] = 'required|string';
-        }
+        // WHY: content (rich description) is optional for every product kind — the
+        // gp247_shop_product_description.content column is nullable, and many simple
+        // products need no long description (US-SADM-product-content-optional). Empty
+        // content persists as '' via HasMultilingualDescriptions, valid for a nullable
+        // column. Kept as a typed rule so a non-string payload is still rejected.
+        $rules['desc.*.content'] = 'nullable|string';
 
         return array_merge($rules, $this->configRules(), $this->customFieldRules(), $this->compositionRules());
     }
