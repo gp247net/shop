@@ -68,6 +68,17 @@ class ProductManager extends ResourcePanel
      */
     private const QTY_FIELDS = ['stock', 'minimum'];
 
+    /**
+     * Config-gated product fields: `product_config_attribute` key => form field.
+     * Single source of truth for the render/validate/persist parity — a field whose
+     * gate is turned off in Shop Config must be neither rendered, validated, nor
+     * persisted (modification 20260826T093146, ADR shop-admin_product-field-config-scope).
+     */
+    private const GATED_FIELDS = [
+        'product_price' => 'price', 'product_cost' => 'cost', 'product_stock' => 'stock',
+        'product_brand' => 'brand_id', 'product_supplier' => 'supplier_id', 'product_type' => 'product_type',
+    ];
+
     /** @var string Category filter (list). */
     public string $filterCategory = '';
 
@@ -307,6 +318,12 @@ class ProductManager extends ResourcePanel
     {
         $rules = [];
         foreach (self::NUMERIC_FIELDS as $field) {
+            // WHY: a gated field turned off in Shop Config is out of the form's scope
+            // — not rendered, so it must not be validated either (else a stale DB value
+            // like a negative backorder stock trips min:0 and silently blocks the save).
+            if ($this->gatedFieldDisabled($field)) {
+                continue;
+            }
             // WHY: stock/minimum are quantities (gated by product_qty_decimal); the
             // rest are money/dimensions and always stay numeric (ADR-016).
             $rules['form.' . $field] = in_array($field, self::QTY_FIELDS, true)
@@ -314,13 +331,14 @@ class ProductManager extends ResourcePanel
                 : 'nullable|numeric';
         }
 
-        // config key => form field (required-by-config when both flags are truthy).
-        $gated = [
-            'product_price' => 'price', 'product_cost' => 'cost', 'product_stock' => 'stock',
-            'product_brand' => 'brand_id', 'product_supplier' => 'supplier_id', 'product_type' => 'product_type',
-        ];
+        // A still-enabled gated field becomes required when its *_required flag is on.
         if (function_exists('gp247_config_admin')) {
-            foreach ($gated as $cfg => $field) {
+            foreach (self::GATED_FIELDS as $cfg => $field) {
+                // WHY: keep parity with the render/persist gate — a field hidden by
+                // productFieldEnabled() must never get any rule, not even 'required'.
+                if ($this->gatedFieldDisabled($field)) {
+                    continue;
+                }
                 if (gp247_config_admin($cfg) && gp247_config_admin($cfg . '_required')) {
                     $existing = $rules['form.' . $field] ?? 'nullable';
                     $rules['form.' . $field] = 'required|' . ltrim(str_replace('nullable', '', $existing), '|');
@@ -487,9 +505,20 @@ class ProductManager extends ResourcePanel
     {
         $attributes = [];
         foreach (self::STRING_FIELDS as $field) {
+            // WHY: a gated field turned off in config is not on the form; leaving it out
+            // of the update set preserves the real DB value instead of overwriting it
+            // with an empty default (lost-update — modification 20260826T093146).
+            if ($this->gatedFieldDisabled($field)) {
+                continue;
+            }
             $attributes[$field] = (string) ($data[$field] ?? '');
         }
         foreach (self::NUMERIC_FIELDS as $field) {
+            // WHY: same scope rule as STRING_FIELDS — e.g. an off product_stock must not
+            // reset the real stock column (which orders may have changed concurrently).
+            if ($this->gatedFieldDisabled($field)) {
+                continue;
+            }
             $attributes[$field] = (float) ($data[$field] ?? 0);
         }
         // WHY: when "Use STRUCTURE TYPE" is disabled, ignore submitted kind and always persist SINGLE.
@@ -557,10 +586,11 @@ class ProductManager extends ResourcePanel
      *
      * Mirrors structureTypeEnabled(): a product_config_attribute toggle that is
      * absent (config not yet seeded) is treated as ENABLED so default behaviour is
-     * preserved on a fresh install; only an explicit '0'/0 hides the field. Keeps
-     * the form field set in sync with Shop Config > Product (US-SADM-005) — a field
-     * turned off in config is not rendered (its save/validation rules already relax
-     * to nullable in configRules(), so hiding it never triggers a validation error).
+     * preserved on a fresh install; only an explicit '0'/0 hides the field. This is
+     * the single predicate shared by all three gates — render (blade), validate
+     * (configRules()) and persist (productAttributes()) — so a field turned off in
+     * Shop Config is neither shown, validated, nor written (render/validate/persist
+     * parity, US-SADM-product-field-config-scope, ADR shop-admin_product-field-config-scope).
      *
      * @param string $configKey product_config_attribute key (e.g. 'product_price').
      * @return bool
@@ -576,6 +606,28 @@ class ProductManager extends ResourcePanel
         $value = gp247_config($configKey);
 
         return $value !== '0' && $value !== 0;
+    }
+
+    /**
+     * Whether a form field is a config-gated field whose gate is currently OFF.
+     *
+     * Resolves the field back to its product_config_attribute key via GATED_FIELDS
+     * and negates productFieldEnabled(); non-gated fields are never "disabled" here.
+     * Used to scope such a field out of both validation and persistence so it matches
+     * the blade render gate (modification 20260826T093146).
+     *
+     * @param string $field shop_product column name (e.g. 'stock', 'brand_id').
+     * @return bool True only when $field is gated AND its gate is turned off.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-product-field-config-scope
+     * @aidlc-adr shop-admin_product-field-config-scope
+     */
+    private function gatedFieldDisabled(string $field): bool
+    {
+        $configKey = array_search($field, self::GATED_FIELDS, true);
+
+        return $configKey !== false && !$this->productFieldEnabled($configKey);
     }
 
     // --- View option helpers ------------------------------------------------
