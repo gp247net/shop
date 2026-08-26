@@ -89,14 +89,35 @@ class OrderManager extends ResourcePanel
     }
 
     /**
+     * Whether the root admin manages orders across ALL stores: a
+     * multi-store/multi-vendor plugin is active and the session store is
+     * root. v1 parity — AdminOrderController::index listed every store's
+     * orders (with a store column) at root; scoping to one store here made
+     * sub-store orders unreachable in admin.
+     *
+     * @return bool
+     */
+    private function showAllStores(): bool
+    {
+        $root = defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1;
+
+        return (gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed())
+            && (string) $this->storeId() === (string) $root;
+    }
+
+    /**
      * Store-scoped order query with the list filters (status + date range)
-     * applied when set — parity with AdminOrder::getOrderListAdmin.
+     * applied when set — parity with AdminOrder::getOrderListAdmin (which
+     * only filters store_id when one is given; root + multi-store sees all).
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     protected function baseQuery()
     {
-        $query = AdminOrder::query()->where('store_id', $this->storeId());
+        $query = AdminOrder::query();
+        if (!$this->showAllStores()) {
+            $query->where('store_id', $this->storeId());
+        }
 
         if ($this->filterStatus !== '') {
             $query->where('status', $this->filterStatus);
@@ -141,6 +162,33 @@ class OrderManager extends ResourcePanel
     protected function panelView(): string
     {
         return 'gp247-shop-admin::order-manager';
+    }
+
+    /**
+     * Base render plus the per-order store column data, shown to the root
+     * admin when a multi-store/multi-vendor plugin is active (v1 parity:
+     * the shop_store column of AdminOrderController::index). Store code +
+     * domain come from the cached AdminStore::getListAll() via each order's
+     * own store_id column — no extra per-page query.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function render(): \Illuminate\Contracts\View\View
+    {
+        $showStoreColumn = $this->showAllStores() && $this->editingId === null;
+
+        $storeList = [];
+        if ($showStoreColumn) {
+            foreach (\GP247\Core\Models\AdminStore::getListAll() as $id => $store) {
+                $storeList[$id] = ['code' => (string) $store->code, 'domain' => (string) $store->domain];
+            }
+        }
+
+        return view($this->panelView(), [
+            'rows' => $this->rows(),
+            'showStoreColumn' => $showStoreColumn,
+            'storeList' => $storeList,
+        ])->layout('gp247-admin::layouts.admin', ['title' => $this->pageTitle()]);
     }
 
     /**
@@ -281,7 +329,9 @@ class OrderManager extends ResourcePanel
             return null;
         }
 
-        return AdminOrder::getOrderAdmin($this->editingId, $this->storeId());
+        // WHY: root + multi-store manages every store's orders, so the detail
+        // must not be store-scoped there (null skips the store_id filter).
+        return AdminOrder::getOrderAdmin($this->editingId, $this->showAllStores() ? null : $this->storeId());
     }
 
     /**

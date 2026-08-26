@@ -64,6 +64,10 @@
                         <th class="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" wire:click="setSort('status')">
                             {{ gp247_language_render('order.status') }} @if ($sortField === 'status')<span class="text-xs">{{ $sortDir === 'asc' ? '▲' : '▼' }}</span>@endif
                         </th>
+                        @if (!empty($showStoreColumn))
+                            {{-- Root admin + multi-store: which store each order belongs to (v1 shop_store column). --}}
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ gp247_language_render('front.store_list') }}</th>
+                        @endif
                         <th class="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" wire:click="setSort('created_at')">
                             {{ gp247_language_render('order.created_at') }} @if ($sortField === 'created_at')<span class="text-xs">{{ $sortDir === 'asc' ? '▲' : '▼' }}</span>@endif
                         </th>
@@ -89,6 +93,17 @@
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $this->paymentStatusOptions()[$row->payment_status] ?? $row->payment_status }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $this->shippingStatusOptions()[$row->shipping_status] ?? $row->shipping_status }}</td>
                         <td class="px-4 py-3"><x-gp247::badge :color="$this->statusBadgeColor($row->status)">{{ $this->orderStatusOptions()[$row->status] ?? $row->status }}</x-gp247::badge></td>
+                        @if (!empty($showStoreColumn))
+                            <td class="px-4 py-3 text-sm">
+                                @php($rowStore = $storeList[$row->store_id] ?? null)
+                                @if ($rowStore)
+                                    <a href="//{{ $rowStore['domain'] }}" target="_blank" rel="noopener"
+                                        class="inline-flex items-center gap-1.5 text-blue-600 hover:underline dark:text-blue-400">
+                                        <i class="fab fa-shopify"></i>{{ $rowStore['code'] }}
+                                    </a>
+                                @endif
+                            </td>
+                        @endif
                         <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $row->created_at }}</td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-1">
