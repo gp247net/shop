@@ -582,11 +582,15 @@ trait HasOrderItems
         }
 
         $productId = $detail->product_id;
-        $qty = (float) $detail->qty;
+
+        // Eloquent delete() triggers ShopOrderDetail::boot() deleting,
+        // which calls ShopProduct::updateStock() to restore stock.
+        // ⚠️  Do NOT add a manual ShopProduct::updateStock() call here —
+        // that would restore stock twice (once from the event, once manually)
+        // and silently inflate inventory.
         $detail->delete();
 
         AdminOrder::updateSubTotal($this->editingId);
-        ShopProduct::updateStock($productId, -$qty);
 
         $this->logHistory('Remove item pID#' . $productId, $this->currentOrder()->status ?? 0);
         $this->refreshOrder();

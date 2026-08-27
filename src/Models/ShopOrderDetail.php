@@ -85,12 +85,29 @@ class ShopOrderDetail extends Model
     protected static function boot()
     {
         parent::boot();
-        // before delete() method call this
-        static::deleting(
-            function ($model) {
-                //
-            }
-        );
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║  STOCK-RESTORE — SINGLE-ROW PATH ONLY                           ║
+        // ╠══════════════════════════════════════════════════════════════════╣
+        // ║  This event fires ONLY when a detail row is deleted via          ║
+        // ║  Eloquent $detail->delete() — i.e. one row at a time.           ║
+        // ║                                                                  ║
+        // ║  It does NOT fire for:                                           ║
+        // ║    $order->details()->delete()  ← query-builder bulk delete      ║
+        // ║  That path is used by ShopOrder::boot() deleting, which         ║
+        // ║  already restores stock manually BEFORE the bulk delete.         ║
+        // ║                                                                  ║
+        // ║  ⚠️  DANGER — double-restore scenario:                           ║
+        // ║  If ShopOrder::boot() is ever changed to delete detail rows      ║
+        // ║  one-by-one via Eloquent ($detail->delete()), this event will    ║
+        // ║  fire FOR EACH ROW in addition to ShopOrder's manual restore     ║
+        // ║  → updateStock() runs twice per row → stock inflated silently.  ║
+        // ║                                                                  ║
+        // ║  See ShopOrder::boot() for the full contract and the explicit    ║
+        // ║  warning against that refactor.                                  ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+        static::deleting(function ($model) {
+            ShopProduct::updateStock($model->product_id, -(float) $model->qty);
+        });
 
         //Uuid
         static::creating(function ($model) {

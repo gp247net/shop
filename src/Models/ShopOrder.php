@@ -79,15 +79,47 @@ class ShopOrder extends Model
     protected static function boot()
     {
         parent::boot();
-        // before delete() method call this
+
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║  STOCK-RESTORE CONTRACT — READ BEFORE TOUCHING THIS BLOCK       ║
+        // ╠══════════════════════════════════════════════════════════════════╣
+        // ║  When a whole order is deleted, stock is restored here           ║
+        // ║  in TWO intentional steps:                                       ║
+        // ║                                                                  ║
+        // ║  Step 1 — restore stock MANUALLY via foreach:                    ║
+        // ║    ShopProduct::updateStock($id, -$qty)  ← negative = restore   ║
+        // ║                                                                  ║
+        // ║  Step 2 — cascade-delete detail rows via QUERY-BUILDER:          ║
+        // ║    $order->details()->delete()                                   ║
+        // ║    ↑ This is a raw DB delete, NOT Eloquent model delete().       ║
+        // ║    ↑ It BYPASSES ShopOrderDetail::boot() deleting event.        ║
+        // ║                                                                  ║
+        // ║  WHY query-builder and not Eloquent delete() per row?            ║
+        // ║  ShopOrderDetail::boot() deleting also calls updateStock().      ║
+        // ║  If we used a foreach + $detail->delete() here instead,          ║
+        // ║  updateStock() would fire TWICE per row:                         ║
+        // ║    once from Step 1 above + once from ShopOrderDetail event      ║
+        // ║  = stock restored DOUBLE → inventory inflated silently.          ║
+        // ║                                                                  ║
+        // ║  ⚠️  DANGER — never refactor Step 2 to:                         ║
+        // ║      foreach ($order->details as $d) { $d->delete(); }          ║
+        // ║  That switches from query-builder to Eloquent and triggers       ║
+        // ║  the ShopOrderDetail event, causing double-restore.              ║
+        // ║                                                                  ║
+        // ║  SINGLE-ROW deletes (e.g. HasOrderItems::deleteItem) go through ║
+        // ║  Eloquent $detail->delete() → ShopOrderDetail event fires →     ║
+        // ║  stock restored once, correctly.                                 ║
+        // ╚══════════════════════════════════════════════════════════════════╝
         static::deleting(function ($order) {
-            foreach ($order->details as $key => $orderDetail) {
-                //Update stock, sold
+            // Step 1: restore stock for every line (manual, before bulk delete).
+            foreach ($order->details as $orderDetail) {
                 ShopProduct::updateStock($orderDetail->product_id, -$orderDetail->qty);
             }
-            $order->details()->delete(); //delete order details
-            $order->orderTotal()->delete(); //delete order total
-            $order->history()->delete(); //delete history
+            // Step 2: cascade via query-builder (bypasses model events — intentional,
+            // see contract above).
+            $order->details()->delete();
+            $order->orderTotal()->delete();
+            $order->history()->delete();
         });
 
         //Uuid
