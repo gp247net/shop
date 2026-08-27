@@ -386,6 +386,26 @@
                             @error('exchange_rate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
 
+                        @if ($multiStore ?? false)
+                        <div class="col-span-2">
+                            <p class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-store text-blue-500"></i>{{ gp247_language_render('admin.store') }} *
+                            </p>
+                            <div class="flex flex-wrap gap-4 rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800">
+                                @foreach ($storeList as $storeId => $storeName)
+                                    <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                                        <input type="radio" name="store_id" value="{{ $storeId }}"
+                                            class="h-4 w-4"
+                                            {{ old('store_id') == $storeId ? 'checked' : '' }}
+                                            required>
+                                        {{ $storeName }}
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('store_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        @endif
+
                         @if (!empty($paymentMethod))
                         <div>
                             <label class="{{ $labelCls }}">{{ gp247_language_render('order.payment_method') }}</label>

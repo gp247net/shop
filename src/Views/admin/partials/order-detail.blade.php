@@ -41,6 +41,13 @@
                 @endif
                 <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">{{ gp247_language_render('order.created_at') }}</span><span class="text-gray-800 dark:text-gray-100">{{ $order['created_at'] ?? '' }}</span></div>
 
+                @if (($order['store_name'] ?? '') !== '')
+                <div class="flex justify-between">
+                    <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400"><i class="fas fa-store text-blue-500 text-xs"></i>{{ gp247_language_render('admin.store') }}</span>
+                    <span class="text-gray-800 dark:text-gray-100">{{ $order['store_name'] }}</span>
+                </div>
+                @endif
+
                 {{-- Customer fields are gated by the same admin config toggles the
                      create-order screen uses (order-create.blade.php): first_name is
                      always shown, the rest render only when their toggle is on, so

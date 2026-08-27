@@ -5,10 +5,12 @@ namespace GP247\Shop\Admin\Livewire;
 use GP247\Core\AdminShell\Infrastructure\HasMultilingualDescriptions;
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
 use GP247\Core\Models\AdminLanguage;
+use GP247\Core\Models\AdminStore;
 use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopCategoryDescription;
+use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 
 /**
@@ -20,9 +22,9 @@ use Illuminate\Validation\Rule;
  * (ShopCategory). Gated by `admin_category`.
  *
  * Intentional Phase-C simplifications (parity with Phase 1, documented in the
- * results doc): custom fields (type shop_category) and the multi-store column are
- * not yet surfaced; the legacy screen remains available (strangler). List search
- * is by alias (title lives in the description table).
+ * results doc): custom fields (type shop_category) are not yet surfaced; the
+ * legacy screen remains available (strangler). List search is by alias (title
+ * lives in the description table). Multi-store assignment is now implemented.
  *
  * @aidlc-unit shop-admin
  * @aidlc-story US-SADM-002
@@ -34,6 +36,9 @@ class CategoryManager extends ResourcePanel
     use HasValidationLabels;
 
     protected ?string $permission = 'admin_category';
+
+    /** @var array<int, int|string> Assigned store ids for the current form. */
+    public array $stores = [];
 
     /**
      * Keep the list panel (page/keyword/sort) and the just-saved category on
@@ -74,7 +79,7 @@ class CategoryManager extends ResourcePanel
      */
     protected function baseQuery()
     {
-        return ShopCategory::query();
+        return ShopCategory::query()->with(['stores.descriptions']);
     }
 
     /**
@@ -141,6 +146,7 @@ class CategoryManager extends ResourcePanel
     public function resetForm(): void
     {
         parent::resetForm();
+        $this->stores = [];
         $this->initDescriptions();
     }
 
@@ -151,6 +157,7 @@ class CategoryManager extends ResourcePanel
     protected function fillForm($model): array
     {
         $this->fillDescriptions($model->descriptions);
+        $this->stores = $model->stores()->pluck('store_id')->map(fn ($v): string => (string) $v)->all();
 
         return [
             'image' => (string) $model->image,
@@ -239,6 +246,7 @@ class CategoryManager extends ResourcePanel
         $this->editingId = (string) $category->id;
 
         $this->saveDescriptions($category->id);
+        $category->stores()->sync($this->stores);
 
         // WHY: keep the category title cache coherent with the legacy controller.
         if (function_exists('gp247_cache_clear')) {
@@ -260,6 +268,25 @@ class CategoryManager extends ResourcePanel
                 gp247_cache_clear('cache_category');
             }
         }
+    }
+
+    /**
+     * Override render() to inject multi-store context into the view.
+     *
+     * @return View
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-002
+     */
+    public function render(): View
+    {
+        $multiStore = gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed();
+
+        return view($this->panelView(), [
+            'rows'       => $this->rows(),
+            'multiStore' => $multiStore,
+            'storeList'  => $multiStore ? AdminStore::getListTitle() : [],
+        ])->layout('gp247-admin::layouts.admin', ['title' => $this->pageTitle()]);
     }
 
     /**

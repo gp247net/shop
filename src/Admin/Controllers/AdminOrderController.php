@@ -2,6 +2,7 @@
 namespace GP247\Shop\Admin\Controllers;
 
 use GP247\Core\Controllers\RootAdminController;
+use GP247\Core\Models\AdminStore;
 use GP247\Shop\Models\ShopAttributeGroup;
 use GP247\Core\Models\AdminCountry;
 use GP247\Shop\Models\ShopCurrency;
@@ -248,6 +249,7 @@ class AdminOrderController extends RootAdminController
         // WHY: products are now fetched on demand via the searchable picker
         // (admin_order.product_search), so the full catalog is no longer dumped
         // into the page — keeps the create screen light on large catalogs.
+        $multiStore             = gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed();
         $data['users']          = $users;
         $data['currencies']     = $currencies;
         $data['countries']      = $countries;
@@ -255,6 +257,8 @@ class AdminOrderController extends RootAdminController
         $data['currenciesRate'] = $currenciesRate;
         $data['paymentMethod']  = $paymentMethod;
         $data['shippingMethod'] = $shippingMethod;
+        $data['multiStore']     = $multiStore;
+        $data['storeList']      = $multiStore ? AdminStore::getListTitle() : [];
 
         return view('gp247-shop-admin::order-create')
             ->with($data);
@@ -281,6 +285,9 @@ class AdminOrderController extends RootAdminController
         }
         if (gp247_config('use_shipping')) {
             $validate['shipping_method'] = 'required';
+        }
+        if (gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed()) {
+            $validate['store_id'] = 'required|string';
         }
         if (gp247_config_admin('customer_lastname')) {
             if (gp247_config_admin('customer_lastname_required')) {
@@ -384,6 +391,7 @@ class AdminOrderController extends RootAdminController
             'birthday.date_format'     => gp247_language_render('validation.date_format', ['attribute'=> gp247_language_render('cart.birthday')]),
             'shipping_method.required' => gp247_language_render('cart.validation.shippingMethod_required'),
             'payment_method.required'  => gp247_language_render('cart.validation.paymentMethod_required'),
+            'store_id.required'        => gp247_language_render('validation.required', ['attribute' => gp247_language_render('admin.store')]),
         ];
 
 
@@ -415,6 +423,12 @@ class AdminOrderController extends RootAdminController
             'exchange_rate'   => $data['exchange_rate'],
             'email'           => $data['email'] ?? '',
             'comment'         => $data['comment'] ?? '',
+            // WHY: admin is always root and manages all stores, so store_id must be chosen
+            // explicitly on the create form (validated required when multi-store is active).
+            // Fallback to GP247_STORE_ID_ROOT for single-store installs where the field is absent.
+            // store_id is immutable after creation (ADR shop-admin_admin-order-store-assignment,
+            // modification 20260827T142602).
+            'store_id'        => (string) ($data['store_id'] ?? GP247_STORE_ID_ROOT),
         ];
         $dataCreate = gp247_clean($dataCreate, [], true);
         // WHY: create order + line items + totals and decrement stock atomically,
@@ -495,6 +509,7 @@ class AdminOrderController extends RootAdminController
                                 'attribute' => $attribute,
                                 'currency' => $data['currency'],
                                 'exchange_rate' => $data['exchange_rate'],
+                                'store_id' => $dataCreate['store_id'],
                                 'created_at' => gp247_time_now(),
                             ]]);
                         }

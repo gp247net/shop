@@ -11,6 +11,7 @@ use GP247\Shop\Admin\Livewire\Concerns\HasProductImages;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductPricing;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductTags;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductVariants;
+use GP247\Core\Models\AdminStore;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Admin\Models\AdminProduct;
 use GP247\Shop\Models\ShopBrand;
@@ -18,6 +19,7 @@ use GP247\Shop\Models\ShopProduct;
 use GP247\Shop\Models\ShopProductDescription;
 use GP247\Shop\Models\ShopSupplier;
 use GP247\Shop\Models\ShopTax;
+use Illuminate\Contracts\View\View;
 
 /**
  * Product manager (shop-admin Unit, group F, US-SADM-001) — the most complex
@@ -148,6 +150,7 @@ class ProductManager extends ResourcePanel
     {
         $storeId = $this->storeId();
         $query = ShopProduct::query()
+            ->with(['stores.descriptions'])
             ->whereHas('stores', static fn ($q) => $q->where('store_id', $storeId));
 
         if ($this->filterCategory !== '') {
@@ -628,6 +631,27 @@ class ProductManager extends ResourcePanel
         $configKey = array_search($field, self::GATED_FIELDS, true);
 
         return $configKey !== false && !$this->productFieldEnabled($configKey);
+    }
+
+    // --- Render -------------------------------------------------------------
+
+    /**
+     * Override render() to inject multi-store context into the view.
+     *
+     * @return View
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-001
+     */
+    public function render(): View
+    {
+        $multiStore = gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed();
+
+        return view($this->panelView(), [
+            'rows'       => $this->rows(),
+            'multiStore' => $multiStore,
+            'storeList'  => $multiStore ? AdminStore::getListTitle() : [],
+        ])->layout('gp247-admin::layouts.admin', ['title' => $this->pageTitle()]);
     }
 
     // --- View option helpers ------------------------------------------------

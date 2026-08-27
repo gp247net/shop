@@ -311,6 +311,13 @@ class OrderManager extends ResourcePanel
             'payment_method' => (string) $model->payment_method,
             'shipping_method' => (string) $model->shipping_method,
             'created_at' => (string) $model->created_at,
+            'store_id'   => (string) $model->store_id,
+            // WHY: store_id is write-once provenance (ADR shop-admin_admin-order-store-assignment);
+            // resolve the display name only when a multi-store plugin is active so the
+            // detail view can render a read-only store badge without a Blade helper call.
+            'store_name' => (gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed())
+                ? (string) (\GP247\Core\Models\AdminStore::getListTitle()[(string) $model->store_id] ?? '')
+                : '',
         ];
 
         $this->refreshItems();
