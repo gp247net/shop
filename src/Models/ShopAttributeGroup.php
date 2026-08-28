@@ -1,6 +1,7 @@
 <?php
 namespace GP247\Shop\Models;
 
+use GP247\Core\Models\AdminStore;
 use Illuminate\Database\Eloquent\Model;
 
 class ShopAttributeGroup extends Model
@@ -23,6 +24,20 @@ class ShopAttributeGroup extends Model
     public function attributeDetails()
     {
         return $this->hasMany(ShopProductAttribute::class, 'attribute_group_id', 'id');
+    }
+
+    /**
+     * The store that owns this attribute group (1-1 ownership).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-store-1to1-schema
+     * @aidlc-adr multi-store_one-to-one-store-ownership
+     */
+    public function store()
+    {
+        return $this->belongsTo(AdminStore::class, 'store_id', 'id');
     }
 
     protected static function boot()

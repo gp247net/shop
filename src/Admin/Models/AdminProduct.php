@@ -3,7 +3,6 @@
 namespace GP247\Shop\Admin\Models;
 
 use GP247\Shop\Models\ShopProduct;
-use GP247\Shop\Models\ShopProductStore;
 use GP247\Shop\Models\ShopProductDescription;
 use GP247\Shop\Models\ShopAttributeGroup;
 use GP247\Shop\Models\ShopProductCategory;
@@ -26,9 +25,8 @@ class AdminProduct extends ShopProduct
         ->leftJoin($tableDescription, $tableDescription . '.product_id', $tableProduct . '.id');
 
         if ($storeId) {
-            $tableProductStore = (new ShopProductStore)->getTable();
-            $data = $data->leftJoin($tableProductStore, $tableProductStore . '.product_id', $tableProduct . '.id');
-            $data = $data->where($tableProductStore . '.store_id', $storeId);
+            // WHY: 1-1 ownership — filter by the product's own store_id column.
+            $data = $data->where($tableProduct . '.store_id', $storeId);
         }
 
         $data = $data->first();
@@ -51,17 +49,15 @@ class AdminProduct extends ShopProduct
         $tableDescription = (new ShopProductDescription)->getTable();
         $tablePTC         = (new ShopProductCategory)->getTable();
         $tableProduct     = (new ShopProduct)->getTable();
-        $tableProductStore = (new ShopProductStore)->getTable();
         //Select field
-        $dataSelect = $tableProduct.'.*, 
-        '.$tableDescription.'.name, 
-        '.$tableDescription.'.keyword, 
+        $dataSelect = $tableProduct.'.*,
+        '.$tableDescription.'.name,
+        '.$tableDescription.'.keyword,
         '.$tableDescription.'.description';
 
         $productList = (new ShopProduct)
             ->selectRaw($dataSelect)
-            ->leftJoin($tableDescription, $tableDescription . '.product_id', $tableProduct . '.id')
-            ->leftJoin($tableProductStore, $tableProductStore . '.product_id', $tableProduct . '.id');
+            ->leftJoin($tableDescription, $tableDescription . '.product_id', $tableProduct . '.id');
 
         if ($category_id) {
             $arrCate = (new ShopCategory)->getListSub($category_id);
@@ -74,8 +70,9 @@ class AdminProduct extends ShopProduct
             ->where($tableDescription . '.lang', gp247_get_locale());
 
         if ($storeId) {
-            // Only get products of store if store <> root or store is specified
-            $productList = $productList->where($tableProductStore . '.store_id', $storeId);
+            // WHY: 1-1 ownership — filter by the product's own store_id column.
+            // Only get products of store if store <> root or store is specified.
+            $productList = $productList->where($tableProduct . '.store_id', $storeId);
         }
 
         if ($keyword) {
@@ -150,15 +147,14 @@ class AdminProduct extends ShopProduct
      */
     public function checkProductValidationAdmin($type = null, $fieldValue = null, $pId = null, $storeId = null)
     {
-        $tableProductStore = (new ShopProductStore)->getTable();
         $storeId = $storeId ? gp247_clean($storeId) : session('adminStoreId');
         $type = $type ? gp247_clean($type) : 'sku';
         $fieldValue = gp247_clean($fieldValue);
         $pId = gp247_clean($pId);
+        // WHY: 1-1 ownership — uniqueness is scoped by the product's own store_id column.
         $check =  $this
-        ->leftJoin($tableProductStore, $tableProductStore . '.product_id', $this->getTable() . '.id')
         ->where($type, $fieldValue);
-        $check = $check->where($tableProductStore . '.store_id', $storeId);
+        $check = $check->where($this->getTable() . '.store_id', $storeId);
         if ($pId) {
             $check = $check->where($this->getTable().'.id', '<>', $pId);
         }

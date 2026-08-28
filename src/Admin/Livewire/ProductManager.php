@@ -11,15 +11,16 @@ use GP247\Shop\Admin\Livewire\Concerns\HasProductImages;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductPricing;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductTags;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductVariants;
-use GP247\Core\Models\AdminStore;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Admin\Models\AdminProduct;
 use GP247\Shop\Models\ShopBrand;
+use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopProduct;
 use GP247\Shop\Models\ShopProductDescription;
 use GP247\Shop\Models\ShopSupplier;
 use GP247\Shop\Models\ShopTax;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Product manager (shop-admin Unit, group F, US-SADM-001) — the most complex
@@ -28,7 +29,8 @@ use Illuminate\Contracts\View\View;
  * LIST; the edit/{id} & create routes are a tabbed FORM (general / descriptions /
  * custom fields …). Mirrors the legacy AdminProductController (rule ui-tailadmin
  * P1): the brownfield product_sku_unique / product_alias_unique validators, the
- * config-driven field set, multilingual descriptions and pivots (category/store)
+ * config-driven field set, multilingual descriptions, a category pivot and a
+ * scalar store_id owner (1-1)
  * stay identical to legacy. Domain/schema unchanged. Gated by `admin_product`.
  *
  * @aidlc-unit shop-admin
@@ -148,10 +150,11 @@ class ProductManager extends ResourcePanel
      */
     protected function baseQuery()
     {
+        // WHY: 1-1 ownership — a product belongs to a single store via store_id.
         $storeId = $this->storeId();
         $query = ShopProduct::query()
-            ->with(['stores.descriptions'])
-            ->whereHas('stores', static fn ($q) => $q->where('store_id', $storeId));
+            ->with(['store.descriptions'])
+            ->where('store_id', $storeId);
 
         if ($this->filterCategory !== '') {
             $category = $this->filterCategory;
@@ -222,7 +225,6 @@ class ProductManager extends ResourcePanel
             'minimum' => 0,
             'date_available' => '',
             'category' => [],
-            'store' => [$this->storeId()],
         ];
         foreach (self::STRING_FIELDS as $field) {
             $defaults[$field] = '';
@@ -269,7 +271,6 @@ class ProductManager extends ResourcePanel
             'minimum' => (float) $model->minimum,
             'date_available' => $model->date_available ? (string) $model->date_available : '',
             'category' => $model->categories()->pluck('category_id')->map(static fn ($id) => (string) $id)->all(),
-            'store' => $model->stores()->pluck('store_id')->map(static fn ($id) => (string) $id)->all(),
         ];
         foreach (self::STRING_FIELDS as $field) {
             $form[$field] = (string) ($model->{$field} ?? '');
@@ -457,7 +458,7 @@ class ProductManager extends ResourcePanel
 
     /**
      * Persist the product (mirroring AdminProductController): main row →
-     * descriptions (C0) → custom fields (D0) → category/store pivots. Wrapped in a
+     * descriptions (C0) → custom fields (D0) → category pivot. Wrapped in a
      * transaction; subsequent groups (images/variants/composition/promotion) extend
      * this.
      *
@@ -466,6 +467,12 @@ class ProductManager extends ResourcePanel
      */
     protected function persist(array $data): void
     {
+        // WHY: 1-1 ownership — a product may only reference brand/tax/category rows
+        // owned by its own store. The dropdowns are already store-scoped, but a
+        // crafted Livewire payload could still bind a foreign id, so reject
+        // cross-store references server-side (RISK-TECH-store-same-store-ref).
+        $this->assertSameStoreRefs($data);
+
         $connection = defined('GP247_DB_CONNECTION') ? GP247_DB_CONNECTION : null;
         \DB::connection($connection)->transaction(function () use ($data): void {
             $attributes = $this->productAttributes($data);
@@ -474,6 +481,9 @@ class ProductManager extends ResourcePanel
                 $product = ShopProduct::findOrFail($this->editingId);
                 $product->update($attributes);
             } else {
+                // WHY: 1-1 ownership — a new product is owned by the current admin
+                // store (pinned to root in admin); set its scalar store_id on create.
+                $attributes['store_id'] = $this->storeId();
                 $product = AdminProduct::createProductAdmin($attributes);
             }
 
@@ -488,7 +498,6 @@ class ProductManager extends ResourcePanel
             }
 
             $product->categories()->sync(array_filter((array) ($data['category'] ?? [])));
-            $product->stores()->sync($this->resolveStores($data));
 
             $this->persistImages($product);
             $this->persistVariants($product);
@@ -496,6 +505,48 @@ class ProductManager extends ResourcePanel
             $this->persistPricing($product, $data);
             $this->persistTags($product, $data);
         });
+    }
+
+    /**
+     * Reject a save that references a brand, tax or category owned by another
+     * store. Empty values pass (they clear the field); only a non-empty id that
+     * resolves to a different store's row is rejected.
+     *
+     * @param array<string, mixed> $data Sanitised form.
+     * @return void
+     * @throws ValidationException When any reference belongs to another store.
+     *
+     * @aidlc-adr multi-store_one-to-one-store-ownership
+     */
+    private function assertSameStoreRefs(array $data): void
+    {
+        $storeId = $this->storeId();
+
+        $brandId = (string) ($data['brand_id'] ?? '');
+        if ($brandId !== '' && ShopBrand::where('id', $brandId)->where('store_id', $storeId)->doesntExist()) {
+            throw ValidationException::withMessages([
+                'form.brand_id' => $this->label('product.brand') . ': invalid store reference',
+            ]);
+        }
+
+        $taxId = (string) ($data['tax_id'] ?? '');
+        if ($taxId !== '' && ShopTax::where('id', $taxId)->where('store_id', $storeId)->doesntExist()) {
+            throw ValidationException::withMessages([
+                'form.tax_id' => $this->label('product.tax') . ': invalid store reference',
+            ]);
+        }
+
+        $categoryIds = array_values(array_filter((array) ($data['category'] ?? [])));
+        if ($categoryIds !== []) {
+            $ownedCount = ShopCategory::whereIn('id', $categoryIds)
+                ->where('store_id', $storeId)
+                ->count();
+            if ($ownedCount !== count($categoryIds)) {
+                throw ValidationException::withMessages([
+                    'form.category' => $this->label('product.category') . ': invalid store reference',
+                ]);
+            }
+        }
     }
 
     /**
@@ -534,19 +585,6 @@ class ProductManager extends ResourcePanel
         $attributes['date_available'] = !empty($data['date_available']) ? $data['date_available'] : null;
 
         return $attributes;
-    }
-
-    /**
-     * The store ids to sync (defaults to the current admin store when none chosen).
-     *
-     * @param array<string, mixed> $data
-     * @return array<int, int|string>
-     */
-    private function resolveStores(array $data): array
-    {
-        $stores = array_filter((array) ($data['store'] ?? []));
-
-        return $stores !== [] ? $stores : [$this->storeId()];
     }
 
     /**
@@ -636,21 +674,20 @@ class ProductManager extends ResourcePanel
     // --- Render -------------------------------------------------------------
 
     /**
-     * Override render() to inject multi-store context into the view.
+     * Override render() to feed the store-scoped product list into the view.
      *
      * @return View
      *
      * @aidlc-unit shop-admin
      * @aidlc-story US-SADM-001
+     * @aidlc-adr multi-store_one-to-one-store-ownership
      */
     public function render(): View
     {
-        $multiStore = gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed();
-
+        // WHY: 1-1 ownership — a product has a single owning store (pinned to the
+        // current admin store), so no multi-store picker context is injected.
         return view($this->panelView(), [
-            'rows'       => $this->rows(),
-            'multiStore' => $multiStore,
-            'storeList'  => $multiStore ? AdminStore::getListTitle() : [],
+            'rows' => $this->rows(),
         ])->layout('gp247-admin::layouts.admin', ['title' => $this->pageTitle()]);
     }
 
@@ -669,7 +706,9 @@ class ProductManager extends ResourcePanel
      */
     public function brandOptions(): array
     {
-        return ShopBrand::pluck('name', 'id')->all();
+        // WHY: 1-1 ownership — only offer brands owned by the current store so an
+        // admin cannot reference another store's brand (RISK-TECH-store-same-store-ref).
+        return ShopBrand::where('store_id', $this->storeId())->pluck('name', 'id')->all();
     }
 
     /**
@@ -685,7 +724,9 @@ class ProductManager extends ResourcePanel
      */
     public function taxOptions(): array
     {
-        return ShopTax::pluck('name', 'id')->all();
+        // WHY: 1-1 ownership — only offer taxes owned by the current store so an
+        // admin cannot reference another store's tax (RISK-TECH-store-same-store-ref).
+        return ShopTax::where('store_id', $this->storeId())->pluck('name', 'id')->all();
     }
 
     /**

@@ -46,6 +46,8 @@ class DataShopDefaultSeeder extends Seeder
         foreach ($links as $link) {
             $frontLink = FrontLink::create([
                 'id' => (string)\Illuminate\Support\Str::orderedUuid(),
+                // WHY: 1-1 ownership — the link owns its store via the scalar store_id column.
+                'store_id' => $storeId,
                 'name' => $link['name'],
                 'url' => $link['url'],
                 'target' => $link['target'],
@@ -55,8 +57,7 @@ class DataShopDefaultSeeder extends Seeder
                 'module' => 'gp247/shop',
             ]);
 
-            // Attach to store using model relationship
-            $frontLink->stores()->attach($storeId);
+            // Store ownership is set on the link row (store_id) above.
         }
 
         // Add new layout block

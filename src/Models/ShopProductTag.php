@@ -2,6 +2,7 @@
 namespace GP247\Shop\Models;
 
 use GP247\Shop\Models\ShopProduct;
+use GP247\Core\Models\AdminStore;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -59,6 +60,20 @@ class ShopProductTag extends Model
             'tag_id',
             'product_id'
         );
+    }
+
+    /**
+     * The store that owns this tag (1-1 ownership).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-store-1to1-schema
+     * @aidlc-adr multi-store_one-to-one-store-ownership
+     */
+    public function store()
+    {
+        return $this->belongsTo(AdminStore::class, 'store_id', 'id');
     }
 
     /**

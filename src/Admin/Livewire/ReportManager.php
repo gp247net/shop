@@ -85,7 +85,8 @@ class ReportManager extends GP247AdminComponent
     {
         $storeId = $this->storeId();
 
-        return ShopProduct::whereHas('stores', static fn ($q) => $q->where('store_id', $storeId))
+        // WHY: 1-1 ownership — filter by the product's scalar store_id column.
+        return ShopProduct::where('store_id', $storeId)
             ->orderBy('sold', 'desc')
             ->limit(10)
             ->get()

@@ -5,7 +5,6 @@ namespace GP247\Shop\Admin\Livewire;
 use GP247\Core\AdminShell\Infrastructure\HasMultilingualDescriptions;
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
 use GP247\Core\Models\AdminLanguage;
-use GP247\Core\Models\AdminStore;
 use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Models\ShopCategory;
@@ -24,7 +23,7 @@ use Illuminate\Validation\Rule;
  * Intentional Phase-C simplifications (parity with Phase 1, documented in the
  * results doc): custom fields (type shop_category) are not yet surfaced; the
  * legacy screen remains available (strangler). List search is by alias (title
- * lives in the description table). Multi-store assignment is now implemented.
+ * lives in the description table). Store ownership is 1-1 (scalar store_id).
  *
  * @aidlc-unit shop-admin
  * @aidlc-story US-SADM-002
@@ -36,9 +35,6 @@ class CategoryManager extends ResourcePanel
     use HasValidationLabels;
 
     protected ?string $permission = 'admin_category';
-
-    /** @var array<int, int|string> Assigned store ids for the current form. */
-    public array $stores = [];
 
     /**
      * Keep the list panel (page/keyword/sort) and the just-saved category on
@@ -79,7 +75,8 @@ class CategoryManager extends ResourcePanel
      */
     protected function baseQuery()
     {
-        return ShopCategory::query()->with(['stores.descriptions']);
+        // WHY: 1-1 ownership — eager-load the single owning store (store.descriptions).
+        return ShopCategory::query()->with(['store.descriptions']);
     }
 
     /**
@@ -146,7 +143,6 @@ class CategoryManager extends ResourcePanel
     public function resetForm(): void
     {
         parent::resetForm();
-        $this->stores = [];
         $this->initDescriptions();
     }
 
@@ -157,7 +153,6 @@ class CategoryManager extends ResourcePanel
     protected function fillForm($model): array
     {
         $this->fillDescriptions($model->descriptions);
-        $this->stores = $model->stores()->pluck('store_id')->map(fn ($v): string => (string) $v)->all();
 
         return [
             'image' => (string) $model->image,
@@ -238,6 +233,9 @@ class CategoryManager extends ResourcePanel
             $category = ShopCategory::findOrFail($this->editingId);
             $category->update($attributes);
         } else {
+            // WHY: 1-1 ownership — a new category is owned by the current admin store
+            // (pinned to root in admin); set its scalar store_id on create.
+            $attributes['store_id'] = session('adminStoreId', defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1);
             $category = ShopCategory::create($attributes);
         }
 
@@ -246,7 +244,6 @@ class CategoryManager extends ResourcePanel
         $this->editingId = (string) $category->id;
 
         $this->saveDescriptions($category->id);
-        $category->stores()->sync($this->stores);
 
         // WHY: keep the category title cache coherent with the legacy controller.
         if (function_exists('gp247_cache_clear')) {
@@ -271,21 +268,20 @@ class CategoryManager extends ResourcePanel
     }
 
     /**
-     * Override render() to inject multi-store context into the view.
+     * Override render() to feed the category list into the view.
      *
      * @return View
      *
      * @aidlc-unit shop-admin
      * @aidlc-story US-SADM-002
+     * @aidlc-adr multi-store_one-to-one-store-ownership
      */
     public function render(): View
     {
-        $multiStore = gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed();
-
+        // WHY: 1-1 ownership — a category has a single owning store (pinned to the
+        // current admin store), so no multi-store picker context is injected.
         return view($this->panelView(), [
-            'rows'       => $this->rows(),
-            'multiStore' => $multiStore,
-            'storeList'  => $multiStore ? AdminStore::getListTitle() : [],
+            'rows' => $this->rows(),
         ])->layout('gp247-admin::layouts.admin', ['title' => $this->pageTitle()]);
     }
 

@@ -273,9 +273,10 @@ if (!function_exists('gp247_render_option_price') && !in_array('gp247_render_opt
 if (!function_exists('gp247_get_list_store_of_product_detail') && !in_array('gp247_get_list_store_of_product_detail', config('gp247_functions_except', []))) {
     function gp247_get_list_store_of_product_detail($pId):array
     {
-        return \GP247\Shop\Models\ShopProductStore::where('product_id', $pId)
-        ->pluck('store_id')
-        ->toArray();
+        // WHY: 1-1 ownership — a product now owns a single store_id column; return
+        // it as a 1-element array to keep the historical array return shape.
+        $storeId = \GP247\Shop\Models\ShopProduct::where('id', $pId)->value('store_id');
+        return $storeId ? [$storeId] : [];
     }
 }
 
@@ -303,11 +304,13 @@ if (!function_exists('gp247_get_list_store_of_supplier') && !in_array('gp247_get
 if (!function_exists('gp247_get_list_store_of_banner') && !in_array('gp247_get_list_store_of_banner', config('gp247_functions_except', []))) {
     function gp247_get_list_store_of_banner(array $arrBannerId)
     {
+        // WHY: 1-1 ownership — resolve each banner's owning store from its own
+        // store_id column (join admin_store) and keep the groupBy('banner_id') shape.
         $tableStore = (new \GP247\Core\Models\AdminStore)->getTable();
-        $tableBannerStore = (new \GP247\Front\Models\FrontBannerStore)->getTable();
-        return \GP247\Front\Models\FrontBannerStore::select($tableStore.'.code', $tableStore.'.id', 'banner_id')
-            ->leftJoin($tableStore, $tableStore.'.id', $tableBannerStore.'.store_id')
-            ->whereIn('banner_id', $arrBannerId)
+        $tableBanner = (new \GP247\Front\Models\FrontBanner)->getTable();
+        return \GP247\Front\Models\FrontBanner::select($tableStore.'.code', $tableStore.'.id', $tableBanner.'.id as banner_id')
+            ->join($tableStore, $tableStore.'.id', $tableBanner.'.store_id')
+            ->whereIn($tableBanner.'.id', $arrBannerId)
             ->get()
             ->groupBy('banner_id');
     }
@@ -318,11 +321,13 @@ if (!function_exists('gp247_get_list_store_of_banner') && !in_array('gp247_get_l
 if (!function_exists('gp247_get_list_store_of_page') && !in_array('gp247_get_list_store_of_page', config('gp247_functions_except', []))) {
     function gp247_get_list_store_of_page(array $arrPageId)
     {
+        // WHY: 1-1 ownership — resolve each page's owning store from its own
+        // store_id column (join admin_store) and keep the groupBy('page_id') shape.
         $tableStore = (new \GP247\Core\Models\AdminStore)->getTable();
-        $tablePageStore = (new \GP247\Front\Models\FrontPageStore)->getTable();
-        return \GP247\Front\Models\FrontPageStore::select($tableStore.'.code', $tableStore.'.id', 'page_id')
-            ->leftJoin($tableStore, $tableStore.'.id', $tablePageStore.'.store_id')
-            ->whereIn('page_id', $arrPageId)
+        $tablePage = (new \GP247\Front\Models\FrontPage)->getTable();
+        return \GP247\Front\Models\FrontPage::select($tableStore.'.code', $tableStore.'.id', $tablePage.'.id as page_id')
+            ->join($tableStore, $tableStore.'.id', $tablePage.'.store_id')
+            ->whereIn($tablePage.'.id', $arrPageId)
             ->get()
             ->groupBy('page_id');
     }
@@ -334,9 +339,10 @@ if (!function_exists('gp247_get_list_store_of_page') && !in_array('gp247_get_lis
 if (!function_exists('gp247_get_list_store_of_banner_detail') && !in_array('gp247_get_list_store_of_banner_detail', config('gp247_functions_except', []))) {
     function gp247_get_list_store_of_banner_detail($bId):array
     {
-        return \GP247\Front\Models\FrontBannerStore::where('banner_id', $bId)
-            ->pluck('store_id')
-            ->toArray();
+        // WHY: 1-1 ownership — a banner owns a single store_id column; return it as
+        // a 1-element array to keep the historical array return shape.
+        $storeId = \GP247\Front\Models\FrontBanner::where('id', $bId)->value('store_id');
+        return $storeId ? [$storeId] : [];
     }
 }
 
@@ -362,11 +368,13 @@ if (!function_exists('gp247_get_list_store_of_order') && !in_array('gp247_get_li
 if (!function_exists('gp247_get_list_store_of_category') && !in_array('gp247_get_list_store_of_category', config('gp247_functions_except', []))) {
     function gp247_get_list_store_of_category(array $arrCategoryId)
     {
+        // WHY: 1-1 ownership — resolve each category's owning store from its own
+        // store_id column (join admin_store) and keep the groupBy('category_id') shape.
         $tableStore = (new \GP247\Core\Models\AdminStore)->getTable();
-        $tableCategoryStore = (new \GP247\Shop\Models\ShopCategoryStore)->getTable();
-        return \GP247\Shop\Models\ShopCategoryStore::select($tableStore.'.code', $tableStore.'.id', 'category_id')
-            ->leftJoin($tableStore, $tableStore.'.id', $tableCategoryStore.'.store_id')
-            ->whereIn('category_id', $arrCategoryId)
+        $tableCategory = (new \GP247\Shop\Models\ShopCategory)->getTable();
+        return \GP247\Shop\Models\ShopCategory::select($tableStore.'.code', $tableStore.'.id', $tableCategory.'.id as category_id')
+            ->join($tableStore, $tableStore.'.id', $tableCategory.'.store_id')
+            ->whereIn($tableCategory.'.id', $arrCategoryId)
             ->get()
             ->groupBy('category_id');
     }
@@ -379,9 +387,10 @@ if (!function_exists('gp247_get_list_store_of_category') && !in_array('gp247_get
 if (!function_exists('gp247_get_list_store_of_category_detail') && !in_array('gp247_get_list_store_of_category_detail', config('gp247_functions_except', []))) {
     function gp247_get_list_store_of_category_detail($cId):array
     {
-        return \GP247\Shop\Models\ShopCategoryStore::where('category_id', $cId)
-            ->pluck('store_id')
-            ->toArray();
+        // WHY: 1-1 ownership — a category owns a single store_id column; return it as
+        // a 1-element array to keep the historical array return shape.
+        $storeId = \GP247\Shop\Models\ShopCategory::where('id', $cId)->value('store_id');
+        return $storeId ? [$storeId] : [];
     }
 }
 

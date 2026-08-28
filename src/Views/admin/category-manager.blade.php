@@ -8,8 +8,7 @@
     @aidlc-story US-SADM-002
     @aidlc-adr ADR-005, ADR-006, ADR-007
 
-    Variables: $rows (ShopCategory paginator); $form, $desc, $stores, $editingId, $sortField, $sortDir,
-               $multiStore (bool), $storeList (array) (state).
+    Variables: $rows (ShopCategory paginator); $form, $desc, $editingId, $sortField, $sortDir (state).
 --}}
 @php($inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100')
 @php($labelCls = 'mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200')
@@ -50,16 +49,7 @@
                     <x-gp247::input type="number" min="0" :label="gp247_language_render('admin.category.sort')"
                         name="sort" wire:model="form.sort" :error="$errors->first('form.sort')" />
 
-                    @if ($multiStore ?? false)
-                        <div class="space-y-1">
-                            <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"><i class="fas fa-store text-blue-500"></i>{{ gp247_language_render('admin.store') }}</label>
-                            <div class="flex flex-wrap gap-3 rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800">
-                                @foreach ($storeList as $storeId => $storeName)
-                                    <x-gp247::checkbox :label="$storeName" wire:model="stores" value="{{ $storeId }}" id="catm-store-{{ $storeId }}" />
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
+                    {{-- Store ownership is 1-1 (scalar store_id) and pinned to the current admin store; no multi-store picker. --}}
 
                     <div class="flex flex-wrap gap-4">
                         <x-gp247::checkbox :label="gp247_language_render('admin.category.top')" wire:model="form.top" value="1" />
@@ -131,17 +121,6 @@
                     </td>
                     <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">
                         {{ $row->getTitle() ?: $row->alias }}
-                        @if ($multiStore ?? false)
-                            @php($visibleStores = ((string)$row->id === (string)$editingId) ? $row->stores->filter(fn($s) => in_array((string)$s->id, array_map('strval', $stores ?? []))) : $row->stores)
-                            @if ($visibleStores->isNotEmpty())
-                                <div class="mt-1 flex flex-wrap items-center gap-1">
-                                    <i class="fas fa-store text-xs text-blue-500"></i>
-                                    @foreach ($visibleStores as $store)
-                                        <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-blue-500 dark:bg-gray-700">{{ $store->descriptions->firstWhere('lang', gp247_get_locale())?->name ?? $store->code }}</span>
-                                    @endforeach
-                                </div>
-                            @endif
-                        @endif
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->sort }}</td>
                     <td class="px-4 py-3"><x-gp247::badge :color="$row->status ? 'green' : 'gray'">{{ $row->status ? gp247_language_render('admin.active') : gp247_language_render('admin.inactive') }}</x-gp247::badge></td>

@@ -30,6 +30,20 @@ class ShopBrand extends Model
         return $this->hasMany(ShopProduct::class, 'brand_id', 'id');
     }
 
+    /**
+     * The store that owns this brand (1-1 ownership).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-store-1to1-schema
+     * @aidlc-adr multi-store_one-to-one-store-ownership
+     */
+    public function store()
+    {
+        return $this->belongsTo(AdminStore::class, 'store_id', 'id');
+    }
+
 
     protected static function boot()
     {

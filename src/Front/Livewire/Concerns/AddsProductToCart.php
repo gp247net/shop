@@ -102,7 +102,8 @@ trait AddsProductToCart
         if (gp247_config_global('MultiVendorPro') && config('app.storeId') == GP247_STORE_ID_ROOT) {
             $product = (new ShopProduct())->getDetail($productId);
             if ($product) {
-                $storeId = (string) $product->stores()->first()->id;
+                // WHY: 1-1 ownership — the product's owning store is its scalar store_id.
+                $storeId = (string) $product->store_id;
             }
         }
 

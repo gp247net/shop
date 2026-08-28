@@ -2,6 +2,7 @@
 #GP247/Shop/Models/ShopTax.php
 namespace GP247\Shop\Models;
 
+use GP247\Core\Models\AdminStore;
 use Illuminate\Database\Eloquent\Model;
 
 class ShopTax extends Model
@@ -36,6 +37,20 @@ class ShopTax extends Model
             self::$getList = $data;
         }
         return self::$getList;
+    }
+
+    /**
+     * The store that owns this tax rate (1-1 ownership).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-store-1to1-schema
+     * @aidlc-adr multi-store_one-to-one-store-ownership
+     */
+    public function store()
+    {
+        return $this->belongsTo(AdminStore::class, 'store_id', 'id');
     }
 
     /**

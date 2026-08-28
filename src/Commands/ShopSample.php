@@ -10,7 +10,6 @@ use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopCategoryDescription;
 use GP247\Shop\Models\ShopProduct;
 use GP247\Shop\Models\ShopProductDescription;
-use GP247\Shop\Models\ShopProductStore;
 use GP247\Shop\Models\ShopProductPromotion;
 use GP247\Shop\Models\ShopProductCategory;
 use GP247\Shop\Models\ShopProductGroup;
@@ -74,13 +73,11 @@ class ShopSample extends GP247Command
             // Clear existing data
             $this->info('Clearing existing data...');
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category_description')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category_store')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_supplier')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_description')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_store')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_category')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_promotion')->truncate();
             DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_attribute_group')->truncate();
@@ -438,6 +435,8 @@ class ShopSample extends GP247Command
             foreach ($categories as $category) {
                 // Create category
                 $categoryData = collect($category)->except('descriptions')->toArray();
+                // WHY: 1-1 ownership — the category owns its store via store_id column.
+                $categoryData['store_id'] = GP247_STORE_ID_ROOT;
                 $cat = ShopCategory::create($categoryData);
                 if ($category['parent'] != '0') {
                     $categoryIds[] = $cat->id;
@@ -453,11 +452,7 @@ class ShopSample extends GP247Command
                     ]);
                 }
 
-                // Link to store
-                DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category_store')->insert([
-                    'category_id' => $cat->id,
-                    'store_id' => GP247_STORE_ID_ROOT
-                ]);
+                // Store ownership is set on the category row (store_id) above.
             }
 
             // Create sample brands
@@ -576,6 +571,8 @@ class ShopSample extends GP247Command
                     // Basic product data
                     $productData = [
                         'id' => $productId,
+                        // WHY: 1-1 ownership — product owns its store via store_id column.
+                        'store_id' => GP247_STORE_ID_ROOT,
                         'sku' => 'SAMPLE-' . $categoryKey . '-' . $i,
                         'alias' => 'sample-product-' . $productNumber,
                         'image' => 'https://picsum.photos/500/500?random=' . $productNumber,
@@ -637,11 +634,7 @@ class ShopSample extends GP247Command
                         'category_id' => $categoryId
                     ]);
 
-                    // Link to store
-                    ShopProductStore::create([
-                        'product_id' => $productId,
-                        'store_id' => GP247_STORE_ID_ROOT
-                    ]);
+                    // Store ownership is set on the product row (store_id) above.
 
                     // Create promotion if needed
                     if ($hasPromotion) {
@@ -675,6 +668,8 @@ class ShopSample extends GP247Command
             // Basic product data
             $productData = [
                 'id' => $productId,
+                // WHY: 1-1 ownership — product owns its store via store_id column.
+                'store_id' => GP247_STORE_ID_ROOT,
                 'sku' => 'SAMPLE-BUNDLE-' . $i,
                 'alias' => 'sample-bundle-' . $i,
                 'image' => 'https://picsum.photos/500/500?random=2' . $i,
@@ -734,11 +729,7 @@ class ShopSample extends GP247Command
                 'category_id' => $categoryIds[array_rand($categoryIds)]
             ]);
 
-            // Link to store
-            ShopProductStore::create([
-                'product_id' => $productId,
-                'store_id' => GP247_STORE_ID_ROOT
-            ]);
+            // Store ownership is set on the product row (store_id) above.
 
             // Random 2 product from $productSingleIds
             $randomProductIds = [];
@@ -773,6 +764,8 @@ class ShopSample extends GP247Command
             // Basic product data
             $productData = [
                 'id' => $productId,
+                // WHY: 1-1 ownership — product owns its store via store_id column.
+                'store_id' => GP247_STORE_ID_ROOT,
                 'sku' => 'SAMPLE-GROUP-' . $i,
                 'alias' => 'sample-group-' . $i,
                 'image' => 'https://picsum.photos/500/500?random=3' . $i,
@@ -832,11 +825,7 @@ class ShopSample extends GP247Command
                 'category_id' => $categoryIds[array_rand($categoryIds)]
             ]);
 
-            // Link to store
-            ShopProductStore::create([
-                'product_id' => $productId,
-                'store_id' => GP247_STORE_ID_ROOT
-            ]);
+            // Store ownership is set on the product row (store_id) above.
 
             // Random 2 product from $productSingleIds
             $randomProductIds = [];

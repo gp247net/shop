@@ -27,6 +27,8 @@ return new class extends Migration
                 $table->string('url', 100)->nullable();
                 $table->tinyInteger('status')->default(0);
                 $table->integer('sort')->default(0);
+                // Store ownership: each brand belongs to exactly one store (1-1).
+                $table->uuid('store_id')->default(1)->index();
                 $table->timestamps();
             }
         );
@@ -41,6 +43,8 @@ return new class extends Migration
                 $table->integer('top')->nullable()->default(0);
                 $table->tinyInteger('status')->default(0);
                 $table->integer('sort')->default(0);
+                // Store ownership: each category belongs to exactly one store (1-1).
+                $table->uuid('store_id')->default(1)->index();
                 $table->timestamps();
             }
         );
@@ -240,6 +244,8 @@ return new class extends Migration
                 $table->string('alias', 120)->index();
                 $table->timestamp('date_lastview', $precision = 0)->nullable();
                 $table->date('date_available')->nullable();
+                // Store ownership: each product belongs to exactly one store (1-1).
+                $table->uuid('store_id')->default(1)->index();
                 $table->timestamps();
             }
         );
@@ -305,6 +311,8 @@ return new class extends Migration
                 $table->string('alias', 120)->unique();
                 $table->tinyInteger('status')->default(1)->index();
                 $table->integer('sort')->default(0);
+                // Store ownership: each product tag belongs to exactly one store (1-1).
+                $table->uuid('store_id')->default(1)->index();
                 $table->timestamps();
             }
         );
@@ -327,6 +335,8 @@ return new class extends Migration
                 $table->tinyInteger('status')->default(0);
                 $table->integer('sort')->default(0);
                 $table->string('type', 50)->comment('radio,select,checkbox');
+                // Store ownership: each attribute group belongs to exactly one store (1-1).
+                $table->uuid('store_id')->default(1)->index();
                 $table->timestamps();
             }
         );
@@ -455,6 +465,8 @@ return new class extends Migration
                 // such as 8.5% or the US 8.375% (modification 20260803T223543, ADR
                 // shop-admin_tax-standardization, decision D1). 8,4 = up to 9999.9999%.
                 $table->decimal('value', 8, 4)->default(0);
+                // Store ownership: each tax rate belongs to exactly one store (1-1).
+                $table->uuid('store_id')->default(1)->index();
                 $table->timestamps();
             }
         );
@@ -476,24 +488,6 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->uuid('product_id');
                 $table->string('path', 255);
-            }
-        );
-        //Multi store
-        $schema->create(
-            GP247_DB_PREFIX.'shop_product_store',
-            function (Blueprint $table) {
-                $table->uuid('product_id');
-                $table->uuid('store_id');
-                $table->primary(['product_id', 'store_id']);
-            }
-        );
-
-        $schema->create(
-            GP247_DB_PREFIX.'shop_category_store',
-            function (Blueprint $table) {
-                $table->uuid('category_id');
-                $table->uuid('store_id');
-                $table->primary(['category_id', 'store_id']);
             }
         );
 
@@ -564,9 +558,6 @@ return new class extends Migration
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_sessions');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_tax');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_download');
-        //Multi store
-        $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_store');
-        $schema->dropIfExists(GP247_DB_PREFIX.'shop_category_store');
-        
+
     }
 };

@@ -24,9 +24,18 @@ class ShopCategory extends Model
     {
         return $this->belongsToMany(ShopProduct::class, GP247_DB_PREFIX . 'shop_product_category', 'category_id', 'product_id');
     }
-    public function stores()
+    /**
+     * The store that owns this category (1-1 ownership).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-store-1to1-schema
+     * @aidlc-adr multi-store_one-to-one-store-ownership
+     */
+    public function store()
     {
-        return $this->belongsToMany(AdminStore::class, ShopCategoryStore::class, 'category_id', 'store_id');
+        return $this->belongsTo(AdminStore::class, 'store_id', 'id');
     }
 
     public function descriptions()
@@ -68,7 +77,6 @@ class ShopCategory extends Model
             //Delete category descrition
             $category->descriptions()->delete();
             $category->products()->detach();
-            $category->stores()->detach();
 
             //Delete custom field
             (new \GP247\Core\Models\AdminCustomFieldDetail)
@@ -136,12 +144,12 @@ class ShopCategory extends Model
             ->where($tableDescription . '.lang', gp247_get_locale());
 
         if (gp247_store_check_multi_store_installed()) {
-            $tableCategoryStore = (new ShopCategoryStore)->getTable();
+            // WHY: 1-1 ownership — filter by the category's own store_id column and
+            // still require the owning store to be active (join admin_store).
             $tableStore = (new AdminStore)->getTable();
-            $category = $category->join($tableCategoryStore, $tableCategoryStore.'.category_id', $this->getTable() . '.id');
-            $category = $category->join($tableStore, $tableStore . '.id', $tableCategoryStore.'.store_id');
+            $category = $category->join($tableStore, $tableStore . '.id', $this->getTable() . '.store_id');
             $category = $category->where($tableStore . '.status', '1');
-            $category = $category->where($tableCategoryStore.'.store_id', $storeId);
+            $category = $category->where($this->getTable() . '.store_id', $storeId);
         }
 
         if ($type === null) {
@@ -229,12 +237,12 @@ class ShopCategory extends Model
         }
 
         if (gp247_store_check_multi_store_installed()) {
-            $tableCategoryStore = (new ShopCategoryStore)->getTable();
+            // WHY: 1-1 ownership — filter by the category's own store_id column and
+            // still require the owning store to be active (join admin_store).
             $tableStore = (new AdminStore)->getTable();
-            $query = $query->join($tableCategoryStore, $tableCategoryStore.'.category_id', $this->getTable() . '.id');
-            $query = $query->join($tableStore, $tableStore . '.id', $tableCategoryStore.'.store_id');
+            $query = $query->join($tableStore, $tableStore . '.id', $this->getTable() . '.store_id');
             $query = $query->where($tableStore . '.status', '1');
-            $query = $query->where($tableCategoryStore.'.store_id', $storeId);
+            $query = $query->where($this->getTable() . '.store_id', $storeId);
         }
 
         $query = $query->where($this->getTable().'.status', 1);

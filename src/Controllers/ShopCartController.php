@@ -751,7 +751,8 @@ class ShopCartController extends RootFrontController
                         ['error' => gp247_language_render('front.data_notfound')]
                     );
             }
-            $storeId = $product->stores()->first()->id; 
+            // WHY: 1-1 ownership — the product's owning store is its scalar store_id.
+            $storeId = $product->store_id;
         } else {
             $storeId = config('app.storeId');
             $product = (new ShopProduct)->getDetail($productId, null, $storeId);

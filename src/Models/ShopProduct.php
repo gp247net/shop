@@ -10,7 +10,6 @@ use GP247\Shop\Models\ShopProductPromotion;
 use GP247\Shop\Models\ShopProductTag;
 use GP247\Shop\Models\ShopTax;
 use GP247\Core\Models\AdminStore;
-use GP247\Shop\Models\ShopProductStore;
 use GP247\Core\Models\AdminCustomFieldDetail;
 use Illuminate\Database\Eloquent\Model;
 
@@ -57,9 +56,18 @@ class ShopProduct extends Model
     {
         return $this->hasMany(ShopProductGroup::class, 'group_id', 'id');
     }
-    public function stores()
+    /**
+     * The store that owns this product (1-1 ownership).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-store-1to1-schema
+     * @aidlc-adr multi-store_one-to-one-store-ownership
+     */
+    public function store()
     {
-        return $this->belongsToMany(AdminStore::class, ShopProductStore::class, 'product_id', 'store_id');
+        return $this->belongsTo(AdminStore::class, 'store_id', 'id');
     }
     public function builds()
     {
@@ -260,7 +268,6 @@ class ShopProduct extends Model
         }
         $storeId = empty($storeId) ? config('app.storeId') : $storeId;
         $tableStore = (new AdminStore)->getTable();
-        $tableProductStore = (new ShopProductStore)->getTable();
 
         // Check store status  = 1
         $store = AdminStore::find($storeId);
@@ -281,19 +288,19 @@ class ShopProduct extends Model
         $product = $this->leftJoin($tableDescription, $tableDescription . '.product_id', $this->getTable() . '.id');
         
         if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) {
-            $dataSelect .= ', '.$tableProductStore.'.store_id';
-            $product = $product->join($tableProductStore, $tableProductStore.'.product_id', $this->getTable() . '.id');
-            $product = $product->join($tableStore, $tableStore . '.id', $tableProductStore.'.store_id');
+            // WHY: 1-1 ownership — the product carries its own store_id column;
+            // join admin_store on it and require the owning store to be active.
+            $product = $product->join($tableStore, $tableStore . '.id', $this->getTable() . '.store_id');
             $product = $product->where($tableStore . '.status', '1');
 
-            if (gp247_store_check_multi_store_installed()  
+            if (gp247_store_check_multi_store_installed()
                 || (
-                    (gp247_store_check_multi_partner_installed()) 
+                    (gp247_store_check_multi_partner_installed())
                     && (!empty($this->gp247_store_info_id) || config('app.storeId') != GP247_STORE_ID_ROOT)
                     )
             ) {
                 //store of vendor
-                $product = $product->where($tableProductStore.'.store_id', $storeId);
+                $product = $product->where($this->getTable() . '.store_id', $storeId);
             }
         }
 
@@ -315,7 +322,7 @@ class ShopProduct extends Model
         $product = $product->selectRaw($dataSelect);
         $product = $product
             ->with('images')
-            ->with('stores')
+            ->with('store')
             ->with('promotionPrice');
         $product = $product->first();
         return $product;
@@ -335,7 +342,6 @@ class ShopProduct extends Model
                 $product->downloadPath()->delete();
                 $product->builds()->delete();
                 $product->categories()->detach();
-                $product->stores()->detach();
                 $product->tags()->detach();
 
                 // Custom field type key is canonically Model::getTable() (prefixed),
@@ -834,28 +840,28 @@ class ShopProduct extends Model
     {
         $tableDescription = (new ShopProductDescription)->getTable();
         $tableStore = (new AdminStore)->getTable();
-        $tableProductStore = (new ShopProductStore)->getTable();
         $storeId = $this->gp247_store_info_id ? $this->gp247_store_info_id : config('app.storeId');
-        
+
         // Start with a subquery to get unique product IDs first
         $subQuery = $this->select($this->getTable().'.id');
-        
+
         // Apply store filters in subquery
         if (gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) {
-            $subQuery = $subQuery->join($tableProductStore, $tableProductStore.'.product_id', $this->getTable() . '.id');
-            $subQuery = $subQuery->join($tableStore, $tableStore . '.id', $tableProductStore.'.store_id');
+            // WHY: 1-1 ownership — join admin_store on the product's own store_id
+            // column and require the owning store to be active.
+            $subQuery = $subQuery->join($tableStore, $tableStore . '.id', $this->getTable() . '.store_id');
             $subQuery = $subQuery->where($tableStore . '.status', '1');
 
             if (gp247_store_check_multi_store_installed()
                 // Multi store
                 || (
                     // Multi vendor and not root store
-                    (gp247_store_check_multi_partner_installed()) 
+                    (gp247_store_check_multi_partner_installed())
                     && (!empty($this->gp247_store_info_id) || config('app.storeId') != GP247_STORE_ID_ROOT)
                     )
             ) {
                 //store of vendor
-                $subQuery = $subQuery->where($tableProductStore.'.store_id', $storeId);
+                $subQuery = $subQuery->where($this->getTable() . '.store_id', $storeId);
             }
 
             if (count($this->gp247_category_vendor) && gp247_store_check_multi_partner_installed()) {
@@ -969,7 +975,7 @@ class ShopProduct extends Model
 
         $query = $query->selectRaw($dataSelect);
         $query = $query->with('promotionPrice');
-        $query = $query->with('stores');
+        $query = $query->with('store');
 
         $query = $this->processMoreQuery($query);
 
@@ -1066,7 +1072,7 @@ class ShopProduct extends Model
             $subPath = 'common.shop_display_store';
             $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'), $subPath);
             gp247_check_view($view);
-            $vendorCode = $this->stores()->first()->code;
+            $vendorCode = $this->store?->code;
             $vendorUrl = $this->goToShop($vendorCode);
             return  view(
                 $view,
