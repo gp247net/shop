@@ -244,12 +244,18 @@ return new class extends Migration
 
         // Only orders that carry a discount and whose lines are still untouched, so a
         // second run — or a run after someone edited an order — changes nothing.
+        // WHY MAX(o.discount): grouping is by o.id, so o.discount is one value per group,
+        // but MariaDB under ONLY_FULL_GROUP_BY does not infer that functional dependency
+        // through the join (unlike MySQL 5.7+) and rejects a bare o.discount with error
+        // 1055. Wrapping it in an aggregate keeps the SQL valid on every engine without
+        // changing the result (all rows in the group share the same order discount).
         $pending = $db->table($orders . ' as o')
             ->join($details . ' as d', 'd.order_id', '=', 'o.id')
             ->where('o.discount', '<>', 0)
             ->groupBy('o.id')
             ->havingRaw('SUM(d.discount) = 0')
-            ->pluck('o.discount', 'o.id');
+            ->select('o.id', DB::raw('MAX(o.discount) as discount'))
+            ->pluck('discount', 'id');
 
         foreach ($pending as $orderId => $discount) {
             $lines = $db->table($details)
