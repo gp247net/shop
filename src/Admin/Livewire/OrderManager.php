@@ -6,6 +6,7 @@ use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
 use GP247\Core\Models\AdminCountry;
 use GP247\Shop\Admin\Livewire\Concerns\HasOrderItems;
 use GP247\Shop\Admin\Models\AdminOrder;
+use GP247\Shop\Models\ShopOrderTransaction;
 use GP247\Shop\Models\ShopOrderStatus;
 use GP247\Shop\Models\ShopPaymentStatus;
 use GP247\Shop\Models\ShopShippingStatus;
@@ -57,8 +58,13 @@ class OrderManager extends ResourcePanel
     /**
      * shop_order_total codes editable via updateTotalRow() — the derived rows
      * (subtotal/tax/total) are recomputed from line items, never set directly.
+     *
+     * `received` is deliberately absent: it is a PAYMENT, not a component of the
+     * order document. Since the payment ledger it is not edited as a figure at all —
+     * money is added with recordPayment()/recordRefund(), one row per movement
+     * (ADR shop-admin_money-sign-convention D3, ADR shop_order-payment-ledger).
      */
-    private const EDITABLE_TOTAL_CODES = ['shipping', 'discount', 'other_fee', 'received'];
+    private const EDITABLE_TOTAL_CODES = ['shipping', 'discount', 'other_fee'];
 
     /** @var string Order-status filter (list). */
     public string $filterStatus = '';
@@ -322,7 +328,52 @@ class OrderManager extends ResourcePanel
 
         $this->refreshItems();
         $this->totals = AdminOrder::getOrderTotal($model->id);
-        $this->history = $model->history()->orderBy('add_date', 'desc')->get()->toArray();
+        $this->history = $this->historyWithActors($model);
+    }
+
+    /**
+     * The order's history, each entry labelled with WHO made the change.
+     *
+     * The timeline used to lead with a raw timestamp (`2026-08-29T10:03:00.000000Z`),
+     * which is the least useful thing an audit line can say: the reader already knows
+     * roughly when, and what they actually need is who. The id was recorded all along —
+     * it simply was never resolved to a name.
+     *
+     * Names are looked up in two batched queries rather than per row, so a long
+     * timeline does not turn into one query per line.
+     *
+     * @param \GP247\Shop\Models\ShopOrder $model The order being viewed.
+     * @return array<int, array<string, mixed>> History rows plus an `actor` label.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-003
+     */
+    private function historyWithActors($model): array
+    {
+        $rows = $model->history()->orderBy('add_date', 'desc')->get();
+
+        $adminIds = $rows->pluck('admin_id')->filter()->unique()->all();
+        $customerIds = $rows->pluck('customer_id')->filter()->unique()->all();
+
+        $admins = $adminIds
+            ? \GP247\Core\Models\AdminUser::whereIn('id', $adminIds)->pluck('name', 'id')->all()
+            : [];
+        $customers = $customerIds
+            ? \GP247\Shop\Models\ShopCustomer::whereIn('id', $customerIds)
+                ->get(['id', 'first_name', 'last_name'])
+                ->pluck('name', 'id')->all()
+            : [];
+
+        return $rows->map(function ($row) use ($admins, $customers) {
+            $entry = $row->toArray();
+            // An admin id wins over a customer id: when both are set the change was made
+            // through the admin screens on the customer's behalf.
+            $entry['actor'] = $admins[$row->admin_id]
+                ?? $customers[$row->customer_id]
+                ?? gp247_language_render('admin.order.history_actor_system');
+
+            return $entry;
+        })->all();
     }
 
     /**
@@ -339,6 +390,50 @@ class OrderManager extends ResourcePanel
         // WHY: root + multi-store manages every store's orders, so the detail
         // must not be store-scoped there (null skips the store_id filter).
         return AdminOrder::getOrderAdmin($this->editingId, $this->showAllStores() ? null : $this->storeId());
+    }
+
+    /**
+     * Refuse a STRUCTURE edit when the order is finalised (Done/Refunded/Canceled).
+     *
+     * Structure = header, line items, fee rows. Changing status (reopening) and
+     * recording payments are NOT structure and go through their own actions
+     * (ADR shop-admin_order-finalized-lock). Notifies and returns false when locked.
+     *
+     * @param \GP247\Shop\Models\ShopOrder $order
+     * @return bool True when the edit may proceed.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-finalized-lock
+     * @aidlc-adr shop-admin_order-finalized-lock
+     */
+    /**
+     * Whether the order being viewed is finalised (for the blade to disable/annotate
+     * structural controls). Reads the loaded form status — no extra query.
+     *
+     * @return bool
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-finalized-lock
+     * @aidlc-adr shop-admin_order-finalized-lock
+     */
+    public function orderIsLocked(): bool
+    {
+        return in_array(
+            (int) ($this->form['status'] ?? 0),
+            [ShopOrderStatus::DONE, ShopOrderStatus::REFUNDED, ShopOrderStatus::CANCELED],
+            true
+        );
+    }
+
+    private function guardEditable($order): bool
+    {
+        if ($order !== null && $order->isLocked()) {
+            $this->notify('error', gp247_language_render('admin.order.locked_no_edit'));
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -375,19 +470,6 @@ class OrderManager extends ResourcePanel
     }
 
     /**
-     * Change the payment status.
-     *
-     * @param int|string $value New payment-status id.
-     * @return void
-     * @throws \GP247\Core\AdminShell\Domain\AuthorizationException When denied.
-     */
-    public function changePaymentStatus($value): void
-    {
-        $this->authorizeAction('update');
-        $this->applyStatusChange('payment_status', (int) $value);
-    }
-
-    /**
      * Change the shipping status.
      *
      * @param int|string $value New shipping-status id.
@@ -401,12 +483,22 @@ class OrderManager extends ResourcePanel
     }
 
     /**
-     * Persist a status-column change, fire the success hooks on the order-status
-     * transition to/from "done" (5), log the change and refresh.
+     * Persist a status-column change, log it and refresh.
+     *
+     * The order-status column delegates to the domain seam
+     * ShopOrder::changeStatus() — stock movement around Canceled, history,
+     * events and the Done(5) hooks all live THERE so the gateway/API paths get
+     * them too (RISK-BIZ-cancel-path-bypass-restock); this component only keeps
+     * the presentation: toast on success, reason toast on refusal.
+     * payment_status/shipping_status carry no side effects and stay local.
      *
      * @param string $column One of status|payment_status|shipping_status.
      * @param int    $value  New status id.
      * @return void
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-cancel-restock
+     * @aidlc-adr shop-admin_order-cancel-vs-delete
      */
     private function applyStatusChange(string $column, int $value): void
     {
@@ -420,21 +512,19 @@ class OrderManager extends ResourcePanel
             return;
         }
 
-        $order->update([$column => $value]);
-
         if ($column === 'status') {
-            // WHY: legacy fires optional template/plugin hooks on the done(5)
-            // transition; call them only when defined (function_exists guard).
-            if ($old !== 5 && $value === 5 && function_exists('gp247_order_success_finish')) {
-                gp247_order_success_finish($this->editingId);
-            }
-            if ($old === 5 && $value !== 5 && function_exists('gp247_order_success_unfinish')) {
-                gp247_order_success_unfinish($this->editingId);
-            }
-        }
+            $blockReason = $order->changeStatus($value, ['admin_id' => $this->adminId()]);
+            if ($blockReason !== null) {
+                $this->notify('error', gp247_language_render($blockReason));
 
-        $content = 'Change <b>' . $column . "</b> from '" . $old . "' to '" . $value . "'";
-        $this->logHistory($content, (int) $order->fresh()->status);
+                return;
+            }
+        } else {
+            $order->update([$column => $value]);
+
+            $content = 'Change <b>' . $column . "</b> from '" . $old . "' to '" . $value . "'";
+            $this->logHistory($content, (int) $order->fresh()->status);
+        }
 
         $this->refreshOrder();
         $this->notify('success', gp247_language_render('action.update_success'));
@@ -492,6 +582,10 @@ class OrderManager extends ResourcePanel
 
         $order = $this->currentOrder();
         if ($order === null) {
+            return;
+        }
+        // Finalised orders are immutable in structure (ADR shop-admin_order-finalized-lock).
+        if (!$this->guardEditable($order)) {
             return;
         }
 
@@ -665,6 +759,10 @@ class OrderManager extends ResourcePanel
         if ($this->editingId === null) {
             return;
         }
+        // Finalised orders are immutable in structure (fee rows included).
+        if (!$this->guardEditable($this->currentOrder())) {
+            return;
+        }
 
         $row = AdminOrder::getRowOrderTotal($rowId);
         if ($row === null
@@ -679,6 +777,19 @@ class OrderManager extends ResourcePanel
         if (!is_numeric($value)) {
             $this->notify('error', gp247_language_render('validation.numeric', [
                 'attribute' => gp247_language_render('order.totals.' . $row->code),
+            ]));
+
+            return;
+        }
+
+        // Money rows hold MAGNITUDES — the sign belongs to the formula, not the data
+        // (ADR shop-admin_money-sign-convention D1). A negative discount used to be the
+        // documented way to enter one; it now means the opposite of what the admin
+        // intends, so refuse it instead of storing a value the totals will misread.
+        if ((float) $value < 0) {
+            $this->notify('error', gp247_language_render('validation.min.numeric', [
+                'attribute' => gp247_language_render('order.totals.' . $row->code),
+                'min' => 0,
             ]));
 
             return;
@@ -705,6 +816,210 @@ class OrderManager extends ResourcePanel
 
         $this->refreshOrder();
         $this->notify('success', gp247_language_render('action.update_success'));
+    }
+
+    /**
+     * Record money collected on the order.
+     *
+     * Note what changed with the payment ledger: this is no longer "set the received
+     * figure" but "record a payment of this amount". The distinction matters — a
+     * customer paying twice produces two rows with two dates, which is what makes
+     * cash-flow reporting by payment date, and partial refunds, possible at all
+     * (ADR shop_order-payment-ledger).
+     *
+     * @param mixed       $value  Amount collected (numeric, > 0).
+     * @param string|null $paidAt Date the money moved (Y-m-d or datetime); defaults to now.
+     * @param string|null $method Payment method label; defaults to the order's own.
+     * @return void
+     * @throws \GP247\Core\AdminShell\Domain\AuthorizationException When denied.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-payment-ledger
+     * @aidlc-adr shop_order-payment-ledger
+     */
+    public function recordPayment($value, ?string $paidAt = null, ?string $method = null): void
+    {
+        $this->authorizeAction('update');
+
+        if ($this->editingId === null) {
+            return;
+        }
+
+        $label = gp247_language_render('order.totals.received');
+
+        if (!is_numeric($value)) {
+            $this->notify('error', gp247_language_render('validation.numeric', ['attribute' => $label]));
+
+            return;
+        }
+
+        // Money is a magnitude here as everywhere else; a refund is its own action, not
+        // a negative payment (ADR shop-admin_money-sign-convention D1).
+        $amount = (float) $value;
+        if ($amount <= 0) {
+            $this->notify('error', gp247_language_render('validation.min.numeric', [
+                'attribute' => $label,
+                'min' => 0,
+            ]));
+
+            return;
+        }
+
+        $order = $this->currentOrder();
+        if ($order === null) {
+            return;
+        }
+
+        if ($this->periodIsClosed($paidAt)) {
+            return;
+        }
+
+        $movement = $order->recordPayment(
+            $amount,
+            $method ?: ($order->payment_method ?: null),
+            null,
+            $paidAt ?: null,
+            null,
+            $this->adminId() ?: null
+        );
+
+        if ($movement === null) {
+            return;
+        }
+
+        $this->logHistory(
+            'Payment recorded: ' . $amount . ' (' . ($movement->paid_at ?? '') . ')',
+            (int) ($order->status ?? 0),
+        );
+
+        $this->refreshOrder();
+        $this->notify('success', gp247_language_render('action.update_success'));
+    }
+
+    /**
+     * Record money given back to the customer.
+     *
+     * @param mixed       $value  Amount refunded (numeric, > 0).
+     * @param string|null $paidAt
+     * @param string|null $method
+     * @return void
+     * @throws \GP247\Core\AdminShell\Domain\AuthorizationException When denied.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-payment-ledger
+     */
+    public function recordRefund($value, ?string $paidAt = null, ?string $method = null): void
+    {
+        $this->authorizeAction('update');
+
+        if ($this->editingId === null) {
+            return;
+        }
+
+        $label = gp247_language_render('order.totals.received');
+
+        if (!is_numeric($value) || (float) $value <= 0) {
+            $this->notify('error', gp247_language_render('validation.numeric', ['attribute' => $label]));
+
+            return;
+        }
+
+        $order = $this->currentOrder();
+        if ($order === null) {
+            return;
+        }
+
+        if ($this->periodIsClosed($paidAt)) {
+            return;
+        }
+
+        $movement = $order->recordRefund(
+            (float) $value,
+            $method ?: ($order->payment_method ?: null),
+            null,
+            $paidAt ?: null,
+            null,
+            $this->adminId() ?: null
+        );
+
+        if ($movement === null) {
+            return;
+        }
+
+        $this->logHistory(
+            'Refund recorded: ' . (float) $value . ' (' . ($movement->paid_at ?? '') . ')',
+            (int) ($order->status ?? 0),
+        );
+
+        $this->refreshOrder();
+        $this->notify('success', gp247_language_render('action.update_success'));
+    }
+
+    /**
+     * Refuse to move money into an accounting period the books are closed on.
+     *
+     * WHY function_exists and not a dependency: period closing belongs to the InOut
+     * accounting plugin, which core must not require — a shop without it simply has no
+     * closed periods. The same soft-dependency shape core already uses for
+     * gp247_order_success_finish() and the multi-store checks.
+     *
+     * WHY only here and not inside ShopOrder::recordPayment(): this guards a person
+     * typing into a screen. A gateway callback reports money that has ALREADY moved —
+     * refusing to record it would not un-take the customer's money, it would just leave
+     * the books missing a payment that exists.
+     *
+     * @param string|null $paidAt Date the money moved; today when omitted.
+     * @return bool True when the entry was refused (and the admin told why).
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-inout-revenue-by-payment-date
+     * @aidlc-adr shop_order-payment-ledger
+     */
+    private function periodIsClosed(?string $paidAt): bool
+    {
+        if (!function_exists('inout_check_period_closed')) {
+            return false;
+        }
+
+        $date = $paidAt ?: date('Y-m-d');
+        $storeId = $this->storeId();
+
+        if (!inout_check_period_closed($storeId, $date)) {
+            return false;
+        }
+
+        $this->notify('error', gp247_language_render('Plugins/InOut::lang.period_closed_error'));
+
+        return true;
+    }
+
+    /**
+     * The order's payment history, newest first, for the detail screen.
+     *
+     * @return array<int, array<string, mixed>>
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-payment-ledger
+     */
+    public function paymentHistory(): array
+    {
+        if ($this->editingId === null) {
+            return [];
+        }
+
+        return ShopOrderTransaction::where('order_id', $this->editingId)
+            ->orderBy('paid_at', 'desc')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => (string) $row->id,
+                'type' => (string) $row->type,
+                'amount' => (float) $row->amount,
+                'method' => (string) ($row->method ?? ''),
+                'gateway_transaction_id' => (string) ($row->gateway_transaction_id ?? ''),
+                'paid_at' => $row->paid_at ? $row->paid_at->format('Y-m-d H:i') : '',
+                'note' => (string) ($row->note ?? ''),
+            ])
+            ->all();
     }
 
     // --- Invoice / email (reuse existing helpers) --------------------------
@@ -783,6 +1098,36 @@ class OrderManager extends ResourcePanel
     protected function persist(array $data): void
     {
         // No-op — see changeOrderStatus()/saveItem().
+    }
+
+    /**
+     * Delete an order, refusing outright when money has been recorded against it.
+     *
+     * WHY override delete() rather than deleteModel(): the base ResourcePanel shows a
+     * success notice as soon as deleteModel() returns, so a delete the model guard
+     * silently refused would still read as "deleted" — the admin would walk away
+     * believing the order is gone. Intercepting here reports the reason and skips the
+     * success path; ShopOrder::deleting stays the backstop for every other caller.
+     *
+     * @param int|string $id
+     * @return void
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-delete-money-guard
+     * @aidlc-adr shop-admin_order-delete-money-guard
+     */
+    public function delete($id): void
+    {
+        $this->authorizeAction('delete');
+
+        $model = $this->baseQuery()->find($id);
+        if ($model !== null && ($reason = $model->deleteBlockReason()) !== null) {
+            $this->notify('error', gp247_language_render('admin.order.delete_blocked_' . $reason));
+
+            return;
+        }
+
+        parent::delete($id);
     }
 
     /**

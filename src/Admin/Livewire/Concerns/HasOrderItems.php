@@ -374,6 +374,10 @@ trait HasOrderItems
         if ($this->editingId === null) {
             return;
         }
+        // Finalised orders are immutable in structure (ADR shop-admin_order-finalized-lock).
+        if (!$this->guardEditable($this->currentOrder())) {
+            return;
+        }
 
         // WHY: qty format (integer|numeric) is config-driven — product_qty_decimal
         // (modification 20260705T093328, ADR-016); gt:0 stays on top of it.
@@ -435,6 +439,35 @@ trait HasOrderItems
     }
 
     /**
+     * The tax RATE implied by an amount an admin typed for a line.
+     *
+     * Industry practice says tax is a result, not an input — but the amount field is a
+     * capability admins use, and removing it would take something away without offering
+     * a replacement. So the typed amount is kept and reinterpreted: it fixes the rate,
+     * and the rate is what survives. From then on the figure moves with its base, which
+     * is what a tax does; a charge that must NOT move when a discount is applied is an
+     * `other_fee`, not a tax (ADR shop-admin_order-discount-pre-tax D6).
+     *
+     * @param float $tax        Amount the admin typed.
+     * @param float $lineTotal  Gross line amount.
+     * @param float $discount   Discount already allocated to the line.
+     * @return float Rate as a percent; 0 when there is no base to divide by.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-discount-pre-tax
+     * @aidlc-adr shop-admin_order-discount-pre-tax
+     */
+    private function rateFromTypedTax(float $tax, float $lineTotal, float $discount = 0): float
+    {
+        $base = $lineTotal - $discount;
+        if ($base <= 0) {
+            return 0.0;
+        }
+
+        return round($tax / $base * 100, 2);
+    }
+
+    /**
      * Update an existing line item (reusing legacy stock/total recalculation).
      *
      * @param array<string, mixed> $clean Sanitised item form.
@@ -455,6 +488,10 @@ trait HasOrderItems
 
         $oldQty = (float) $detail->qty;
         $delta = $qty - $oldQty;
+        // Capture old values for the audit diff (US-SADM-order-audit-trail AC2);
+        // $detail still holds them because updateDetail() writes the DB, not this instance.
+        $oldPrice = (float) $detail->price;
+        $oldTax = (float) $detail->tax;
 
         // WHY: unified hard block (ADR shop-admin_order-stock-parity, revised
         // 2026-08-16) — when increasing qty beyond stock, reject BEFORE writing /
@@ -469,23 +506,47 @@ trait HasOrderItems
             }
         }
 
+        // WHY move stock before the detail write: the atomic updateStock() can still
+        // refuse when a concurrent order consumed the stock between the pre-check above
+        // and here (ADR compat-foundation_atomic-stock-movement). Decrement first, and
+        // only write the line if it succeeded — otherwise the line would show the new
+        // qty while inventory never moved.
+        if ($qty !== $oldQty) {
+            if (!ShopProduct::updateStock($detail->product_id, $delta)) {
+                $this->notify('error', gp247_language_render('cart.item_over_qty', ['sku' => $detail->sku, 'qty' => $qty]));
+
+                return false;
+            }
+        }
+
         (new ShopOrderDetail)->updateDetail($detail->id, [
             'qty' => $qty,
             'price' => $price,
             'tax' => $tax,
+            // Store the rate the typed amount implies, so the figure follows its base
+            // when the discount is (re)allocated a moment later in updateSubTotal().
+            'tax_rate' => $this->rateFromTypedTax($tax, $qty * $price, (float) $detail->discount),
             'total_price' => $qty * $price,
             'attribute' => $attribute,
         ]);
 
-        // WHY: keep inventory in sync with the qty delta, as the legacy edit does.
-        if ($qty !== $oldQty) {
-            ShopProduct::updateStock($detail->product_id, $delta);
+        // Record the actual changes, not just the id (US-SADM-order-audit-trail AC2):
+        // "Edit product #id: qty 2→3, price 50→60" — only fields that changed.
+        $changes = [];
+        if ($qty != $oldQty) {
+            $changes[] = 'qty ' . $oldQty . '→' . $qty;
         }
-
-        $this->logHistory(
-            gp247_language_render('product.edit_product') . ' #' . $detail->id,
-            $this->currentOrder()->status ?? 0,
-        );
+        if ((float) $price != $oldPrice) {
+            $changes[] = 'price ' . $oldPrice . '→' . $price;
+        }
+        if ((float) $tax != $oldTax) {
+            $changes[] = 'tax ' . $oldTax . '→' . $tax;
+        }
+        $summary = gp247_language_render('product.edit_product') . ' #' . $detail->id;
+        if ($changes !== []) {
+            $summary .= ': ' . implode(', ', $changes);
+        }
+        $this->logHistory($summary, $this->currentOrder()->status ?? 0);
 
         return true;
     }
@@ -548,6 +609,9 @@ trait HasOrderItems
             'price' => $price,
             'total_price' => $qty * $price,
             'tax' => $tax,
+            // A new line carries no discount share yet — the allocation runs right after,
+            // in updateSubTotal(), and will re-tax this line on whatever it receives.
+            'tax_rate' => $this->rateFromTypedTax($tax, $qty * $price),
             'attribute' => $attribute,
             'currency' => $order->currency,
             'exchange_rate' => $order->exchange_rate,
@@ -575,6 +639,10 @@ trait HasOrderItems
         if ($this->editingId === null) {
             return;
         }
+        // Finalised orders are immutable in structure (ADR shop-admin_order-finalized-lock).
+        if (!$this->guardEditable($this->currentOrder())) {
+            return;
+        }
 
         $detail = ShopOrderDetail::where('id', $id)->where('order_id', $this->editingId)->first();
         if ($detail === null) {
@@ -582,6 +650,9 @@ trait HasOrderItems
         }
 
         $productId = $detail->product_id;
+        // Capture qty/price for the audit line before the row goes (US-SADM-order-audit-trail).
+        $removedQty = (float) $detail->qty;
+        $removedPrice = (float) $detail->price;
 
         // Eloquent delete() triggers ShopOrderDetail::boot() deleting,
         // which calls ShopProduct::updateStock() to restore stock.
@@ -592,7 +663,12 @@ trait HasOrderItems
 
         AdminOrder::updateSubTotal($this->editingId);
 
-        $this->logHistory('Remove item pID#' . $productId, $this->currentOrder()->status ?? 0);
+        // Record what was removed, not just the id (US-SADM-order-audit-trail AC2).
+        // Float interpolation renders cleanly (2.0 → "2", 50.5 → "50.5").
+        $this->logHistory(
+            'Remove item pID#' . $productId . ' (qty ' . $removedQty . ' @ ' . $removedPrice . ')',
+            $this->currentOrder()->status ?? 0
+        );
         $this->refreshOrder();
         $this->notify('success', gp247_language_render('action.update_success'));
     }

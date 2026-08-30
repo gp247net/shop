@@ -466,28 +466,89 @@ class ShopProduct extends Model
         return -1;
     }
 
-    /*
-    Upate stock, sold
-    */
-    public static function updateStock($product_id, $qty_change)
+    /**
+     * Move stock and sold for a product by an ATOMIC conditional UPDATE.
+     *
+     * WHY not read-modify-write: the previous version loaded stock into PHP,
+     * subtracted, and saved. With no row lock, two concurrent orders could both
+     * pass hasStockForOrder() and oversell, or both read 10 and write 9 (a lost
+     * update that also corrupted `sold`) — RISK-TECH-stock-race-condition. The
+     * decrement now runs as one `UPDATE ... SET stock = stock - ? WHERE stock >= ?`,
+     * so the shortage check happens at write time, atomically, and `sold` can no
+     * longer be lost. hasStockForOrder() stays a UX pre-check; enforcement lives
+     * here (ADR compat-foundation_atomic-stock-movement).
+     *
+     * @param int|string $product_id Product to adjust.
+     * @param float|int   $qty_change Positive = sell (decrement stock); negative = return.
+     * @return bool True when applied; false when a guarded decrement found no stock
+     *              (caller inside a transaction should throw to roll back).
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-atomic-stock-movement
+     * @aidlc-adr compat-foundation_atomic-stock-movement
+     */
+    public static function updateStock($product_id, $qty_change): bool
     {
-        $item = self::find($product_id);
-        if ($item) {
-            $item->stock = $item->stock - $qty_change;
-            $item->sold = $item->sold + $qty_change;
-            $item->save();
+        $qtyChange = (float) $qty_change;
+        $storeId = config('app.storeId');
 
-            //Process build
-            $product = self::find($product_id);
-            if ($product->kind == GP247_PRODUCT_BUILD) {
-                foreach ($product->builds as $key => $build) {
-                    $productBuild = $build->product;
-                    $productBuild->stock -= $qty_change * $build->quantity;
-                    $productBuild->sold += $qty_change * $build->quantity;
-                    $productBuild->save();
+        // Enforce availability only when DECREMENTING and the shop both manages
+        // stock and forbids overselling — same predicate as hasStockForOrder().
+        $enforce = $qtyChange > 0
+            && !gp247_config('product_buy_out_of_stock', $storeId)
+            && !empty(gp247_config('product_stock', $storeId));
+
+        if (!self::applyStockDelta($product_id, $qtyChange, $enforce)) {
+            return false;
+        }
+
+        // Build product: each component moves by qty × its build quantity, under
+        // the same atomic rule. A short component fails the whole call so a
+        // transactional caller rolls the order back.
+        $product = self::find($product_id);
+        if ($product && $product->kind == GP247_PRODUCT_BUILD) {
+            foreach ($product->builds as $build) {
+                $component = $build->product;
+                if ($component === null) {
+                    continue;
+                }
+                if (!self::applyStockDelta($component->id, $qtyChange * (float) $build->quantity, $enforce)) {
+                    return false;
                 }
             }
         }
+
+        return true;
+    }
+
+    /**
+     * Apply one atomic stock/sold delta to a single product row.
+     *
+     * @param int|string $product_id Product row to update.
+     * @param float       $qtyChange  Positive decrements stock; negative returns it.
+     * @param bool        $enforce    Add `WHERE stock >= qty` so a shortage writes nothing.
+     * @return bool True when a row was updated; false when the guard blocked it.
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-atomic-stock-movement
+     */
+    private static function applyStockDelta($product_id, float $qtyChange, bool $enforce): bool
+    {
+        // Our own cast float rendered as a plain decimal literal (dot separator, no
+        // thousands, no scientific notation) — safe to inline in the raw expression.
+        $q = number_format($qtyChange, 4, '.', '');
+
+        $query = self::where('id', $product_id);
+        if ($enforce) {
+            $query->where('stock', '>=', $qtyChange);
+        }
+
+        $affected = $query->update([
+            'stock' => \DB::raw('stock - ' . $q),
+            'sold' => \DB::raw('sold + ' . $q),
+        ]);
+
+        return $affected > 0;
     }
 
     /**
@@ -1015,9 +1076,20 @@ class ShopProduct extends Model
     }
 
     /**
-     * Get tax ID
+     * Resolve the effective tax-class id of this product.
      *
-     * @return  [type]  [return description]
+     * Semantics of the tax_id column: 0 = tax free, 'auto' = the shop-wide
+     * default class, any other value = a specific class that must still exist.
+     *
+     * WHY getArrayId() and not getListAll(): getListAll() returns a plain array
+     * padded with the pseudo keys 'none'/'auto' for admin dropdowns — calling
+     * Collection methods on it was a fatal, and its pseudo keys are not valid
+     * tax ids anyway (RISK-TECH-tax-list-type-mismatch).
+     *
+     * @return int|string Tax-class id, or 0 when tax is off / class missing.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-product-tax-resolution
      */
     public function getTaxId()
     {
@@ -1026,11 +1098,10 @@ class ShopProduct extends Model
         }
         if ($this->tax_id == 'auto') {
             return ShopTax::checkStatus();
-        } else {
-            $arrTaxList = ShopTax::getListAll();
-            if ($this->tax_id == 0 || !$arrTaxList->has($this->tax_id)) {
-                return 0;
-            }
+        }
+        // Loose in_array on purpose: the column is a string ('3'), ids are ints.
+        if ($this->tax_id == 0 || !in_array($this->tax_id, ShopTax::getArrayId())) {
+            return 0;
         }
         return $this->tax_id;
     }

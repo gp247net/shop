@@ -30,6 +30,15 @@
     </div>
 </div>
 
+@if ($this->orderIsLocked())
+    {{-- Finalised order: structural edits are refused server-side; tell the admin why
+         and what to do (ADR shop-admin_order-finalized-lock). --}}
+    <div data-testid="shop-admin-order-locked-notice"
+        class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+        <i class="fas fa-lock"></i> {{ gp247_language_render('admin.order.locked_no_edit') }}
+    </div>
+@endif
+
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     {{-- Left: customer info + line items (products) — mirror the create-order screen. --}}
     <div class="space-y-6">
@@ -224,11 +233,13 @@
                 </div>
                 <div>
                     <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">{{ gp247_language_render('order.payment_status') }}</label>
-                    <select wire:change="changePaymentStatus($event.target.value)" class="{{ $inputCls }}">
-                        @foreach ($this->paymentStatusOptions() as $id => $name)
-                            <option value="{{ $id }}" @selected((int) ($form['payment_status'] ?? 0) === (int) $id)>{{ $name }}</option>
-                        @endforeach
-                    </select>
+                    {{-- Read-only: payment_status is DERIVED from the payment ledger
+                         (ShopPaymentStatus::deriveFrom); setting it by hand was overwritten
+                         on the next recalc (ADR shop-admin_order-finalized-lock). --}}
+                    <span data-testid="shop-admin-order-payment-status-badge"
+                        class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                        {{ $this->paymentStatusOptions()[(int) ($form['payment_status'] ?? 0)] ?? ($form['payment_status'] ?? '') }}
+                    </span>
                 </div>
                 <div>
                     <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">{{ gp247_language_render('order.shipping_status') }}</label>

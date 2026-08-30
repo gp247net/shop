@@ -286,6 +286,7 @@ class ShopCurrency extends Model
         $dataReturn = [];
         $sumSubtotal  = 0;
         $sumSubtotalWithTax  = 0;
+        $lines = [];
         foreach ($dataCheckout as $item) {
             // WHY: session('dataCheckout') is read straight from the session, not
             // via Cart::content(), so when session.serialization = json it comes
@@ -304,10 +305,16 @@ class ShopCurrency extends Model
                 $lineTax = gp247_line_tax($priceConverted, $item->qty, $product->getTaxValue());
                 $sumSubtotal += $lineSubtotal;
                 $sumSubtotalWithTax += $lineSubtotal + $lineTax;
+                // Per-line figures so a discount can be split across the lines and the
+                // tax recomputed on what is left of each one. The two sums above cannot
+                // answer that: with more than one tax rate in the cart there is no way
+                // back from a total to the parts (ADR shop-admin_order-discount-pre-tax).
+                $lines[] = ['subtotal' => $lineSubtotal, 'rate' => (float) $product->getTaxValue()];
             }
         }
         $dataReturn['subTotal'] = $sumSubtotal;
         $dataReturn['subTotalWithTax'] = $sumSubtotalWithTax;
+        $dataReturn['lines'] = $lines;
         return $dataReturn;
     }
 

@@ -3,7 +3,10 @@
 namespace GP247\Shop\Admin\Models;
 
 use GP247\Shop\Models\ShopOrder;
+use GP247\Shop\Models\ShopOrderStatus;
 use GP247\Shop\Models\ShopOrderTotal;
+use GP247\Shop\Models\ShopOrderTransaction;
+use GP247\Shop\Models\ShopPaymentStatus;
 use Cache;
 
 class AdminOrder extends ShopOrder
@@ -157,50 +160,43 @@ class AdminOrder extends ShopOrder
         $upField->updated_at = gp247_time_now();
         $upField->save();
         $order_id = $upField->order_id;
+        $order = ShopOrder::find($order_id);
 
         //Sum value item order total
+        // WHY ShopOrderTotal::signOf(): the sign of every component is declared once,
+        // in SIGN_MAP, and the stored values are non-negative magnitudes
+        // (ADR shop-admin_money-sign-convention D1/D2). Before this contract the sum
+        // added `discount` raw — correct only while discounts happened to be stored
+        // negative, which admin-created orders never did, silently turning a discount
+        // into a surcharge on the first edit (RISK-BIZ-order-sign-split).
         $totalData = ShopOrderTotal::where('order_id', $order_id)->get();
-        $total = $discount = $shipping = $received = $other_fee = 0;
-        foreach ($totalData as $key => $value) {
-            if ($value['code'] === 'subtotal') {
-                $total += $value['value'];
-            }
-            if ($value['code'] === 'tax') {
-                $total += $value['value'];
-            }
-            if ($value['code'] === 'discount') {
+        $discount = $shipping = $other_fee = 0;
+        foreach ($totalData as $value) {
+            $code = $value['code'];
+            if ($code === 'discount') {
                 $discount += $value['value'];
-                $total += $value['value'];
-            }
-            if ($value['code'] === 'other_fee') {
+            } elseif ($code === 'other_fee') {
                 $other_fee += $value['value'];
-                $total += $value['value'];
-            }
-            if ($value['code'] === 'shipping') {
+            } elseif ($code === 'shipping') {
                 $shipping += $value['value'];
-                $total += $value['value'];
             }
-            if ($value['code'] === 'received') {
-                $received += $value['value'];
-            }
+            // subtotal/tax/total are derived from the lines, and any legacy `received`
+            // row is a payment, not a component of the document (D3).
         }
 
-        //Update total
-        $updateTotal = ShopOrderTotal::where('order_id', $order_id)
-            ->where('code', 'total')
-            ->first();
-        $updateTotal->value = $total;
-        $updateTotal->save();
-
-        //Update Order
-        $order = ShopOrder::find($order_id);
+        //Update Order — only the components an admin edits directly
         $order->discount = $discount;
         $order->shipping = $shipping;
         $order->other_fee = $other_fee;
-        $order->received = $received;
-        $order->balance = $total + $received;
-        $order->total = $total;
         $order->save();
+
+        // Everything downstream of those components is recomputed by the one path that
+        // owns it. Editing the discount now has to reach the LINES — it changes the
+        // taxable base of every one of them — and this method never touched
+        // shop_order_detail before. Delegating rather than re-deriving the total here is
+        // also what keeps the two recalculation paths from drifting apart
+        // (ADR shop-admin_order-discount-pre-tax D7).
+        self::updateSubTotal($order_id);
     }
 
 
@@ -213,29 +209,36 @@ class AdminOrder extends ShopOrder
     {
         try {
             $order = self::getOrderAdmin($orderId);
-            $details = $order->details;
-            $tax = $subTotal = 0;
-            if ($details->count()) {
-                foreach ($details as $detail) {
-                    $tax +=$detail->tax;
-                    $subTotal +=$detail->total_price;
-                }
-            }
+            // Discount comes off the lines BEFORE tax is charged on what remains, and the
+            // per-line shares are rewritten here rather than read: this method runs on
+            // every line edit, so an allocation that accumulated would drift silently
+            // (ADR shop-admin_order-discount-pre-tax D7/D8).
+            $sums = ShopOrder::find($orderId)->reallocateDiscountAndTax();
+            $subTotal = $sums['subtotal'];
+            $tax = $sums['tax'];
             $order->subtotal = $subTotal;
             $order->tax = $tax;
-            $total = $subTotal + $tax + $order->discount + $order->shipping;
-            $balance = $total + $order->received;
-            $payment_status = 0;
-            if ($balance == $total) {
-                $payment_status = ShopOrderTotal::NOT_YET_PAY; //Not pay
-            } elseif ($balance < 0) {
-                $payment_status = ShopOrderTotal::NEED_REFUND; //Need refund
-            } elseif ($balance == 0) {
-                $payment_status = ShopOrderTotal::PAID; //Paid
-            } else {
-                $payment_status = ShopOrderTotal::PART_PAY; //Part pay
-            }
-            $order->payment_status = $payment_status;
+            // The cap can lower the stored discount (a discount typed larger than the
+            // cart), so write back what was actually applied — otherwise the order would
+            // keep rendering a figure the totals no longer use (F17).
+            $order->discount = $sums['discount'];
+            // WHY this shape: the one formula of the sign contract — every column is a
+            // non-negative magnitude and the sign is applied here, once
+            // (ADR shop-admin_money-sign-convention D2). `other_fee` joins the sum: it
+            // was silently dropped before, so editing a line erased any surcharge.
+            // `received` stays OUT of the total and only drives the balance (D3).
+            // Read from the LEDGER, not the column: the column is a cache of
+            // Σ payment − Σ refund, and re-deriving here means a cache that drifted for
+            // any reason is corrected on the next recalculation rather than propagated
+            // (ADR shop_order-payment-ledger D2, RISK-TECH-received-derivation-drift).
+            $received = ShopOrderTransaction::netReceived($orderId);
+            $order->received = $received;
+            $total = $subTotal + $tax + $order->shipping + $order->other_fee - $order->discount;
+            $balance = $total - $received;
+            // The branch itself lives in ShopPaymentStatus::deriveFrom() — one copy for
+            // every writer (updateSubTotal, postCreate, and the payment ledger), so a
+            // rule change lands everywhere at once (NFR-MAINT-status-enum-single-source).
+            $order->payment_status = ShopPaymentStatus::deriveFrom($received, $balance);
             $order->total = $total;
             $order->balance = $balance;
             $order->save();
@@ -260,6 +263,17 @@ class AdminOrder extends ShopOrder
             ->first();
             $updateSubTotal->value = $tax;
             $updateSubTotal->save();
+
+            // Keep the discount ROW in step when the cap lowered it: the row is what the
+            // detail screen and the invoice print, so leaving it showing a figure the
+            // totals no longer use would make the document contradict itself.
+            $discountRow = ShopOrderTotal::where('order_id', $orderId)
+                ->where('code', 'discount')
+                ->first();
+            if ($discountRow !== null && (float) $discountRow->value != $sums['discount']) {
+                $discountRow->value = $sums['discount'];
+                $discountRow->save();
+            }
 
             return 1;
         } catch (\Throwable $e) {
@@ -297,40 +311,98 @@ class AdminOrder extends ShopOrder
     }
     
     /**
-     * Get Sum order total In Year
+     * Dashboard revenue by month over the last 12 months — "order value placed".
      *
-     * @return  [type]  [return description]
+     * Semantics (ADR shop-admin_revenue-semantics): the VALUE OF ORDERS PLACED, by
+     * placed date (created_at), converted to base. It deliberately differs from the
+     * per-currency completed-order report and the InOut cash book (money collected by
+     * paid_at) — each screen declares what it measures.
+     *
+     * Fixes three real bugs (modification 20260830T120405):
+     *  - excludes Canceled/Failed (used to count them);
+     *  - COALESCE(NULLIF(exchange_rate,0),1) so an order with a missing rate is not
+     *    dropped by `total/NULL = NULL` (base orders are rate 1 — a deliberate default,
+     *    not a guessed rate);
+     *  - store scope (root sees all; a specific store filters), parity with OrderManager.
+     *
+     * @param int|string|null $storeId Null/root = all stores; otherwise this store only.
+     * @return \Illuminate\Support\Collection
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-revenue-semantics
+     * @aidlc-adr shop-admin_revenue-semantics
      */
-    public static function getSumOrderTotalInYear()
+    public static function getSumOrderTotalInYear($storeId = null)
     {
-        return self::selectRaw('DATE_FORMAT(created_at, "%Y-%m") AS ym, SUM(total/exchange_rate) AS total_amount')
-            ->whereRaw('DATE_FORMAT(created_at, "%Y-%m") >=  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH), "%Y-%m")')
-            ->groupBy('ym')->get();
+        return self::scopePlacedRevenue(
+            self::selectRaw('DATE_FORMAT(created_at, "%Y-%m") AS ym, SUM(total/COALESCE(NULLIF(exchange_rate,0),1)) AS total_amount')
+                ->whereRaw('DATE_FORMAT(created_at, "%Y-%m") >=  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH), "%Y-%m")'),
+            $storeId
+        )->groupBy('ym')->get();
     }
 
     /**
-     * Get count order in Year
+     * Dashboard order count by month — same scope as getSumOrderTotalInYear so the
+     * "count" and "revenue" series line up (excludes Canceled/Failed, store-scoped).
      *
-     * @return  [type]  [return description]
+     * @param int|string|null $storeId Null/root = all stores; otherwise this store only.
+     * @return \Illuminate\Support\Collection
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-revenue-semantics
+     * @aidlc-adr shop-admin_revenue-semantics
      */
-    public static function getCountOrderTotalInYear()
+    public static function getCountOrderTotalInYear($storeId = null)
     {
-        return self::selectRaw('DATE_FORMAT(created_at, "%Y-%m") AS ym, count(*) AS count')
-            ->whereRaw('DATE_FORMAT(created_at, "%Y-%m") >=  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH), "%Y-%m")')
-            ->groupBy('ym')->get();
+        return self::scopePlacedRevenue(
+            self::selectRaw('DATE_FORMAT(created_at, "%Y-%m") AS ym, count(*) AS count')
+                ->whereRaw('DATE_FORMAT(created_at, "%Y-%m") >=  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH), "%Y-%m")'),
+            $storeId
+        )->groupBy('ym')->get();
     }
 
     /**
-     * Get Sum order total In month
+     * Dashboard revenue by day over the last month — "order value placed".
+     * Same semantics and fixes as getSumOrderTotalInYear.
      *
-     * @return  [type]  [return description]
+     * @param int|string|null $storeId Null/root = all stores; otherwise this store only.
+     * @return \Illuminate\Support\Collection
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-revenue-semantics
+     * @aidlc-adr shop-admin_revenue-semantics
      */
-    public static function getSumOrderTotalInMonth()
+    public static function getSumOrderTotalInMonth($storeId = null)
     {
-        return self::selectRaw('DATE_FORMAT(created_at, "%m-%d") AS md,
-        SUM(total/exchange_rate) AS total_amount, count(id) AS total_order')
-            ->whereRaw('created_at >=  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), "%Y-%m-%d")')
-            ->groupBy('md')->get();
+        return self::scopePlacedRevenue(
+            self::selectRaw('DATE_FORMAT(created_at, "%m-%d") AS md,
+            SUM(total/COALESCE(NULLIF(exchange_rate,0),1)) AS total_amount, count(id) AS total_order')
+                ->whereRaw('created_at >=  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), "%Y-%m-%d")'),
+            $storeId
+        )->groupBy('md')->get();
+    }
+
+    /**
+     * Apply the shared "placed revenue" scope: exclude Canceled/Failed, and filter by
+     * store when a non-root store is given (root/null sees all — parity with OrderManager).
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int|string|null $storeId
+     * @return \Illuminate\Database\Eloquent\Builder
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-revenue-semantics
+     */
+    private static function scopePlacedRevenue($query, $storeId)
+    {
+        $query->whereNotIn('status', [ShopOrderStatus::CANCELED, ShopOrderStatus::FAILED]);
+
+        $root = defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1;
+        if ($storeId !== null && (string) $storeId !== (string) $root) {
+            $query->where('store_id', $storeId);
+        }
+
+        return $query;
     }
 
 

@@ -24,7 +24,11 @@ Route::group(
             ->name('checkout');
 
         //Checkout process, from screen checkout to checkout confirm
+        // throttle: coarse flood guard on the money-moving POSTs (RateLimiter uses the
+        // default cache store, shared-host safe). Idempotency proper is the
+        // checkout_token unique index (US-LW-checkout-idempotency).
         $router->post('/checkout-process', $cartController.'@processCheckout')
+            ->middleware('throttle:20,1')
             ->name('checkout.process');
 
         //Checkout process, from screen checkout confirm to order
@@ -33,6 +37,7 @@ Route::group(
 
         //Add order
         $router->post('/order-add', $cartController.'@addOrder')
+            ->middleware('throttle:10,1')
             ->name('order.add');
 
         //Order success

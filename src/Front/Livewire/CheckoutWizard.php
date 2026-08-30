@@ -332,6 +332,14 @@ class CheckoutWizard extends BaseFrontComponent
     {
         $objects = ShopOrderTotal::getObjectOrderTotal();
         session(['dataTotal' => ShopOrderTotal::processDataTotal($objects)]);
+
+        // Stamp one idempotency token for this checkout session (mirrors the plain
+        // controller confirm step). Both paths guard on absence, so whichever runs
+        // first stamps and the other no-ops; prepareCheckout()/clearSession() rotate
+        // it (US-LW-checkout-idempotency, ADR storefront_checkout-idempotency).
+        if (!session('checkoutToken')) {
+            session(['checkoutToken' => gp247_token(32)]);
+        }
     }
 
     /**

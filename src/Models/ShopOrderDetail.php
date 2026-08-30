@@ -48,8 +48,12 @@ class ShopOrderDetail extends Model
             $this->insert($data);
             //Update stock, sold
             foreach ($data as $key => $item) {
-                //Update stock, sold
-                ShopProduct::updateStock($item['product_id'], $item['qty']);
+                // Atomic decrement: throw when it refuses (a concurrent order took the
+                // stock after the caller's pre-check) so a transactional caller rolls
+                // the whole order back (ADR compat-foundation_atomic-stock-movement).
+                if (!ShopProduct::updateStock($item['product_id'], $item['qty'])) {
+                    throw new \RuntimeException(gp247_language_render('cart.item_over_qty', ['sku' => $item['sku'] ?? '', 'qty' => $item['qty']]));
+                }
             }
         }
     }

@@ -110,7 +110,7 @@ class ReportManager extends GP247AdminComponent
      */
     public function monthSeries(): array
     {
-        $totals = collect(AdminOrder::getSumOrderTotalInMonth())->keyBy('md');
+        $totals = collect(AdminOrder::getSumOrderTotalInMonth($this->storeId()))->keyBy('md');
         $series = [];
         $period = new \DatePeriod(new \DateTime('-1 month'), new \DateInterval('P1D'), new \DateTime('+1 day'));
         foreach ($period as $day) {
@@ -129,7 +129,7 @@ class ReportManager extends GP247AdminComponent
      */
     public function yearSeries(): array
     {
-        $totals = collect(AdminOrder::getSumOrderTotalInYear())->pluck('total_amount', 'ym');
+        $totals = collect(AdminOrder::getSumOrderTotalInYear($this->storeId()))->pluck('total_amount', 'ym');
         $series = [];
         for ($i = 12; $i >= 0; $i--) {
             $date = date('Y-m', strtotime(date('Y-m-01') . " -$i months"));

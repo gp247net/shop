@@ -127,16 +127,20 @@
                 @if ($element['code'] == 'shipping')
                     <tr><td class="py-1 text-ink-500">{!! $element['title'] !!}</td><td class="py-1 text-end">{{ gp247_currency_format($element['value']) }}</td></tr>
                 @endif
+                {{-- Stored as a magnitude; the minus is rendered from the code, not read
+                     off the value (ADR shop-admin_money-sign-convention D4). --}}
                 @if ($element['code'] == 'discount')
-                    <tr><td class="py-1 text-ink-500">{!! $element['title'] !!}(-)</td><td class="py-1 text-end">{{ gp247_currency_format($element['value']) }}</td></tr>
+                    <tr><td class="py-1 text-ink-500">{!! $element['title'] !!}</td><td class="py-1 text-end">{{ ((float) $element['value'] != 0 ? '-' : '') }}{{ gp247_currency_format($element['value']) }}</td></tr>
                 @endif
                 @if ($element['code'] == 'total')
                     <tr class="font-bold"><td class="py-2 border-t border-ink-100">{!! $element['title'] !!}</td><td class="py-2 text-end border-t border-ink-100">{{ gp247_currency_format($element['value']) }}</td></tr>
                 @endif
-                @if ($element['code'] == 'received')
-                    <tr><td class="py-1 text-ink-500">{!! $element['title'] !!}(-)</td><td class="py-1 text-end">{{ gp247_currency_format($element['value']) }}</td></tr>
-                @endif
             @endforeach
+            {{-- Received is a payment held on the order itself, no longer a totals row (D3);
+                 read it from $order so it shows on new and legacy orders alike. --}}
+            @if ((float) $order->received != 0)
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.totals.received') }}</td><td class="py-1 text-end">{{ gp247_currency_format($order->received) }}</td></tr>
+            @endif
             <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.totals.balance') }}</td><td class="py-1 text-end">{{ gp247_currency_format($order->balance) }}</td></tr>
         </table>
     </div>

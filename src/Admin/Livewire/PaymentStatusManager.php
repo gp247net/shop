@@ -26,15 +26,27 @@ class PaymentStatusManager extends AbstractStatusManager
     }
 
     /**
+     * Statuses that carry business meaning and therefore cannot be deleted.
+     *
+     * WHY built from the constants: the assumption "these four ids mean something to
+     * the code" now lives in exactly one place (ShopPaymentStatus). This map used to
+     * repeat it as literals, so nothing guaranteed the two stayed in step — and they
+     * did not (ADR shop-admin_payment-status-enum-alignment, D4).
+     *
+     * The labels are the seeded English names, shown only in the "cannot delete"
+     * message; what a status is CALLED stays editable, what it MEANS does not.
+     *
      * @return array<int|string, string>
+     *
+     * @aidlc-story US-SADM-payment-status-enum-alignment
      */
     protected function protectedMap(): array
     {
         return [
-            '1' => 'Unpaid',
-            '2' => 'Partial payment',
-            '3' => 'Paid',
-            '4' => 'Refund',
+            (string) ShopPaymentStatus::UNPAID  => 'Unpaid',
+            (string) ShopPaymentStatus::PARTIAL => 'Partial payment',
+            (string) ShopPaymentStatus::PAID    => 'Paid',
+            (string) ShopPaymentStatus::REFUND  => 'Refund',
         ];
     }
 

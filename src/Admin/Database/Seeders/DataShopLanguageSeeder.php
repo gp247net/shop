@@ -192,6 +192,42 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'admin.currency.base_label','text' => 'Base','position' => 'admin.currency','location' => 'en'],
                 ['code' => 'admin.currency.base_locked','text' => 'Đồng tiền cơ sở không thể sửa hoặc xóa. Dùng "Đổi đồng cơ sở" để thay đổi.','position' => 'admin.currency','location' => 'vi'],
                 ['code' => 'admin.currency.base_locked','text' => 'The base currency cannot be edited or deleted. Use "Change base" to change it.','position' => 'admin.currency','location' => 'en'],
+                // Order history: who made the change. The id was always stored; these
+                // label the case where nothing did it but the system itself.
+                ['code' => 'admin.order.history_actor_system','text' => 'Hệ thống','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.history_actor_system','text' => 'System','position' => 'admin.order','location' => 'en'],
+                // Recording money: every field says what it is for. Three unlabelled
+                // inputs left the admin guessing which one wrote money.
+                ['code' => 'admin.order.record_payment_title','text' => 'Ghi nhận tiền đã thu','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.record_payment_title','text' => 'Record money received','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.record_refund_title','text' => 'Ghi nhận tiền hoàn lại khách','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.record_refund_title','text' => 'Record money refunded','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.payment_amount','text' => 'Số tiền','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.payment_amount','text' => 'Amount','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.payment_amount_hint','text' => 'Số tiền khách vừa trả cho đơn này. Luôn nhập số dương.','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.payment_amount_hint','text' => 'How much the customer just paid on this order. Always a positive number.','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.payment_amount_hint_refund','text' => 'Số tiền trả lại khách. Nhập số dương — hệ thống tự trừ.','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.payment_amount_hint_refund','text' => 'How much is going back to the customer. Enter a positive number — the system subtracts it.','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.payment_date','text' => 'Ngày tiền chuyển tay','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.payment_date','text' => 'Date the money moved','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.payment_date_hint','text' => 'Ngày thực nhận, không phải ngày đặt đơn — báo cáo dòng tiền tính theo ngày này. Để trống thì lấy hôm nay.','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.payment_date_hint','text' => 'The day it actually arrived, not the order date — cash-flow reports count it in this period. Leave empty for today.','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.payment_method_label','text' => 'Hình thức','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.payment_method_label','text' => 'Method','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.payment_method_hint','text' => 'Ví dụ: tiền mặt, chuyển khoản, COD. Để trống thì lấy hình thức của đơn.','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.payment_method_hint','text' => 'For example: cash, bank transfer, COD. Leave empty to use the method on the order.','position' => 'admin.order','location' => 'en'],
+                // Blocked delete: the goods have already left, so the order describes
+                // something that really happened.
+                ['code' => 'admin.order.delete_blocked_has_shipped','text' => 'Không thể xóa: đơn này đã gửi hàng. Xóa đơn sẽ cộng nhầm hàng về kho trong khi hàng đang ở chỗ khách. Hãy đổi trạng thái đơn (ví dụ "Đã hủy") thay vì xóa.','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.delete_blocked_has_shipped','text' => 'Cannot delete: this order has already shipped. Deleting it would credit the goods back to stock while they sit with the customer. Change the order status (e.g. "Canceled") instead.','position' => 'admin.order','location' => 'en'],
+                // Refused re-open: the goods went back to stock when the order was
+                // cancelled and are no longer there to take out again.
+                ['code' => 'admin.order.reopen_blocked_stock','text' => 'Không thể mở lại đơn: hàng đã trả về kho khi hủy, nay tồn kho không đủ để trừ lại. Hãy nhập thêm hàng, hoặc bật "Cho phép mua khi hết hàng".','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.reopen_blocked_stock','text' => 'Cannot re-open this order: its goods were returned to stock when it was cancelled, and there is no longer enough stock to take back. Restock the products, or enable "Allow buying out of stock".','position' => 'admin.order','location' => 'en'],
+                // Blocked order delete: say why, and say what to do instead — an admin
+                // who only hears "cannot delete" will look for a way around it.
+                ['code' => 'admin.order.delete_blocked_has_money','text' => 'Không thể xóa: đơn này đã phát sinh tiền. Xóa đơn sẽ xóa luôn bằng chứng của khoản tiền đó. Hãy đổi trạng thái đơn (ví dụ "Đã hủy") thay vì xóa.','position' => 'admin.order','location' => 'vi'],
+                ['code' => 'admin.order.delete_blocked_has_money','text' => 'Cannot delete: money has been recorded against this order. Deleting it would destroy the evidence of that money. Change the order status (e.g. "Canceled") instead.','position' => 'admin.order','location' => 'en'],
                 ['code' => 'admin.currency.base_none','text' => 'Chưa chọn đồng cơ sở.','position' => 'admin.currency','location' => 'vi'],
                 ['code' => 'admin.currency.base_none','text' => 'No base currency set.','position' => 'admin.currency','location' => 'en'],
                 ['code' => 'admin.currency.rebase_button','text' => 'Đổi đồng cơ sở','position' => 'admin.currency','location' => 'vi'],
@@ -474,6 +510,14 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'cart.item_over_qty','text' => 'Mã hàng :sku không đủ số lượng. Bạn đặt :qty','position' => 'cart','location' => 'vi'],
                 ['code' => 'cart.qty_must_be_whole_number','text' => 'Quantity must be a whole number','position' => 'cart','location' => 'en'],
                 ['code' => 'cart.qty_must_be_whole_number','text' => 'Số lượng phải là số nguyên','position' => 'cart','location' => 'vi'],
+                ['code' => 'cart.price_changed_review','text' => 'The price has changed since you confirmed. Please review the updated total before placing your order.','position' => 'cart','location' => 'en'],
+                ['code' => 'cart.price_changed_review','text' => 'Giá đã thay đổi so với lúc bạn xác nhận. Vui lòng xem lại tổng tiền mới trước khi đặt hàng.','position' => 'cart','location' => 'vi'],
+                ['code' => 'admin.report.revenue_placed_note','text' => 'Order value (by placed date, excludes cancelled)','position' => 'admin.report','location' => 'en'],
+                ['code' => 'admin.report.revenue_placed_note','text' => 'Giá trị đơn đặt (theo ngày đặt, không tính đơn huỷ)','position' => 'admin.report','location' => 'vi'],
+                ['code' => 'admin.report.revenue_completed_note','text' => 'Completed-order revenue (by currency)','position' => 'admin.report','location' => 'en'],
+                ['code' => 'admin.report.revenue_completed_note','text' => 'Doanh thu đơn hoàn tất (theo tiền tệ)','position' => 'admin.report','location' => 'vi'],
+                ['code' => 'admin.order.locked_no_edit','text' => 'This order is finalised and can no longer be edited. Reopen it (change its status) to make changes.','position' => 'admin.order','location' => 'en'],
+                ['code' => 'admin.order.locked_no_edit','text' => 'Đơn đã chốt, không thể sửa. Hãy mở lại đơn (đổi trạng thái) nếu cần thay đổi.','position' => 'admin.order','location' => 'vi'],
                 ['code' => 'cart.have_error','text' => 'Có lỗi xảy ra. Vui lòng kiểm tra lại.','position' => 'cart','location' => 'vi'],
                 ['code' => 'cart.have_error','text' => 'Have an error. Please check again.','position' => 'cart','location' => 'en'],
                 ['code' => 'cart.cart_empty','text' => 'Giỏ hàng rỗng.','position' => 'cart','location' => 'vi'],

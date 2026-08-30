@@ -26,6 +26,8 @@
 @endphp
 @if (!empty($yearSeries))
     <x-gp247::card :title="gp247_language_render('admin.dashboard.order_year')">
+        {{-- Declared semantics: order value placed, excludes cancelled (US-SADM-revenue-semantics). --}}
+        <p class="mb-2 text-xs text-gray-400 dark:text-gray-500" data-testid="shop-admin-revenue-year-note">{{ gp247_language_render('admin.report.revenue_placed_note') }}</p>
         <div class="text-gray-400 dark:text-gray-500">
             @include('gp247-admin::partials.dashboard-chart', ['series' => $yearSeries, 'color' => '#10b981', 'name' => gp247_language_render('admin.dashboard.order_year')])
         </div>

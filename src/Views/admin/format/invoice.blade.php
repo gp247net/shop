@@ -60,10 +60,14 @@
                 <div class="flex justify-between"><span>{{ gp247_language_render('order.totals.subtotal') }}</span><span class="text-gray-800">{{ gp247_currency_render_symbol($subtotal, $currency) }}</span></div>
                 <div class="flex justify-between"><span>{{ gp247_language_render('order.totals.tax') }}</span><span class="text-gray-800">{{ gp247_currency_render_symbol($tax, $currency) }}</span></div>
                 <div class="flex justify-between"><span>{{ gp247_language_render('order.totals.shipping') }}</span><span class="text-gray-800">{{ gp247_currency_render_symbol($shipping, $currency) }}</span></div>
-                <div class="flex justify-between"><span>{{ gp247_language_render('order.totals.discount') }}</span><span class="text-gray-800">{{ gp247_currency_render_symbol($discount, $currency) }}</span></div>
+                {{-- Discount is stored as a magnitude; the minus is presentation, keyed on
+                     the row code (ADR shop-admin_money-sign-convention D4). --}}
+                <div class="flex justify-between"><span>{{ gp247_language_render('order.totals.discount') }}</span><span class="text-gray-800">{{ ((float) $discount != 0 ? '-' : '') }}{{ gp247_currency_render_symbol($discount, $currency) }}</span></div>
                 <div class="flex justify-between bg-gray-100 rounded-lg px-3 py-2 font-semibold text-gray-900"><span>{{ gp247_language_render('order.totals.total') }}</span><span>{{ gp247_currency_render_symbol($total, $currency) }}</span></div>
                 <hr class="border-gray-200">
                 <div class="flex justify-between"><span>{{ gp247_language_render('order.other_fee') }}</span><span class="text-gray-800">{{ gp247_currency_render_symbol($other_fee, $currency) }}</span></div>
+                {{-- Received is a payment, not a document line: shown as collected, with the
+                     balance below carrying the deduction (D3). --}}
                 <div class="flex justify-between"><span>{{ gp247_language_render('order.totals.received') }}</span><span class="text-gray-800">{{ gp247_currency_render_symbol($received, $currency) }}</span></div>
                 <div class="flex justify-between items-center bg-blue-50 rounded-lg px-3 py-2 font-bold text-lg text-green-700"><span class="text-gray-900 text-sm font-semibold">{{ gp247_language_render('order.totals.balance') }}</span><span>{{ gp247_currency_render_symbol($balance, $currency) }}</span></div>
             </div>

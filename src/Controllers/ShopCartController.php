@@ -88,6 +88,11 @@ class ShopCartController extends RootFrontController
             return redirect(gp247_route_front('customer.login'));
         }
 
+        // Starting a checkout afresh from the cart drops any previous idempotency
+        // token, so a genuinely new order gets a new token (the confirm step stamps
+        // it) — US-LW-checkout-idempotency.
+        session()->forget('checkoutToken');
+
         $data = request()->all();
 
         $storeId = $data['store_id'] ?? 0;
@@ -511,6 +516,15 @@ class ShopCartController extends RootFrontController
         //Set session dataTotal
         session(['dataTotal' => $dataTotal]);
 
+        // Stamp one idempotency token per checkout session. addOrder() maps it to at
+        // most one order (unique index on shop_order.checkout_token), so a Back /
+        // refresh / double-click cannot create a second order. Rotated whenever the
+        // cart or checkout is redone (see prepareCheckout / clearSession)
+        // (US-LW-checkout-idempotency, ADR storefront_checkout-idempotency).
+        if (!session('checkoutToken')) {
+            session(['checkoutToken' => gp247_token(32)]);
+        }
+
         $subPath = 'screen.shop_checkout_confirm';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
@@ -554,6 +568,22 @@ class ShopCartController extends RootFrontController
             return redirect(gp247_route_front('customer.login'));
         } //
 
+        // Idempotency guard (US-LW-checkout-idempotency, ADR storefront_checkout-idempotency):
+        // the confirm step stamped a token; without it this POST did not come through the
+        // proper flow, so send the customer back to the cart (this also replaces the old,
+        // missing session('step') check). If the token already maps to an order — a Back /
+        // refresh / double-click, especially after a gateway redirect left the session
+        // intact — replay that order's success page instead of creating a second order.
+        $checkoutToken = session('checkoutToken');
+        if (empty($checkoutToken)) {
+            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'checkout'])]);
+        }
+        $existingOrder = ShopOrder::where('checkout_token', $checkoutToken)->first();
+        if ($existingOrder) {
+            session(['orderID' => $existingOrder->id]);
+            return redirect(gp247_route_front('order.success'))->with(['orderID' => $existingOrder->id]);
+        }
+
         $data = request()->all();
         if (!$data) {
             return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_empty', ['item' => 'data'])]);
@@ -567,12 +597,38 @@ class ShopCartController extends RootFrontController
             $dataCheckout    = session('dataCheckout') ?? '';
         }
 
+        // Recompute the totals fresh at submit and compare with what the confirm step
+        // showed. The lines below are re-priced live from the DB, so if a price /
+        // promotion / tax changed between confirm and submit the header would otherwise
+        // be filed from a stale snapshot and the customer charged a figure they never
+        // saw (RISK-BIZ-price-change-mid-checkout, US-LW-checkout-total-freshness). On a
+        // mismatch beyond a rounding tolerance, send them back to re-confirm the new
+        // price rather than proceed.
+        $freshDataTotal = ShopOrderTotal::processDataTotal(ShopOrderTotal::getObjectOrderTotal());
+        $displayedTotal = (new ShopOrderTotal)->sumValueTotal('total', $dataTotal);
+        $freshTotal     = (new ShopOrderTotal)->sumValueTotal('total', $freshDataTotal);
+        if (abs((float) $freshTotal - (float) $displayedTotal) > 0.01) {
+            session(['dataTotal' => $freshDataTotal, 'step' => 'checkout.confirm']);
+            return redirect(gp247_route_front('checkout.confirm'))
+                ->with(['warning' => gp247_language_render('cart.price_changed_review')]);
+        }
+        // Use the freshly computed figures for the order (they matched the display).
+        $dataTotal = $freshDataTotal;
+        session(['dataTotal' => $dataTotal]);
+
         //Process total
         $subtotal = (new ShopOrderTotal)->sumValueTotal('subtotal', $dataTotal); //sum total
         $tax      = (new ShopOrderTotal)->sumValueTotal('tax', $dataTotal); //sum tax
         $shipping = (new ShopOrderTotal)->sumValueTotal('shipping', $dataTotal); //sum shipping
+        // WHY the sums are stored as-is: since modification 20260829T094327 every
+        // total row carries a NON-NEGATIVE magnitude and the sign lives in the
+        // formula (ShopOrderTotal::SIGN_MAP). `discount` therefore lands in
+        // shop_order.discount as a positive number — the column is "how much was
+        // discounted", not "a signed adjustment" (ADR shop-admin_money-sign-convention D1).
         $discount = (new ShopOrderTotal)->sumValueTotal('discount', $dataTotal); //sum discount
         $otherFee = (new ShopOrderTotal)->sumValueTotal('other_fee', $dataTotal); //sum other_fee
+        // Legacy safety: a `received` row is no longer emitted (D3); this sum is 0 on
+        // every new checkout and is kept only so a stale session still resolves.
         $received = (new ShopOrderTotal)->sumValueTotal('received', $dataTotal); //sum received
         $total    = (new ShopOrderTotal)->sumValueTotal('total', $dataTotal);
         //end total
@@ -591,7 +647,12 @@ class ShopCartController extends RootFrontController
         $dataOrder['currency']        = gp247_currency_code();
         $dataOrder['exchange_rate']   = gp247_currency_rate();
         $dataOrder['total']           = $total;
-        $dataOrder['balance']         = $total + $received;
+        // WHY minus, not plus: `received` is a payment held OUTSIDE the totals ledger,
+        // stored as a non-negative magnitude like every other money column
+        // (ADR shop-admin_money-sign-convention D1/D3). It is 0 at checkout — the
+        // storefront never captures money here — but the formula must still read the
+        // way every other writer reads it.
+        $dataOrder['balance']         = $total - $received;
         $dataOrder['email']           = $shippingAddress['email'];
         $dataOrder['first_name']      = $shippingAddress['first_name'];
         $dataOrder['payment_method']  = $paymentMethod;
@@ -600,6 +661,9 @@ class ShopCartController extends RootFrontController
         $dataOrder['device_type']      = $agent->deviceType();
         $dataOrder['ip']              = $request->ip();
         $dataOrder['created_at']      = gp247_time_now();
+        // Idempotency token: unique index makes this the DB-level guarantee that one
+        // checkout session yields one order (US-LW-checkout-idempotency).
+        $dataOrder['checkout_token']  = $checkoutToken;
 
         if (!empty($shippingAddress['last_name'])) {
             $dataOrder['last_name']       = $shippingAddress['last_name'];
@@ -679,7 +743,15 @@ class ShopCartController extends RootFrontController
             gp247_report($newOrder['msg']);
             return redirect(gp247_route_front('cart'))->with(['error' => $newOrder['msg']]);
         }
-        
+
+        // Concurrent race resolved by the unique index: createOrder replayed the order
+        // that won. Do NOT re-run the payment plugin (no re-charge) — go straight to
+        // the success page of the existing order (US-LW-checkout-idempotency).
+        if (!empty($newOrder['replayed'])) {
+            session(['orderID' => $newOrder['orderID']]);
+            return redirect(gp247_route_front('order.success'))->with(['orderID' => $newOrder['orderID']]);
+        }
+
         //Set session info order
         session(['dataOrder' => $dataOrder]);
         session(['arrCartDetail' => $arrCartDetail]);
@@ -1069,12 +1141,30 @@ class ShopCartController extends RootFrontController
     }
 
     /**
-     * Cancel order
+     * Cancel the in-flight order after the customer aborts at the gateway.
+     *
+     * WHY changeStatus() and not a raw update: the raw `status = 4` write this
+     * used to do skipped restock, history, events and hooks entirely — the
+     * goods of a gateway-cancelled order never came back to stock
+     * (RISK-BIZ-cancel-path-bypass-restock). Entering Canceled is never
+     * refused, so this path needs no failure branch.
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-cancel-restock
+     * @aidlc-adr shop-admin_order-cancel-vs-delete
      */
     public function cancelOrder()
     {
         $orderID = session('orderID', null);
-        \GP247\Shop\Models\ShopOrder::where('id', $orderID)->update(['status' => 4]);
+        $order = $orderID ? \GP247\Shop\Models\ShopOrder::find($orderID) : null;
+        if ($order) {
+            $order->changeStatus(\GP247\Shop\Models\ShopOrderStatus::CANCELED, [
+                'content' => 'Payment cancelled',
+                'customer_id' => $order->customer_id ?: 0,
+            ]);
+        }
         //Clear session
         $this->clearSession();
         return redirect(gp247_route_front('front.home'))->with('error', 'Payment cancelled');
@@ -1158,6 +1248,7 @@ class ShopCartController extends RootFrontController
         session()->forget('dataOrder'); //destroy dataOrder
         session()->forget('arrCartDetail'); //destroy arrCartDetail
         session()->forget('orderID'); //destroy orderID
+        session()->forget('checkoutToken'); //rotate idempotency token — a new checkout gets a fresh one
     }
 
     /**

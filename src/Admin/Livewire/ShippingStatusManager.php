@@ -30,12 +30,12 @@ class ShippingStatusManager extends AbstractStatusManager
      */
     protected function protectedMap(): array
     {
-        return [
-            '1' => 'Not sent',
-            '2' => 'Sending',
-            '3' => 'Shipping done',
-            '4' => 'Refunded',
-        ];
+        $map = [];
+        foreach (ShopShippingStatus::businessIds() as $id => $name) {
+            $map[(string) $id] = $name;
+        }
+
+        return $map;
     }
 
     /**

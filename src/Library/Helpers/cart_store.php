@@ -241,6 +241,66 @@ if (!function_exists('gp247_line_tax') && !in_array('gp247_line_tax', config('gp
 }
 
 /**
+ * Split an order-level discount across its lines, in proportion to line totals.
+ *
+ * The whole point is the LAST line. Rounding each share independently gives a set that
+ * does not add up — three lines sharing 10.00 round to 3.33 each and lose a cent — so
+ * the final line takes whatever is left rather than its own rounded share. That keeps
+ * `Σ shares = discount` exactly, which is what every later reconciliation compares, and
+ * it makes the split deterministic: the same inputs always produce the same output.
+ *
+ * Deliberately a pure function of (line totals, discount). It never reads the shares
+ * already stored on the order, because this runs again on every single line edit; an
+ * allocation that fed on its own previous output would creep a little further each save,
+ * with nothing to show for it (RISK-TECH-discount-allocation-drift).
+ *
+ * @param array<int, float> $lineTotals Gross line amounts, in order.
+ * @param float             $discount   Order-level discount magnitude (>= 0).
+ * @return array<int, float> Per-line shares, same order and length as $lineTotals.
+ *
+ * @aidlc-unit shop-admin
+ * @aidlc-story US-SADM-order-discount-pre-tax
+ * @aidlc-adr shop-admin_order-discount-pre-tax
+ */
+if (!function_exists('gp247_allocate_discount') && !in_array('gp247_allocate_discount', config('gp247_functions_except', []))) {
+    function gp247_allocate_discount(array $lineTotals, $discount)
+    {
+        $count = count($lineTotals);
+        if ($count === 0) {
+            return [];
+        }
+
+        $subtotal = 0.0;
+        foreach ($lineTotals as $amount) {
+            $subtotal += (float) $amount;
+        }
+
+        $discount = (float) $discount;
+        if ($discount <= 0 || $subtotal <= 0) {
+            return array_fill(0, $count, 0.0);
+        }
+
+        // A discount larger than what is being discounted is a data-entry accident, not
+        // a generous offer: cap it so the order can never total less than nothing (F17).
+        $discount = min($discount, $subtotal);
+
+        $shares = [];
+        $allocated = 0.0;
+        foreach ($lineTotals as $index => $amount) {
+            if ($index === $count - 1) {
+                $shares[$index] = round($discount - $allocated, 2);
+                continue;
+            }
+            $share = round($discount * (float) $amount / $subtotal, 2);
+            $allocated += $share;
+            $shares[$index] = $share;
+        }
+
+        return $shares;
+    }
+}
+
+/**
  * Render html option price
  *
  * @param   string $arrtribute  format: attribute-name__value-option-price

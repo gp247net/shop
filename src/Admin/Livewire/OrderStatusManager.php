@@ -26,19 +26,27 @@ class OrderStatusManager extends AbstractStatusManager
     }
 
     /**
+     * Statuses an admin may not delete, read from the model that owns them.
+     *
+     * The ids used to be spelled out here as literals while the code branched on the
+     * same numbers elsewhere — the assumption written twice, with nothing keeping the
+     * two copies honest. Now the branching code and this guard read the same source
+     * (ADR shop-admin_order-cancel-vs-delete; same correction as F18 for payment statuses).
+     *
      * @return array<int|string, string>
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-cancel-restock
+     * @aidlc-adr shop-admin_order-cancel-vs-delete
      */
     protected function protectedMap(): array
     {
-        return [
-            '1' => 'New',
-            '2' => 'Processing',
-            '3' => 'Hold',
-            '4' => 'Canceled',
-            '5' => 'Done',
-            '6' => 'Failed',
-            '7' => 'Refunded',
-        ];
+        $map = [];
+        foreach (ShopOrderStatus::businessIds() as $id => $name) {
+            $map[(string) $id] = $name;
+        }
+
+        return $map;
     }
 
     /**

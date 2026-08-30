@@ -100,6 +100,11 @@ return new class extends Migration
                 $table->integer('payment_status')->default(1);
                 $table->integer('shipping_status')->default(1);
                 $table->integer('status')->default(0);
+                // Marks that this order's goods are back in the warehouse. Cancelling
+                // returns them; without this, an order cancelled, re-opened and cancelled
+                // again would hand the same goods back twice
+                // (ADR shop-admin_order-cancel-vs-delete D3).
+                $table->timestamp('stock_returned_at')->nullable();
                 $table->decimal('tax',15,2)->nullable()->default(0);
                 $table->decimal('other_fee',15,2)->nullable()->default(0);
                 $table->decimal('total',15,2)->nullable()->default(0);
@@ -134,6 +139,12 @@ return new class extends Migration
                 $table->string('device_type', 20)->nullable()->default('other')->index();
                 $table->string('ip', 100)->nullable();
                 $table->string('transaction', 100)->nullable();
+                // WHY unique + nullable: identifies one checkout session so a
+                // double-submit / Back / refresh cannot create a second order
+                // (US-CMP-checkout-token-schema). MySQL allows many NULLs on a unique
+                // column, so admin/legacy orders (no token) are unaffected; only
+                // storefront orders carry a token and are forced unique.
+                $table->string('checkout_token', 64)->nullable()->unique();
                 $table->uuid('store_id')->nullable()->default(1)->index();
                 $table->timestamps();
             }
@@ -150,7 +161,20 @@ return new class extends Migration
                 $table->decimal('qty',15,2)->default(0);
                 $table->uuid('store_id')->default(1);
                 $table->decimal('total_price',15,2)->default(0);
+                // Line-level discount share and tax rate (ADR shop-admin_order-discount-pre-tax).
+                // `total_price` stays the GROSS line amount: the invoice has to print both
+                // the original price and the reduction, and subtracting in place would
+                // destroy that split irrecoverably (D9).
+                $table->decimal('discount',15,2)->default(0);
                 $table->decimal('tax',15,2)->default(0);
+                // The rate is the durable intent; the amount above is derived from it.
+                // Without it, tax cannot be recomputed once a discount moves the base —
+                // and an old order's tax would shift whenever the product's tax changed.
+                // WHY decimal(8,4), not (5,2): matches shop_tax.value so a fractional
+                // rate frozen on the line (e.g. 8.375%) is not truncated to 8.38 and
+                // lineTaxFor() can recompute tax exactly on a later edit
+                // (US-CMP-tax-rate-precision).
+                $table->decimal('tax_rate',8,4)->default(0);
                 $table->string('sku', 50);
                 $table->string('currency', 10);
                 // WHY: decimal(16,6) to match shop_order / shop_currency — one exact
@@ -170,7 +194,10 @@ return new class extends Migration
             function (Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->uuid('order_id');
-                $table->string('content', 300);
+                // WHY text, not string(300): audit entries carry full addresses and
+                // before→after diffs that overflow 300 chars and were silently truncated
+                // (US-SADM-order-audit-trail).
+                $table->text('content');
                 $table->uuid('admin_id')->default(0);
                 $table->uuid('customer_id')->default(0);
                 $table->integer('order_status_id')->default(0);
@@ -198,6 +225,42 @@ return new class extends Migration
                 $table->string('text', 200)->nullable();
                 $table->integer('sort')->default(1);
                 $table->timestamps();
+            }
+        );
+
+        // WHY a ledger and not one more column on shop_order: what the customer owes is a
+        // state, what the customer paid is a SEQUENCE — when, how much, by which method,
+        // under which gateway reference. A single `received` column could express none of
+        // that, so partial refunds, deposits and duplicate gateway callbacks were all
+        // impossible to represent (ADR shop_order-payment-ledger).
+        $schema->create(
+            GP247_DB_PREFIX.'shop_order_transaction',
+            function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('order_id')->index();
+                // Meaning lives here; `amount` is always a magnitude, mirroring the sign
+                // contract of ADR shop-admin_money-sign-convention.
+                $table->enum('type', ['payment', 'refund']);
+                $table->decimal('amount',15,2);
+                // Converted to the BASE currency once, at write time, so aggregate reports
+                // never re-convert — and are not silently mixed after a base-currency
+                // rebase (ADR currency-rebase-value-preserving).
+                $table->decimal('amount_base',15,2)->default(0);
+                $table->string('currency', 10)->nullable();
+                $table->decimal('exchange_rate',16,6)->nullable();
+                $table->string('method', 100)->nullable();
+                // Unique so replaying a webhook cannot double-count. Nullable: money taken
+                // by hand has no gateway reference, and MySQL allows many NULLs here.
+                $table->string('gateway_transaction_id', 100)->nullable()->unique();
+                // The day the money actually moved — the time axis every cash-flow report
+                // needs, and the one thing a `received` column could never carry.
+                $table->dateTime('paid_at')->nullable()->index();
+                $table->uuid('admin_id')->nullable();
+                $table->uuid('customer_id')->nullable();
+                $table->text('note')->nullable();
+                $table->timestamps();
+                // A financial document is never hard-deleted.
+                $table->softDeletes();
             }
         );
 
@@ -536,6 +599,7 @@ return new class extends Migration
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_order_history');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_order_status');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_order_total');
+        $schema->dropIfExists(GP247_DB_PREFIX.'shop_order_transaction');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_payment_status');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_product');
         $schema->dropIfExists(GP247_DB_PREFIX.'shop_product_description');

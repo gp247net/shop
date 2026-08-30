@@ -41,185 +41,6 @@ class AdminOrderController extends RootAdminController
     }
 
     /**
-     * Index interface.
-     *
-     * @return Content
-     */
-    public function index()
-    {
-        $data = [
-            'title'         => gp247_language_render('admin.order.list'),
-            'subTitle'      => '',
-            'icon'          => 'fa fa-indent',
-            'urlDeleteItem' => gp247_route_admin('admin_order.delete'),
-            'removeList'    => 1, // 1 - Enable function delete list item
-            'buttonRefresh' => 1, // 1 - Enable button refresh
-            'css'           => '',
-            'js'            => '',
-        ];
-        //Process add content
-        $data['menuRight']    = gp247_config_group('menuRight', \Request::route()->getName());
-        $data['menuLeft']     = gp247_config_group('menuLeft', \Request::route()->getName());
-        $data['topMenuRight'] = gp247_config_group('topMenuRight', \Request::route()->getName());
-        $data['topMenuLeft']  = gp247_config_group('topMenuLeft', \Request::route()->getName());
-        $data['blockBottom']  = gp247_config_group('blockBottom', \Request::route()->getName());
-
-        $listTh = [
-            'email'          => gp247_language_render('order.email'),
-            'first_name'     => gp247_language_render('order.first_name'),
-            'subtotal'       => gp247_language_render('order.subtotal'),
-            'shipping'       => gp247_language_render('order.shipping'),
-            'discount'       => gp247_language_render('order.discount'),
-            'tax'            => gp247_language_render('order.tax'),
-            'total'          => gp247_language_render('order.total'),
-            'payment_method' => gp247_language_render('admin.order.payment_method_short'),
-            'payment_status' => gp247_language_render('order.payment_status'),
-            'shipping_status'=> gp247_language_render('order.shipping_status'),
-            'status'         => gp247_language_render('order.status'),
-        ];
-        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
-            // Only show store info if store is root
-            $listTh['shop_store'] = '<i class="fab fa-shopify" aria-hidden="true" title="'.gp247_language_render('front.store_list').'"></i>';
-        }
-        $listTh['created_at'] = gp247_language_render('admin.created_at');
-        $listTh['action'] = gp247_language_render('action.title');
-
-        $keyword      = gp247_clean(request('keyword') ?? '');
-        $from_to      = gp247_clean(request('from_to') ?? '');
-        $end_to       = gp247_clean(request('end_to') ?? '');
-        $order_status = gp247_clean(request('order_status') ?? '');
-        $dataSearch = [
-            'keyword'      => $keyword,
-            'from_to'      => $from_to,
-            'end_to'       => $end_to,
-            'order_status' => $order_status,
-        ];
-        $dataTmp = (new AdminOrder)->getOrderListAdmin($dataSearch);
-        if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
-            $arrId = $dataTmp->pluck('id')->toArray();
-            // Only show store info if store is root
-            if (function_exists('gp247_get_list_store_of_order')) {
-                $dataStores = gp247_get_list_store_of_order($arrId);
-            } else {
-                $dataStores = [];
-            }
-        }
-
-        $styleStatus = $this->statusOrder;
-        array_walk($styleStatus, function (&$v, $k) {
-            $v = '<span class="badge badge-' . (AdminOrder::$mapStyleStatus[$k] ?? 'light') . '">' . $v . '</span>';
-        });
-        $dataTr = [];
-        foreach ($dataTmp as $key => $row) {
-            $dataMap = [
-                'email'          => $row['email'] ?? 'N/A',
-                'first_name'     => $row['first_name'] ?? 'N/A',
-                'subtotal'       => gp247_currency_render_symbol($row['subtotal'] ?? 0, $row['currency']),
-                'shipping'       => gp247_currency_render_symbol($row['shipping'] ?? 0, $row['currency']),
-                'discount'       => gp247_currency_render_symbol($row['discount'] ?? 0, $row['currency']),
-                'tax'            => gp247_currency_render_symbol($row['tax'] ?? 0, $row['currency']),
-                'total'          => gp247_currency_render_symbol($row['total'] ?? 0, $row['currency']),
-                'payment_method' => ($row['payment_method'] ?? 'N/A').'('.$row['currency'] . '/' . $row['exchange_rate'].')',
-                'payment_status' => $this->statusPayment[$row['payment_status']] ?? $row['payment_status'],
-                'shipping_status'=> $this->statusShipping[$row['shipping_status']] ?? $row['shipping_status'],
-                'status'         => $styleStatus[$row['status']] ?? $row['status'],
-            ];
-            if ((gp247_store_check_multi_partner_installed() ||  gp247_store_check_multi_store_installed()) && session('adminStoreId') == GP247_STORE_ID_ROOT) {
-                // Only show store info if store is root
-                if (!empty($dataStores[$row['id']])) {
-                    $storeTmp = $dataStores[$row['id']]->pluck('code', 'id')->toArray();
-                    $storeTmp = array_map(function ($code) {
-                        if (is_null($code)) {
-                            return ;
-                        }
-                        $domain = gp247_store_get_domain_from_code($code);
-                        return '<a target=_new href="'.$domain.'">'.$code.'</a>';
-                    }, $storeTmp);
-                    $dataMap['shop_store'] = '<i class="nav-icon fab fa-shopify"></i> '.implode('<br><i class="nav-icon fab fa-shopify"></i> ', $storeTmp);
-                } else {
-                    $dataMap['shop_store'] = '';
-                }
-            }
-            $dataMap['created_at'] = $row['created_at'];
-
-            $arrAction = [
-                '<a href="' . gp247_route_admin('admin_order.detail', ['id' => $row['id'] ? $row['id'] : 'not-found-id']) . '"  class="dropdown-item"><i class="fa fa-edit"></i> '.gp247_language_render('action.edit').'</a>',
-                ];
-            $arrAction[] = '<a href="#" onclick="deleteItem(\'' . $row['id'] . '\');"  title="' . gp247_language_render('action.delete') . '" class="dropdown-item"><i class="fas fa-trash-alt"></i> '.gp247_language_render('action.remove').'</a>';
-            $action = $this->procesListAction($arrAction);
-            $dataMap['action'] = $action;
-            $dataTr[$row['id']] = $dataMap;
-        }
-
-        $data['listTh'] = $listTh;
-        $data['dataTr'] = $dataTr;
-        $data['pagination'] = $dataTmp->appends(request()->except(['_token']))->links('gp247-admin::component.pagination');
-        $data['resultItems'] = gp247_language_render('admin.result_item', ['item_from' => $dataTmp->firstItem(), 'item_to' => $dataTmp->lastItem(), 'total' =>  $dataTmp->total()]);
-
-
-        //menuRight
-        $data['menuRight'][] = '<a href="' . gp247_route_admin('admin_order.create') . '" class="btn  btn-success  btn-flat" title="New" id="button_create_new">
-                           <i class="fa fa-plus" title="'.gp247_language_render('action.add').'"></i>
-                           </a>';
-        //=menuRight
-
-        //menuSearch
-        $optionStatus = '';
-        foreach ($this->statusOrder as $key => $status) {
-            $optionStatus .= '<option  ' . (($order_status == $key) ? "selected" : "") . ' value="' . $key . '">' . $status . '</option>';
-        }
-        $data['topMenuRight'][] = '
-                <form action="' . gp247_route_admin('admin_order.index') . '" id="button_search">
-                    <div class="input-group float-left">
-
-                        <div style="width:130px">
-                            <div class="form-group">
-                                <label>'.gp247_language_render('action.from').':</label>
-                                <div class="input-group">
-                                <input type="text" name="from_to" id="from_to" class="form-control input-sm date_time rounded-0" data-date-format="yyyy-mm-dd" placeholder="yyyy-mm-dd" /> 
-                                </div>
-                            </div>
-                        </div> &nbsp;
-                        <div style="width:130px">
-                            <div class="form-group">
-                                <label>'.gp247_language_render('action.to').':</label>
-                                <div class="input-group">
-                                <input type="text" name="end_to" id="end_to" class="form-control input-sm date_time rounded-0" data-date-format="yyyy-mm-dd" placeholder="yyyy-mm-dd" /> 
-                                </div>
-                            </div>
-                        </div> &nbsp;
-                        <div style="width:150px">
-                            <div class="form-group">
-                                <label>'.gp247_language_render('admin.order.status').':</label>
-                                <div class="input-group">
-                                <select class="form-control rounded-0" name="order_status">
-                                <option value="">'.gp247_language_render('admin.order.search_order_status').'</option>
-                                ' . $optionStatus . '
-                                </select>
-                                </div>
-                            </div>
-                        </div> &nbsp;
-                        <div style="width:200px">
-                            <div class="form-group">
-                                <label>'.gp247_language_render('search.placeholder').':</label>
-                                <div class="input-group">
-                                    <input type="text" name="keyword" class="form-control rounded-0 float-right" placeholder="' . gp247_language_render('search.placeholder') . '" value="' . $keyword . '">
-                                    <div class="input-group-append">
-                                        <button type="submit" class="btn btn-primary  btn-flat"><i class="fas fa-search"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>';
-        //=menuSearch
-
-
-        return view('gp247-admin::screen.list')
-            ->with($data);
-    }
-
-    /**
      * Form create new item in admin
      * @return [type] [description]
      */
@@ -279,6 +100,13 @@ class AdminOrderController extends RootAdminController
             'exchange_rate'   => 'required',
             'currency'        => 'required',
             'status'          => 'required',
+            // Money inputs are MAGNITUDES: never negative, whatever their role in the
+            // formula (ADR shop-admin_money-sign-convention D1). Rejecting at the gate
+            // beats normalising silently — an admin who types "-20" into Discount meant
+            // something, and should be told rather than have it reinterpreted.
+            'shipping'        => 'nullable|numeric|min:0',
+            'discount'        => 'nullable|numeric|min:0',
+            'received'        => 'nullable|numeric|min:0',
         ];
         if (gp247_config('use_payment')) {
             $validate['payment_method'] = 'required';
@@ -506,6 +334,9 @@ class AdminOrderController extends RootAdminController
                                 'qty' => $qty,
                                 'total_price' => $itemSubtotal,
                                 'tax' => $itemTax,
+                                // Freeze the rate on the document (D5) — the amount above
+                                // is re-derived from it once the discount is allocated.
+                                'tax_rate' => (float) $product->getTaxValue(),
                                 'attribute' => $attribute,
                                 'currency' => $data['currency'],
                                 'exchange_rate' => $data['exchange_rate'],
@@ -517,12 +348,36 @@ class AdminOrderController extends RootAdminController
                 }
             }
 
-            // Get shipping, discount and received from form
-            $shipping = (float)($data['shipping'] ?? 0);
-            $discount = (float)($data['discount'] ?? 0);
-            $received = (float)($data['received'] ?? 0);
-            $total = $subtotal + $taxTotal + $shipping - $discount;
-            $balance = $total + $received;
+            // Get shipping, discount and received from form.
+            // WHY max(0, …): the sign contract stores magnitudes only, so a negative
+            // input is clamped rather than silently re-interpreted as its opposite
+            // (ADR shop-admin_money-sign-convention D1). The form also validates
+            // `min:0`, so this is the second line of defence, not the first.
+            $shipping = max(0, (float)($data['shipping'] ?? 0));
+            // Capped at the PRE-TAX subtotal: a discount bigger than the goods produced
+            // an order with a negative total, which no screen downstream is prepared for
+            // (F17, ADR shop-admin_order-discount-pre-tax D1).
+            $discount = min(max(0, (float)($data['discount'] ?? 0)), $subtotal);
+            $received = max(0, (float)($data['received'] ?? 0));
+            // WHY a variable for a value the form cannot set: the component still
+            // enters the total through signOf() below, so a future other_fee field
+            // cannot silently diverge from SIGN_MAP the way the old inline formula
+            // did — it simply omitted other_fee (P0-3, rà soát 2026-08-30).
+            $otherFee = 0.0;
+
+            // Same rule as the storefront: the discount comes off before tax is charged.
+            // An order typed by an admin and the same basket bought by a customer must
+            // not report two different tax figures (QĐ-5a) — so the allocation runs from
+            // the one shared path, over the rows just written.
+            $order->discount = $discount;
+            $sums = $order->reallocateDiscountAndTax();
+            $taxTotal = $sums['tax'];
+            // The one sign convention (ADR shop-admin_money-sign-convention D2):
+            // total = subtotal + tax + Σ(signOf(code) × value).
+            $total = $subtotal + $taxTotal
+                + ShopOrderTotal::signOf('shipping') * $shipping
+                + ShopOrderTotal::signOf('other_fee') * $otherFee
+                + ShopOrderTotal::signOf('discount') * $discount;
 
             // Insert order totals with calculated values
             AdminOrder::insertOrderTotal([
@@ -530,20 +385,56 @@ class AdminOrderController extends RootAdminController
                 ['id' => gp247_uuid(),'code' => 'tax', 'value' => $taxTotal, 'title' => gp247_language_render('order.totals.tax'), 'sort' => ShopOrderTotal::POSITION_TAX, 'order_id' => $order->id],
                 ['id' => gp247_uuid(),'code' => 'shipping', 'value' => $shipping, 'title' => gp247_language_render('order.totals.shipping'), 'sort' => ShopOrderTotal::POSITION_SHIPPING_METHOD, 'order_id' => $order->id],
                 ['id' => gp247_uuid(),'code' => 'discount', 'value' => $discount, 'title' => gp247_language_render('order.totals.discount'), 'sort' => ShopOrderTotal::POSITION_TOTAL_METHOD, 'order_id' => $order->id],
-                ['id' => gp247_uuid(),'code' => 'other_fee', 'value' => 0, 'title' => gp247_language_render('order.totals.other_fee'), 'sort' => ShopOrderTotal::POSITION_OTHER_FEE, 'order_id' => $order->id],
+                ['id' => gp247_uuid(),'code' => 'other_fee', 'value' => $otherFee, 'title' => gp247_language_render('order.totals.other_fee'), 'sort' => ShopOrderTotal::POSITION_OTHER_FEE, 'order_id' => $order->id],
                 ['id' => gp247_uuid(),'code' => 'total', 'value' => $total, 'title' => gp247_language_render('order.totals.total'), 'sort' => ShopOrderTotal::POSITION_TOTAL, 'order_id' => $order->id],
-                ['id' => gp247_uuid(),'code' => 'received', 'value' => $received, 'title' => gp247_language_render('order.totals.received'), 'sort' => ShopOrderTotal::POSITION_RECEIVED, 'order_id' => $order->id],
+                // WHY no `received` row: a payment is not a component of the order
+                // document, so it lives on shop_order.received alone (D3).
             ]);
 
-            // Update order total
+            // WHY no received/balance/payment_status here: received is DERIVED from
+            // the payment ledger (ADR shop_order-payment-ledger). Writing the columns
+            // directly created money the ledger never saw, and the next recalc
+            // (AdminOrder::updateSubTotal reads netReceived()) silently reset it to 0
+            // (RISK-BIZ-admin-create-received-drift).
             $order->update([
                 'subtotal' => $subtotal,
                 'shipping' => $shipping,
                 'discount' => $discount,
                 'tax' => $taxTotal,
                 'total' => $total,
-                'received' => $received,
-                'balance' => $balance,
+            ]);
+
+            // Money typed by an admin respects the accounting period lock, same as
+            // the record-payment button on the detail screen. The ORDER is still
+            // created — a closed period locks money entries, not selling (QĐ-2,
+            // mod 20260830T091705).
+            $periodClosedRefusal = $received > 0
+                && $this->receivedPeriodClosed((string) $dataCreate['store_id']);
+            if ($periodClosedRefusal) {
+                $received = 0;
+            }
+            if ($received > 0) {
+                $order->recordPayment(
+                    $received,
+                    $data['payment_method'] ?? null,
+                    null,
+                    null,
+                    'Recorded at order creation',
+                    $this->adminId()
+                );
+            } else {
+                // recordPayment() already recalcs; this branch keeps balance and
+                // payment_status derived even when nothing was collected.
+                $order->recalcReceived();
+            }
+
+            // Parity with the storefront createOrder: an admin-created order leaves
+            // an audit trail of who created it (P0-3, rà soát 2026-08-30).
+            (new AdminOrder)->addOrderHistory([
+                'order_id' => $order->id,
+                'content' => 'New order',
+                'admin_id' => $this->adminId(),
+                'order_status_id' => (int) ($dataCreate['status'] ?? 0),
             ]);
 
             \DB::connection(GP247_DB_CONNECTION)->commit();
@@ -554,8 +445,56 @@ class AdminOrderController extends RootAdminController
                 ->with('error', gp247_language_render('admin.toast_error') . ' ' . $e->getMessage());
         }
 
-        return redirect(gp247_route_admin('admin_order.index'))
+        $redirect = redirect(gp247_route_admin('admin_order.index'))
             ->with('success', gp247_language_render('action.create_success'));
+        if ($periodClosedRefusal) {
+            // Rendered by the shared flash→toast bridge (admin layout).
+            $redirect->with('warning', gp247_language_render('Plugins/InOut::lang.period_closed_error'));
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * Whether admin-typed money is refused right now because the accounting
+     * period covering today is closed (InOut plugin, soft dependency).
+     *
+     * Mirrors OrderManager::periodIsClosed(): only MANUAL money entry is
+     * gated — gateway callbacks are never refused, the customer's money has
+     * already moved. Installs without the InOut plugin: always false.
+     *
+     * @param string $storeId Store the order belongs to.
+     * @return bool True when the period is closed and the entry must be refused.
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-payment-ledger
+     * @aidlc-adr shop_order-payment-ledger
+     */
+    private function receivedPeriodClosed(string $storeId): bool
+    {
+        if (!function_exists('inout_check_period_closed')) {
+            return false;
+        }
+
+        return inout_check_period_closed($storeId, date('Y-m-d'));
+    }
+
+    /**
+     * Current admin user id (0 when unavailable, e.g. in tests) — same guarded
+     * lookup as OrderManager::adminId().
+     *
+     * @return int|string
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-payment-ledger
+     */
+    private function adminId()
+    {
+        if (function_exists('admin') && admin()->user()) {
+            return admin()->user()->id;
+        }
+
+        return 0;
     }
 
     /**
@@ -648,32 +587,6 @@ class AdminOrderController extends RootAdminController
         );
     }
 
-    /*
-    Delete list order ID
-    Need mothod destroy to boot deleting in model
-    */
-    public function deleteList()
-    {
-        if (!request()->ajax()) {
-            return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.method_not_allow')]);
-        } else {
-            $ids = request('ids');
-            $arrID = explode(',', $ids);
-            $arrDontPermission = [];
-            foreach ($arrID as $key => $id) {
-                if (!$this->checkPermisisonItem($id)) {
-                    $arrDontPermission[] = $id;
-                }
-            }
-            if (count($arrDontPermission)) {
-                return response()->json(['error' => 1, 'msg' => gp247_language_render('admin.remove_dont_permisison') . ': ' . json_encode($arrDontPermission)]);
-            } else {
-                AdminOrder::destroy($arrID);
-                return response()->json(['error' => 0, 'msg' => gp247_language_render('action.update_success')]);
-            }
-        }
-    }
-
     /**
      * Process invoice
      */
@@ -750,11 +663,4 @@ class AdminOrderController extends RootAdminController
         }
     }
 
-    /**
-     * Check permisison item
-     */
-    public function checkPermisisonItem($id)
-    {
-        return AdminOrder::getOrderAdmin($id);
-    }
 }
