@@ -7,7 +7,7 @@
  \_____|_|       |____|  |_| /_/    
 ```
 
-> 🌐 **Ngôn ngữ:** 🇻🇳 Tiếng Việt (hiện tại) · [🇬🇧 English](readme.md)
+> 🌐 **Ngôn ngữ:** 🇻🇳 Tiếng Việt (hiện tại) · [🇬🇧 English](README.md)
 
 Hệ thống website thương mại điện tử miễn phí cho doanh nghiệp
 

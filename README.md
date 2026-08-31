@@ -7,7 +7,7 @@
  \_____|_|       |____|  |_| /_/    
 ```
 
-> 🌐 **Language:** 🇬🇧 English (current) · [🇻🇳 Tiếng Việt](readme_vi.md)
+> 🌐 **Language:** 🇬🇧 English (current) · [🇻🇳 Tiếng Việt](README_vi.md)
 
 Free e-commerce platform for businesses
 
