@@ -76,7 +76,16 @@ class CategoryManager extends ResourcePanel
     protected function baseQuery()
     {
         // WHY: 1-1 ownership — eager-load the single owning store (store.descriptions).
-        return ShopCategory::query()->with(['store.descriptions']);
+        // Store-scoped at root admin shows EVERY store's categories (each row labelled
+        // by its store); a scoped context (store-admin/switcher) or a single-store
+        // install filters to the own store — parity with ProductManager so both screens
+        // agree on what the current store context sees (ADR admin-shell_store-scoped-resource-panel).
+        $query = ShopCategory::query()->with(['store.descriptions']);
+        if (!($this->storeScopeActive() && $this->isRootScope())) {
+            $query->where('store_id', $this->storeContext());
+        }
+
+        return $query;
     }
 
     /**
