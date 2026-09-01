@@ -35,11 +35,35 @@ class BrandManager extends ResourcePanel
     protected bool $keepStateOnSave = true;
 
     /**
+     * Store-scoped: pick a store on create (root admin), show it in the list, lock
+     * it on edit. Brand is a leaf entity (no cross-store related fields to reset).
+     *
+     * @return array<string, mixed>|null
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-store-content-assignment
+     * @aidlc-adr admin-shell_store-scoped-resource-panel
+     */
+    protected function storeScoped(): ?array
+    {
+        return ['display' => 'name', 'reset' => []];
+    }
+
+    /**
+     * Store-scoped brand query: root admin shows every store's brands (each row
+     * labelled by its store); a scoped context (store-admin/switcher) or a
+     * single-store install filters to the own store.
+     *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     protected function baseQuery()
     {
-        return ShopBrand::query();
+        $query = ShopBrand::query();
+        if (!($this->storeScopeActive() && $this->isRootScope())) {
+            $query->where('store_id', $this->storeContext());
+        }
+
+        return $query;
     }
 
     /**
@@ -96,6 +120,9 @@ class BrandManager extends ResourcePanel
      */
     protected function fillForm($model): array
     {
+        // Store is immutable on edit — expose it for the read-only display.
+        $this->formStoreId = (string) $model->store_id;
+
         return [
             'image' => (string) $model->image,
             'name' => (string) $model->name,
@@ -154,8 +181,12 @@ class BrandManager extends ResourcePanel
         ];
 
         if ($this->editingId !== null) {
+            // Store is immutable on edit — do NOT touch store_id (ADR 1-1).
             ShopBrand::findOrFail($this->editingId)->update($attributes);
         } else {
+            // WHY: 1-1 ownership — a new brand is owned by the store picked on create
+            // (root admin) or the current scoped store (store-admin / switcher).
+            $attributes['store_id'] = $this->resolveCreateStore();
             ShopBrand::create($attributes);
         }
     }

@@ -14,6 +14,7 @@
     {{-- Left: add / edit form --}}
     <x-gp247::card :title="gp247_language_render($editingId ? 'action.edit' : 'admin.brand.add_new')">
         <form wire:submit="save" class="space-y-4">
+            @include('gp247-admin::partials.store-scope-picker', ['testid' => 'brand-store-select'])
             <x-gp247::input :label="gp247_language_render('admin.brand.name')" name="name"
                 wire:model="form.name" :error="$errors->first('form.name')" required />
             <x-gp247::media-input :label="gp247_language_render('admin.brand.image')" name="image" type="brand"
@@ -58,7 +59,10 @@
                     <td class="px-4 py-3">
                         @if ($row->image)<img src="{{ gp247_image_get_path_thumb($row->image) }}" alt="" class="h-9 w-auto rounded border border-gray-200 dark:border-gray-600">@else<span class="text-xs text-gray-400">—</span>@endif
                     </td>
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">{{ $row->name }}</td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">
+                        {{ $row->name }}
+                        @include('gp247-admin::partials.store-scope-line', ['storeId' => $row->store_id])
+                    </td>
                     <td class="px-4 py-3"><x-gp247::badge :color="$row->status ? 'green' : 'gray'">{{ $row->status ? gp247_language_render('admin.active') : gp247_language_render('admin.inactive') }}</x-gp247::badge></td>
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-end gap-1">

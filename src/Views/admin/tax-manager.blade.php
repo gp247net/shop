@@ -13,6 +13,7 @@
     {{-- Left: add / edit form --}}
     <x-gp247::card :title="gp247_language_render($editingId ? 'action.edit' : 'admin.tax.add_new')">
         <form wire:submit="save" class="space-y-4">
+            @include('gp247-admin::partials.store-scope-picker', ['testid' => 'tax-store-select'])
             <x-gp247::input :label="gp247_language_render('admin.tax.name')" name="name"
                 wire:model="form.name" :error="$errors->first('form.name')" required />
             <x-gp247::input type="number" step="0.01" min="0" :label="gp247_language_render('admin.tax.value')"
@@ -48,7 +49,10 @@
 
             @foreach ($rows as $row)
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 {{ (string) $row->id === (string) $editingId ? 'bg-blue-100 border-l-4 border-blue-500 dark:bg-blue-900 dark:border-blue-500' : '' }}" wire:key="tax-{{ $row->id }}">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">{{ $row->name }}</td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">
+                        {{ $row->name }}
+                        @include('gp247-admin::partials.store-scope-line', ['storeId' => $row->store_id])
+                    </td>
                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->value }}</td>
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-end gap-1">

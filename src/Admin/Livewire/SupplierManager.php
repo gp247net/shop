@@ -35,11 +35,34 @@ class SupplierManager extends ResourcePanel
     protected bool $keepStateOnSave = true;
 
     /**
+     * Store-scoped: pick a store on create (root admin), show it in the list, lock
+     * it on edit. Supplier is a leaf entity (no cross-store related fields).
+     *
+     * @return array<string, mixed>|null
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-store-content-assignment
+     * @aidlc-adr admin-shell_store-scoped-resource-panel
+     */
+    protected function storeScoped(): ?array
+    {
+        return ['display' => 'name', 'reset' => []];
+    }
+
+    /**
+     * Store-scoped supplier query: root admin shows every store's suppliers; a
+     * scoped context (store-admin/switcher) or single-store install filters to own.
+     *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     protected function baseQuery()
     {
-        return ShopSupplier::query();
+        $query = ShopSupplier::query();
+        if (!($this->storeScopeActive() && $this->isRootScope())) {
+            $query->where('store_id', $this->storeContext());
+        }
+
+        return $query;
     }
 
     /**
@@ -104,6 +127,9 @@ class SupplierManager extends ResourcePanel
      */
     protected function fillForm($model): array
     {
+        // Store is immutable on edit — expose it for the read-only display.
+        $this->formStoreId = (string) $model->store_id;
+
         return [
             'image' => (string) $model->image,
             'name' => (string) $model->name,
@@ -168,9 +194,12 @@ class SupplierManager extends ResourcePanel
         ];
 
         if ($this->editingId !== null) {
+            // Store is immutable on edit — do NOT touch store_id (ADR 1-1).
             ShopSupplier::findOrFail($this->editingId)->update($attributes);
         } else {
-            $attributes['store_id'] = session('adminStoreId', defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1);
+            // WHY: 1-1 ownership — a new supplier is owned by the store picked on
+            // create (root admin) or the current scoped store (store-admin/switcher).
+            $attributes['store_id'] = $this->resolveCreateStore();
             ShopSupplier::create($attributes);
         }
     }
