@@ -8,7 +8,9 @@ use GP247\Shop\Models\ShopCategoryDescription;
 
 class AdminCategory extends ShopCategory
 {
-    protected static $getListTitleAdmin = null;
+    // WHY: keyed by store id (see getListTitleAdmin) so per-store title lists do not
+    // bleed within one request. ADR multi-store_admin-store-scope-seam (leak L3).
+    protected static $getListTitleAdmin = [];
     protected static $getListCategoryGroupByParentAdmin = null;
     /**
      * Get category detail in admin
@@ -105,40 +107,48 @@ class AdminCategory extends ShopCategory
 
 
     /**
-     * Get array title category
-     * user for admin
+     * Get array title category (id => name) for admin, scoped to the current store.
      *
-     * @return  [type]  [return description]
+     * WHY store scope: since 1-1 ownership every category carries its own store_id,
+     * so a sub-store admin must only see its own categories. ROOT keeps seeing all
+     * (single-store behaviour unchanged — no extra where, same query count). The
+     * static memo is keyed by store so two stores in one request do not bleed
+     * (ADR multi-store_admin-store-scope-seam, leak class L1/L3).
+     *
+     * @return array<int|string, string> Category id => localized name for the active store.
+     *
+     * @aidlc-unit multi-store-pro
+     * @aidlc-story US-multi-store-pro-admin-store-switcher
+     * @aidlc-adr multi-store_admin-store-scope-seam
      */
     public static function getListTitleAdmin()
     {
-        $storeCache = session('adminStoreId');
+        $storeCache = session('adminStoreId') ?: GP247_STORE_ID_ROOT;
         $tableDescription = (new ShopCategoryDescription)->getTable();
         $table = (new AdminCategory)->getTable();
+        $buildForStore = function () use ($tableDescription, $table, $storeCache) {
+            if (!isset(self::$getListTitleAdmin[$storeCache])) {
+                $query = self::join($tableDescription, $tableDescription.'.category_id', $table.'.id')
+                    ->where('lang', gp247_get_locale());
+                // WHY: ROOT = all (single-store unchanged); sub-store filters to its own rows.
+                if ($storeCache != GP247_STORE_ID_ROOT) {
+                    $query = $query->where($table.'.store_id', $storeCache);
+                }
+                self::$getListTitleAdmin[$storeCache] = $query->pluck('name', 'id')->toArray();
+            }
+            return self::$getListTitleAdmin[$storeCache];
+        };
         if (gp247_config_global('cache_status') && gp247_config_global('cache_category')) {
             // Embed the group version so gp247_cache_clear('cache_category') (a version
             // bump) invalidates every store x locale variant at once — the `database`
             // cache driver cannot wildcard-forget the old per-store/locale keys.
             $cacheKey = $storeCache.'_cache_category_'.gp247_get_locale().'_v'.gp247_cache_version('category');
             if (!Cache::has($cacheKey)) {
-                if (self::$getListTitleAdmin === null) {
-                    self::$getListTitleAdmin = self::join($tableDescription, $tableDescription.'.category_id', $table.'.id')
-                    ->where('lang', gp247_get_locale())
-                    ->pluck('name', 'id')
-                    ->toArray();
-                }
-                gp247_cache_set($cacheKey, self::$getListTitleAdmin);
+                gp247_cache_set($cacheKey, $buildForStore());
             }
             return Cache::get($cacheKey);
-        } else {
-            if (self::$getListTitleAdmin === null) {
-                self::$getListTitleAdmin = self::join($tableDescription, $tableDescription.'.category_id', $table.'.id')
-                ->where('lang', gp247_get_locale())
-                ->pluck('name', 'id')
-                ->toArray();
-            }
-            return self::$getListTitleAdmin;
         }
+        return $buildForStore();
     }
 
 

@@ -36,20 +36,48 @@
                 {{-- ---- General ---- --}}
                 <div x-show="tab === 'general'" class="space-y-4">
                     @php($rootLabel = 'ROOT')
-                    <x-gp247::searchable-select
-                        model="form.parent"
-                        :label="gp247_language_render('admin.category.parent')"
-                        :pin-first="true"
-                        :options="collect(['' => $rootLabel] + $this->parentOptions())->reject(fn ($title, $id) => $id !== '' && (string) $id === (string) $editingId)->map(fn ($title, $id) => ['id' => (string) $id, 'label' => (string) $id === '' ? $rootLabel : $rootLabel . ' → ' . $title])->values()->all()"
-                    />
+                    {{-- Store first (ADR admin-shell_store-scoped-resource-panel): the store owns
+                         the record and scopes the fields below, so the user picks it up front;
+                         changing it resets the store-dependent fields + toasts. Only shown when
+                         multi-store/multi-vendor is installed. --}}
+                    @if ($this->storeScopeActive())
+                        <div class="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-900/10">
+                            <label class="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                {{ gp247_language_render('admin.store.scope_label') }}
+                            </label>
+                            @if ($this->showStorePicker())
+                                <select wire:model.live="formStoreId" data-testid="category-store-select"
+                                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                                    <option value="">— {{ gp247_language_render('admin.store.select_store') }} —</option>
+                                    @foreach ($this->storeOptions() as $sid => $stitle)
+                                        <option value="{{ $sid }}">{{ $stitle }}</option>
+                                    @endforeach
+                                </select>
+                                @error('formStoreId') <span class="mt-1 block text-xs text-red-600 dark:text-red-400">{{ $message }}</span> @enderror
+                            @else
+                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                    <i class="fas fa-store text-gray-400"></i> {{ $this->currentStoreLabel() }}
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+                    {{-- wire:key on $formStoreId: the searchable-select is wire:ignore'd, so
+                         changing the store must REPLACE it to reload the store-scoped parent
+                         options (ADR admin-shell_store-scoped-resource-panel). --}}
+                    <div wire:key="cat-parent-{{ $formStoreId }}">
+                        <x-gp247::searchable-select
+                            model="form.parent"
+                            :label="gp247_language_render('admin.category.parent')"
+                            :pin-first="true"
+                            :options="collect(['' => $rootLabel] + $this->parentOptions())->reject(fn ($title, $id) => $id !== '' && (string) $id === (string) $editingId)->map(fn ($title, $id) => ['id' => (string) $id, 'label' => (string) $id === '' ? $rootLabel : $rootLabel . ' → ' . $title])->values()->all()"
+                        />
+                    </div>
 
                     <x-gp247::media-input :label="gp247_language_render('admin.category.image')" name="image" type="category"
                         wire:model="form.image" :value="$form['image'] ?? ''" :error="$errors->first('form.image')" />
 
                     <x-gp247::input type="number" min="0" :label="gp247_language_render('admin.category.sort')"
                         name="sort" wire:model="form.sort" :error="$errors->first('form.sort')" />
-
-                    {{-- Store ownership is 1-1 (scalar store_id) and pinned to the current admin store; no multi-store picker. --}}
 
                     <div class="flex flex-wrap gap-4">
                         <x-gp247::checkbox :label="gp247_language_render('admin.category.top')" wire:model="form.top" value="1" />
@@ -121,6 +149,11 @@
                     </td>
                     <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">
                         {{ $row->getTitle() ?: $row->alias }}
+                        @if ($this->storeScopeActive())
+                            <span class="mt-0.5 block text-xs font-normal text-gray-400 dark:text-gray-500">
+                                <i class="fas fa-store"></i> {{ $this->storeLabel($row->store_id) }}
+                            </span>
+                        @endif
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->sort }}</td>
                     <td class="px-4 py-3"><x-gp247::badge :color="$row->status ? 'green' : 'gray'">{{ $row->status ? gp247_language_render('admin.active') : gp247_language_render('admin.inactive') }}</x-gp247::badge></td>

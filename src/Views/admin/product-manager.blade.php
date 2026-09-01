@@ -42,6 +42,31 @@
 
                 {{-- ---- General ---- (field visibility mirrors legacy product_add gating by kind) --}}
                 <div x-show="tab === 'general'" class="space-y-4">
+                    {{-- Store first (ADR admin-shell_store-scoped-resource-panel): the store owns
+                         the product and scopes category/brand/tax below, so the user picks it up
+                         front; changing it resets those fields + toasts. Only when
+                         multi-store/multi-vendor is installed. --}}
+                    @if ($this->storeScopeActive())
+                        <div class="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-900/10">
+                            <label class="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                {{ gp247_language_render('admin.store.scope_label') }}
+                            </label>
+                            @if ($this->showStorePicker())
+                                <select wire:model.live="formStoreId" data-testid="product-store-select"
+                                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                                    <option value="">— {{ gp247_language_render('admin.store.select_store') }} —</option>
+                                    @foreach ($this->storeOptions() as $sid => $stitle)
+                                        <option value="{{ $sid }}">{{ $stitle }}</option>
+                                    @endforeach
+                                </select>
+                                @error('formStoreId') <span class="mt-1 block text-xs text-red-600 dark:text-red-400">{{ $message }}</span> @enderror
+                            @else
+                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                    <i class="fas fa-store text-gray-400"></i> {{ $this->currentStoreLabel() }}
+                                </div>
+                            @endif
+                        </div>
+                    @endif
                     @if($useStructureType)
                         {{-- WHY: 3-way radio cards beat a dropdown — the kind drives form layout below, so the choice must be immediately scannable. --}}
                         <div>
@@ -66,14 +91,19 @@
                     <x-gp247::input :label="gp247_language_render('product.sku')" name="sku"
                         wire:model="form.sku" :error="$errors->first('form.sku')" required />
 
-                    <x-gp247::searchable-select
-                        model="form.category"
-                        :label="gp247_language_render('product.category')"
-                        :multiple="true"
-                        :options="collect($this->categoryOptions())->map(fn ($title, $id) => ['id' => (string) $id, 'label' => $title])->values()->all()"
-                        :error="$errors->first('form.category')"
-                        :required="true"
-                    />
+                    {{-- wire:key on $formStoreId: searchable-select is wire:ignore'd, so a
+                         store change must REPLACE it to reload store-scoped category options
+                         (ADR admin-shell_store-scoped-resource-panel). --}}
+                    <div wire:key="prod-category-{{ $formStoreId }}">
+                        <x-gp247::searchable-select
+                            model="form.category"
+                            :label="gp247_language_render('product.category')"
+                            :multiple="true"
+                            :options="collect($this->categoryOptions())->map(fn ($title, $id) => ['id' => (string) $id, 'label' => $title])->values()->all()"
+                            :error="$errors->first('form.category')"
+                            :required="true"
+                        />
+                    </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         @if (($isSingle || $isBuild) && $this->productFieldEnabled('product_price'))
@@ -91,11 +121,13 @@
                     @if ($isSingle || $isBuild)
                         <div class="grid grid-cols-2 gap-3">
                             @if ($this->productFieldEnabled('product_brand'))
-                                <x-gp247::searchable-select
-                                    model="form.brand_id"
-                                    :label="gp247_language_render('product.brand')"
-                                    :options="collect($this->brandOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
-                                />
+                                <div wire:key="prod-brand-{{ $formStoreId }}">
+                                    <x-gp247::searchable-select
+                                        model="form.brand_id"
+                                        :label="gp247_language_render('product.brand')"
+                                        :options="collect($this->brandOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
+                                    />
+                                </div>
                             @endif
                             @if ($this->productFieldEnabled('product_supplier'))
                                 <x-gp247::searchable-select
@@ -106,11 +138,13 @@
                             @endif
                             {{-- Tax has no on/off toggle in Shop Config (it is configured via the
                                  tax-config select there), so it is always shown for single/bundle. --}}
-                            <x-gp247::searchable-select
-                                model="form.tax_id"
-                                :label="gp247_language_render('product.tax')"
-                                :options="collect($this->taxOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
-                            />
+                            <div wire:key="prod-tax-{{ $formStoreId }}">
+                                <x-gp247::searchable-select
+                                    model="form.tax_id"
+                                    :label="gp247_language_render('product.tax')"
+                                    :options="collect($this->taxOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
+                                />
+                            </div>
                         </div>
                     @endif
 
@@ -127,8 +161,6 @@
 
                     {{-- Keyword tags apply to EVERY kind (incl. group/build); gated by product_tags. --}}
                     @include('gp247-shop-admin::partials.product-tags', ['inputCls' => $inputCls])
-
-                    {{-- Store ownership is 1-1 (scalar store_id) and pinned to the current admin store; no multi-store picker. --}}
 
                     <div class="flex flex-wrap gap-4">
                         <x-gp247::checkbox :label="gp247_language_render('admin.active')" wire:model="form.status" value="1" />
@@ -247,7 +279,7 @@
             <input type="search" wire:model.live.debounce.300ms="keyword" placeholder="{{ gp247_language_render('search.placeholder') }}" class="{{ $inputCls }}">
             <select wire:model.live="filterCategory" class="{{ $inputCls }}">
                 <option value="">{{ gp247_language_render('product.category') }}</option>
-                @foreach ($this->categoryOptions() as $id => $title)<option value="{{ $id }}">{{ $title }}</option>@endforeach
+                @foreach ($this->filterCategoryOptions() as $id => $title)<option value="{{ $id }}">{{ $title }}</option>@endforeach
             </select>
         </div>
 
@@ -268,6 +300,11 @@
                     <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">{{ $row->sku }}</td>
                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                         {{ $row->getName() ?: $row->alias }}
+                        @if ($this->storeScopeActive())
+                            <span class="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">
+                                <i class="fas fa-store"></i> {{ $this->storeLabel($row->store_id) }}
+                            </span>
+                        @endif
                     </td>
                     <td class="px-4 py-3">
                         @php($rowKind = (int) $row->kind)

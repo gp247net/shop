@@ -96,6 +96,23 @@ class ProductManager extends ResourcePanel
         return session('adminStoreId', defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1);
     }
 
+    /**
+     * Store-scoped: pick a store on create (root admin), show it in the list, lock
+     * it on edit; related option lists (category/brand/tax) filter to that store.
+     *
+     * @return array<string, mixed>|null
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-store-content-assignment
+     * @aidlc-adr admin-shell_store-scoped-resource-panel
+     */
+    protected function storeScoped(): ?array
+    {
+        // 'reset': store-scoped form fields cleared when the create picker changes
+        // store, so a stale cross-store category/brand/tax reference cannot linger.
+        return ['display' => 'name', 'reset' => ['category', 'brand_id', 'tax_id']];
+    }
+
     // --- C0 / D0 contracts ---------------------------------------------------
 
     /**
@@ -151,10 +168,14 @@ class ProductManager extends ResourcePanel
     protected function baseQuery()
     {
         // WHY: 1-1 ownership — a product belongs to a single store via store_id.
-        $storeId = $this->storeId();
-        $query = ShopProduct::query()
-            ->with(['store.descriptions'])
-            ->where('store_id', $storeId);
+        // Store-scoped at root admin shows EVERY store's products (so each store's
+        // catalog can be managed from one admin, with the store shown per row);
+        // a scoped context (store-admin/switcher) or single-store still filters to
+        // the own store (ADR admin-shell_store-scoped-resource-panel).
+        $query = ShopProduct::query()->with(['store.descriptions']);
+        if (!($this->storeScopeActive() && $this->isRootScope())) {
+            $query->where('store_id', $this->storeId());
+        }
 
         if ($this->filterCategory !== '') {
             $category = $this->filterCategory;
@@ -262,6 +283,10 @@ class ProductManager extends ResourcePanel
         $this->fillGallery($model);
         $this->fillVariants($model);
         $this->fillComposition($model);
+
+        // Store is immutable on edit — expose it for the read-only display + to scope
+        // related option lists (category/brand/tax) to the record's own store.
+        $this->formStoreId = (string) $model->store_id;
 
         $form = [
             'kind' => (int) $model->kind,
@@ -481,9 +506,10 @@ class ProductManager extends ResourcePanel
                 $product = ShopProduct::findOrFail($this->editingId);
                 $product->update($attributes);
             } else {
-                // WHY: 1-1 ownership — a new product is owned by the current admin
-                // store (pinned to root in admin); set its scalar store_id on create.
-                $attributes['store_id'] = $this->storeId();
+                // WHY: 1-1 ownership — a new product is owned by the store picked on
+                // create (root admin) or the current scoped store (store-admin /
+                // switcher). ADR admin-shell_store-scoped-resource-panel.
+                $attributes['store_id'] = $this->resolveCreateStore();
                 $product = AdminProduct::createProductAdmin($attributes);
             }
 
@@ -520,7 +546,8 @@ class ProductManager extends ResourcePanel
      */
     private function assertSameStoreRefs(array $data): void
     {
-        $storeId = $this->storeId();
+        // The record's store: picked store on create, own store on edit (immutable).
+        $storeId = $this->currentStore();
 
         $brandId = (string) ($data['brand_id'] ?? '');
         if ($brandId !== '' && ShopBrand::where('id', $brandId)->where('store_id', $storeId)->doesntExist()) {
@@ -698,7 +725,45 @@ class ProductManager extends ResourcePanel
      */
     public function categoryOptions(): array
     {
-        return (array) (new AdminCategory())->getTreeCategoriesAdmin();
+        if (!$this->storeScopeActive()) {
+            return (array) (new AdminCategory())->getTreeCategoriesAdmin();
+        }
+        // Store-scoped: only the picked/record store's categories (none until picked).
+        $store = $this->currentStore();
+        if ($store === null || $store === '') {
+            return [];
+        }
+        $catTable = (new ShopCategory)->getTable();
+        $descTable = (new \GP247\Shop\Models\ShopCategoryDescription)->getTable();
+
+        return ShopCategory::query()
+            ->where($catTable . '.store_id', $store)
+            ->join($descTable, $descTable . '.category_id', $catTable . '.id')
+            ->where($descTable . '.lang', gp247_get_locale())
+            ->pluck($descTable . '.name', $catTable . '.id')
+            ->all();
+    }
+
+    /**
+     * Category options for the LIST filter. At root admin (store-scoped) the list
+     * shows every store's products, so the filter offers categories across all
+     * stores; otherwise it mirrors the (store-scoped) form options.
+     *
+     * @return array<int|string, string>
+     */
+    public function filterCategoryOptions(): array
+    {
+        if (!($this->storeScopeActive() && $this->isRootScope())) {
+            return $this->categoryOptions();
+        }
+        $catTable = (new ShopCategory)->getTable();
+        $descTable = (new \GP247\Shop\Models\ShopCategoryDescription)->getTable();
+
+        return ShopCategory::query()
+            ->join($descTable, $descTable . '.category_id', $catTable . '.id')
+            ->where($descTable . '.lang', gp247_get_locale())
+            ->pluck($descTable . '.name', $catTable . '.id')
+            ->all();
     }
 
     /**
@@ -706,9 +771,13 @@ class ProductManager extends ResourcePanel
      */
     public function brandOptions(): array
     {
-        // WHY: 1-1 ownership — only offer brands owned by the current store so an
+        // WHY: 1-1 ownership — only offer brands owned by the record's store so an
         // admin cannot reference another store's brand (RISK-TECH-store-same-store-ref).
-        return ShopBrand::where('store_id', $this->storeId())->pluck('name', 'id')->all();
+        $store = $this->currentStore();
+        if ($this->storeScopeActive() && ($store === null || $store === '')) {
+            return [];
+        }
+        return ShopBrand::where('store_id', $store)->pluck('name', 'id')->all();
     }
 
     /**
@@ -724,9 +793,13 @@ class ProductManager extends ResourcePanel
      */
     public function taxOptions(): array
     {
-        // WHY: 1-1 ownership — only offer taxes owned by the current store so an
+        // WHY: 1-1 ownership — only offer taxes owned by the record's store so an
         // admin cannot reference another store's tax (RISK-TECH-store-same-store-ref).
-        return ShopTax::where('store_id', $this->storeId())->pluck('name', 'id')->all();
+        $store = $this->currentStore();
+        if ($this->storeScopeActive() && ($store === null || $store === '')) {
+            return [];
+        }
+        return ShopTax::where('store_id', $store)->pluck('name', 'id')->all();
     }
 
     /**

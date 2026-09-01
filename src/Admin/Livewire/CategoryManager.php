@@ -104,6 +104,23 @@ class CategoryManager extends ResourcePanel
     }
 
     /**
+     * Store-scoped: pick a store on create (root admin), show it in the list, lock
+     * it on edit; the list labels each row by its category name.
+     *
+     * @return array<string, mixed>|null
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-store-content-assignment
+     * @aidlc-adr admin-shell_store-scoped-resource-panel
+     */
+    protected function storeScoped(): ?array
+    {
+        // 'reset': form fields cleared when the create picker changes store (the
+        // parent category is store-scoped, so a stale cross-store parent must go).
+        return ['display' => 'name', 'reset' => ['parent']];
+    }
+
+    /**
      * @return string
      */
     protected function panelView(): string
@@ -153,6 +170,10 @@ class CategoryManager extends ResourcePanel
     protected function fillForm($model): array
     {
         $this->fillDescriptions($model->descriptions);
+
+        // Store is immutable on edit — expose it for the read-only display + to scope
+        // related option lists to the record's own store.
+        $this->formStoreId = (string) $model->store_id;
 
         return [
             'image' => (string) $model->image,
@@ -230,12 +251,18 @@ class CategoryManager extends ResourcePanel
         ];
 
         if ($this->editingId !== null) {
+            // Store is immutable on edit — do NOT touch store_id (ADR 1-1).
+            $store = (string) ShopCategory::whereKey($this->editingId)->value('store_id');
+            $this->assertParentSameStore($attributes['parent'] ?? null, $store);
             $category = ShopCategory::findOrFail($this->editingId);
             $category->update($attributes);
         } else {
-            // WHY: 1-1 ownership — a new category is owned by the current admin store
-            // (pinned to root in admin); set its scalar store_id on create.
-            $attributes['store_id'] = session('adminStoreId', defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1);
+            // WHY: 1-1 ownership — a new category is owned by the store picked on create
+            // (root admin) or the current scoped store (store-admin / switcher).
+            // ADR admin-shell_store-scoped-resource-panel.
+            $store = $this->resolveCreateStore();
+            $this->assertParentSameStore($attributes['parent'] ?? null, $store);
+            $attributes['store_id'] = $store;
             $category = ShopCategory::create($attributes);
         }
 
@@ -292,7 +319,50 @@ class CategoryManager extends ResourcePanel
      */
     public function parentOptions(): array
     {
-        return (new AdminCategory())->getTreeCategoriesAdmin();
+        if (!$this->storeScopeActive()) {
+            return (new AdminCategory())->getTreeCategoriesAdmin();
+        }
+
+        // Store-scoped: parent candidates are categories of the SAME store (the picked
+        // store on create, or the record's store on edit); none until a store is chosen.
+        $store = $this->currentStore();
+        if ($store === null || $store === '') {
+            return [];
+        }
+
+        $catTable = (new ShopCategory)->getTable();
+        $descTable = (new ShopCategoryDescription)->getTable();
+
+        return ShopCategory::query()
+            ->where($catTable . '.store_id', $store)
+            ->when($this->editingId !== null && $this->editingId !== '', function ($q) use ($catTable) {
+                $q->where($catTable . '.id', '!=', $this->editingId);
+            })
+            ->join($descTable, $descTable . '.category_id', $catTable . '.id')
+            ->where($descTable . '.lang', gp247_get_locale())
+            ->pluck($descTable . '.name', $catTable . '.id')
+            ->all();
+    }
+
+    /**
+     * Reject a parent category that belongs to another store (same-store integrity,
+     * server-side — NFR-SEC-store-scoped-related-integrity). No-op when not store-scoped.
+     *
+     * @param int|string|null $parentId
+     * @param int|string      $storeId
+     * @return void
+     */
+    private function assertParentSameStore($parentId, $storeId): void
+    {
+        if (!$this->storeScopeActive() || empty($parentId)) {
+            return;
+        }
+        $ok = ShopCategory::whereKey($parentId)->where('store_id', $storeId)->exists();
+        if (!$ok) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'form.parent' => gp247_language_render('admin.store.related_wrong_store'),
+            ]);
+        }
     }
 
     /**
