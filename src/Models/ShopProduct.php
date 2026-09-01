@@ -145,14 +145,17 @@ class ShopProduct extends Model
      * alias / name (current locale). A "group" container (kind=2, non-sellable,
      * price always 0) is excluded; results are capped to $limit.
      *
-     * @param string $term  Raw search term (sku / alias / name fragment).
-     * @param int    $limit Maximum rows to return.
+     * @param string          $term    Raw search term (sku / alias / name fragment).
+     * @param int             $limit   Maximum rows to return.
+     * @param int|string|null $storeId When given, restrict to that store's products
+     *                                 (admin store scope — an order belongs to one store,
+     *                                 so its lines must come from that store's catalog).
      * @return \Illuminate\Support\Collection Matching products (empty when term < 2 chars).
      *
      * @aidlc-unit shop-admin
      * @aidlc-story US-SADM-003
      */
-    public static function searchForAdminOrderPicker(string $term, int $limit = 15)
+    public static function searchForAdminOrderPicker(string $term, int $limit = 15, $storeId = null)
     {
         $term = trim($term);
         if (strlen($term) < 2) {
@@ -164,6 +167,10 @@ class ShopProduct extends Model
         $descTable = (new ShopProductDescription)->getTable();
 
         return static::where('kind', '!=', GP247_PRODUCT_GROUP)
+            // WHY: scope to the order's store when one is chosen (1-1 ownership — each
+            // product belongs to exactly one store_id). Null = no scope (single-store /
+            // root before a store is picked).
+            ->when($storeId !== null && $storeId !== '', fn ($q) => $q->where($productTable . '.store_id', $storeId))
             // WHY: the product name lives on the per-language description table, not
             // shop_product, so join it (current locale only, to avoid duplicate rows)
             // to make name searchable alongside sku/alias.

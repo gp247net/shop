@@ -39,6 +39,29 @@
     <form method="POST" action="{{ gp247_route_admin('admin_order.post_create') }}">
         @csrf
 
+        {{-- Store first (full width, above the customer): an order belongs to one store,
+             which also scopes the product picker below — so it is picked up front. Locked
+             to the current store for a store-scoped admin. --}}
+        @if ($multiStore ?? false)
+            <div class="mb-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <p class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-store text-blue-500"></i>{{ gp247_language_render('admin.store') }} *
+                </p>
+                <div class="flex flex-wrap gap-4 rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800">
+                    @foreach ($storeList as $storeId => $storeName)
+                        <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                            <input type="radio" name="store_id" value="{{ $storeId }}"
+                                class="h-4 w-4"
+                                {{ (old('store_id') == $storeId || count($storeList) === 1) ? 'checked' : '' }}
+                                required>
+                            {{ $storeName }}
+                        </label>
+                    @endforeach
+                </div>
+                @error('store_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
             {{-- ── Left column ──────────────────────────────────────────── --}}
@@ -386,26 +409,6 @@
                             @error('exchange_rate')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
 
-                        @if ($multiStore ?? false)
-                        <div class="col-span-2">
-                            <p class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-store text-blue-500"></i>{{ gp247_language_render('admin.store') }} *
-                            </p>
-                            <div class="flex flex-wrap gap-4 rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800">
-                                @foreach ($storeList as $storeId => $storeName)
-                                    <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                                        <input type="radio" name="store_id" value="{{ $storeId }}"
-                                            class="h-4 w-4"
-                                            {{ old('store_id') == $storeId ? 'checked' : '' }}
-                                            required>
-                                        {{ $storeName }}
-                                    </label>
-                                @endforeach
-                            </div>
-                            @error('store_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                        </div>
-                        @endif
-
                         @if (!empty($paymentMethod))
                         <div>
                             <label class="{{ $labelCls }}">{{ gp247_language_render('order.payment_method') }}</label>
@@ -588,7 +591,11 @@ function orderCreate() {
                 this.products[idx].open = false;
                 return;
             }
-            const res = await fetch(productSearchUrl + '?term=' + encodeURIComponent(term));
+            // Scope the picker to the store chosen on the form so an order's lines come
+            // from its own store's catalog (store-scoped admins have a single locked store).
+            const storeSel = document.querySelector('input[name="store_id"]:checked');
+            const storeParam = storeSel && storeSel.value ? '&store_id=' + encodeURIComponent(storeSel.value) : '';
+            const res = await fetch(productSearchUrl + '?term=' + encodeURIComponent(term) + storeParam);
             const data = await res.json();
             this.products[idx].results = Array.isArray(data) ? data : [];
             this.products[idx].open = this.products[idx].results.length > 0;

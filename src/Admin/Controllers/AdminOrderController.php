@@ -41,6 +41,27 @@ class AdminOrderController extends RootAdminController
     }
 
     /**
+     * Resolve the admin store scope for the order screens: [scopeStore, showAll].
+     * showAll is true only for the root admin under an active multi-store plugin
+     * (session store = root) — parity with OrderManager::showAllStores(). A store-scoped
+     * session (session store != root) is locked to that store.
+     *
+     * @param bool $multiStore Whether a multi-store/multi-vendor plugin is active.
+     * @return array{0:int|string,1:bool} [scope store id, show-all-stores]
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-admin-order-store-scope
+     */
+    private function adminScopeStore(bool $multiStore): array
+    {
+        $root = defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1;
+        $scopeStore = session('adminStoreId', $root);
+        $showAll = $multiStore && (string) $scopeStore === (string) $root;
+
+        return [$scopeStore, $showAll];
+    }
+
+    /**
      * Form create new item in admin
      * @return [type] [description]
      */
@@ -79,7 +100,15 @@ class AdminOrderController extends RootAdminController
         $data['paymentMethod']  = $paymentMethod;
         $data['shippingMethod'] = $shippingMethod;
         $data['multiStore']     = $multiStore;
-        $data['storeList']      = $multiStore ? AdminStore::getListTitle() : [];
+        // WHY store-scope: the create screen must honour the admin store context like the
+        // order LIST does (OrderManager::showAllStores) — a store-scoped admin (session
+        // store != root) may only create orders for their own store, so lock the picker to
+        // it; the root admin (session = root) still chooses among all stores.
+        $storeTitles            = AdminStore::getListTitle();
+        [$scopeStore, $showAll] = $this->adminScopeStore($multiStore);
+        $data['storeList']      = $multiStore
+            ? ($showAll ? $storeTitles : array_intersect_key($storeTitles, [(string) $scopeStore => true]))
+            : [];
 
         return view('gp247-shop-admin::order-create')
             ->with($data);
@@ -230,6 +259,16 @@ class AdminOrderController extends RootAdminController
                 ->withErrors($validator)
                 ->withInput();
         }
+
+        // Security: a store-scoped admin may only create orders for THEIR store — force
+        // store_id to the session store, ignoring any posted value (defence against a
+        // forged store_id). The root admin keeps the store chosen on the form.
+        $multiStore = gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed();
+        [$scopeStore, $showAll] = $this->adminScopeStore($multiStore);
+        if (!$showAll && $multiStore) {
+            $data['store_id'] = (string) $scopeStore;
+        }
+
         //Create new order
         $dataCreate = [
             'customer_id'     => $data['customer_id'] ?? "",
@@ -554,7 +593,18 @@ class AdminOrderController extends RootAdminController
     public function getSearchProduct()
     {
         $term = (string) request('term', '');
-        $products = ShopProduct::searchForAdminOrderPicker($term);
+        // Scope the picker to the order's store: a store-scoped admin is forced to their
+        // store; the root admin filters by the store chosen on the form (null = not yet
+        // chosen → unscoped). Keeps an order's lines within its own store's catalog.
+        $multiStore = gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed();
+        // Only scope under an active multi-store plugin — single-store installs keep the
+        // unfiltered picker (their products may predate the store_id column).
+        $storeFilter = null;
+        if ($multiStore) {
+            [$scopeStore, $showAll] = $this->adminScopeStore($multiStore);
+            $storeFilter = $showAll ? (request('store_id') ?: null) : $scopeStore;
+        }
+        $products = ShopProduct::searchForAdminOrderPicker($term, 15, $storeFilter);
 
         // WHY: preload attribute group names once so building each product's
         // attribute groups stays a single query (not N per result).
