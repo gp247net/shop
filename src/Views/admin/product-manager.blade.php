@@ -148,7 +148,7 @@
                         </div>
                     @endif
 
-                    <x-gp247::media-input :label="gp247_language_render('product.image')" name="image" type="product"
+                    <x-gp247::media-input :working-store="$formStoreId ?? ''" :label="gp247_language_render('product.image')" name="image" type="product"
                         wire:model="form.image" :value="$form['image'] ?? ''" :error="$errors->first('form.image')" />
 
                     {{-- Gallery folded into General (no dedicated tab). --}}

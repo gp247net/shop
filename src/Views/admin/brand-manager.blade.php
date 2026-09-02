@@ -17,7 +17,7 @@
             @include('gp247-admin::partials.store-scope-picker', ['testid' => 'brand-store-select'])
             <x-gp247::input :label="gp247_language_render('admin.brand.name')" name="name"
                 wire:model="form.name" :error="$errors->first('form.name')" required />
-            <x-gp247::media-input :label="gp247_language_render('admin.brand.image')" name="image" type="brand"
+            <x-gp247::media-input :working-store="$formStoreId ?? ''" :label="gp247_language_render('admin.brand.image')" name="image" type="brand"
                 wire:model="form.image" :value="$form['image'] ?? ''" :error="$errors->first('form.image')" />
             <x-gp247::input :label="gp247_language_render('admin.brand.url')" name="url"
                 wire:model="form.url" :error="$errors->first('form.url')" />

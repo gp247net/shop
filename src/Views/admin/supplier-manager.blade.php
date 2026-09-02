@@ -16,7 +16,7 @@
             @include('gp247-admin::partials.store-scope-picker', ['testid' => 'supplier-store-select'])
             <x-gp247::input :label="gp247_language_render('admin.supplier.name')" name="name"
                 wire:model="form.name" :error="$errors->first('form.name')" required />
-            <x-gp247::media-input :label="gp247_language_render('admin.supplier.image')" name="image" type="supplier"
+            <x-gp247::media-input :working-store="$formStoreId ?? ''" :label="gp247_language_render('admin.supplier.image')" name="image" type="supplier"
                 wire:model="form.image" :value="$form['image'] ?? ''" :error="$errors->first('form.image')" />
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <x-gp247::input :label="gp247_language_render('admin.supplier.email')" name="email"

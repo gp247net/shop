@@ -13,7 +13,7 @@
     @forelse ($gallery as $index => $image)
         <div class="flex items-end gap-2" wire:key="gallery-{{ $index }}">
             <div class="flex-1">
-                <x-gp247::media-input name="gallery_{{ $index }}" type="product"
+                <x-gp247::media-input :working-store="$formStoreId ?? ''" name="gallery_{{ $index }}" type="product"
                     wire:model="gallery.{{ $index }}" :value="$image" />
             </div>
             <x-gp247::button size="sm" variant="ghost" wire:click="removeGalleryImage({{ $index }})"><i class="fas fa-trash-alt text-red-600"></i></x-gp247::button>
