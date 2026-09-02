@@ -361,14 +361,17 @@ class ProductManager extends ResourcePanel
         }
 
         // A still-enabled gated field becomes required when its *_required flag is on.
-        if (function_exists('gp247_config_admin')) {
+        if (function_exists('gp247_config')) {
             foreach (self::GATED_FIELDS as $cfg => $field) {
                 // WHY: keep parity with the render/persist gate — a field hidden by
                 // productFieldEnabled() must never get any rule, not even 'required'.
+                // gatedFieldDisabled() already scopes to the product's store, so read the
+                // *_required flag from the same store (mod 20260902T080541) — not the admin
+                // session — so validation matches what the store's form actually shows.
                 if ($this->gatedFieldDisabled($field)) {
                     continue;
                 }
-                if (gp247_config_admin($cfg) && gp247_config_admin($cfg . '_required')) {
+                if (gp247_config($cfg . '_required', $this->formStoreId ?: null)) {
                     $existing = $rules['form.' . $field] ?? 'nullable';
                     $rules['form.' . $field] = 'required|' . ltrim(str_replace('nullable', '', $existing), '|');
                 }
@@ -671,7 +674,12 @@ class ProductManager extends ResourcePanel
         if (!function_exists('gp247_config')) {
             return true;
         }
-        $value = gp247_config($configKey);
+        // WHY $this->formStoreId (mod 20260902T080541): field gating follows the product's
+        // OWN store, not the admin session — so a root admin editing a sub-store's product
+        // sees that store's field config. Empty store falls back to GLOBAL (unchanged for
+        // single-store / stores with no per-store override). ADR admin-shell_lfm-working-dir
+        // extends the working-store principle to config resolution.
+        $value = gp247_config($configKey, $this->formStoreId ?: null);
 
         return $value !== '0' && $value !== 0;
     }
