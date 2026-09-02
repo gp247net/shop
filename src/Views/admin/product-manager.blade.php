@@ -19,6 +19,22 @@
     {{-- ===================== LEFT: FORM ===================== --}}
     <x-gp247::card :title="gp247_language_render($editingId ? 'action.edit' : 'admin.product.add_new')">
         <form wire:submit="save" class="space-y-4">
+            {{-- WHY: safety net — some validation errors (e.g. cross-store brand/tax refs from
+                 assertSameStoreRefs) land on wire:ignore'd searchable-selects whose message is
+                 easy to miss, so the save appears to fail silently (only the tab dot lights up).
+                 A top-of-form summary guarantees every error is visible whatever the active tab. --}}
+            @if ($errors->any())
+                <div class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300" data-testid="product-form-error-summary">
+                    <p class="mb-1 flex items-center gap-2 font-semibold">
+                        <i class="fas fa-exclamation-circle"></i> {{ gp247_language_quickly('admin.validate_error', 'Please review and fix the fields below.') }}
+                    </p>
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             {{-- WHY: when "Use STRUCTURE TYPE" (product_kind) is disabled in Shop Config, the kind is
                  always SINGLE — hide the selector and let productAttributes() enforce it on save.
                  null (config absent / not yet seeded) is treated as enabled (same as seeder default=1). --}}
@@ -126,6 +142,7 @@
                                         model="form.brand_id"
                                         :label="gp247_language_render('product.brand')"
                                         :options="collect($this->brandOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
+                                        :error="$errors->first('form.brand_id')"
                                     />
                                 </div>
                             @endif
@@ -134,6 +151,7 @@
                                     model="form.supplier_id"
                                     :label="gp247_language_render('product.supplier')"
                                     :options="collect($this->supplierOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
+                                    :error="$errors->first('form.supplier_id')"
                                 />
                             @endif
                             {{-- Tax has no on/off toggle in Shop Config (it is configured via the
@@ -143,6 +161,7 @@
                                     model="form.tax_id"
                                     :label="gp247_language_render('product.tax')"
                                     :options="collect($this->taxOptions())->map(fn ($name, $id) => ['id' => (string) $id, 'label' => $name])->values()->all()"
+                                    :error="$errors->first('form.tax_id')"
                                 />
                             </div>
                         </div>

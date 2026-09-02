@@ -552,15 +552,20 @@ class ProductManager extends ResourcePanel
         // The record's store: picked store on create, own store on edit (immutable).
         $storeId = $this->currentStore();
 
+        // WHY: brand_id/tax_id use "0" (legacy S-Cart sentinel) or "" to mean "no
+        // reference". Only "" was skipped before, so a product with the default
+        // brand_id="0" was checked as a real brand, failed doesntExist(), and threw
+        // an invisible cross-store error on form.brand_id — blocking the save with
+        // just a red tab dot. Treat "0" as empty so an absent reference passes.
         $brandId = (string) ($data['brand_id'] ?? '');
-        if ($brandId !== '' && ShopBrand::where('id', $brandId)->where('store_id', $storeId)->doesntExist()) {
+        if ($brandId !== '' && $brandId !== '0' && ShopBrand::where('id', $brandId)->where('store_id', $storeId)->doesntExist()) {
             throw ValidationException::withMessages([
                 'form.brand_id' => $this->label('product.brand') . ': invalid store reference',
             ]);
         }
 
         $taxId = (string) ($data['tax_id'] ?? '');
-        if ($taxId !== '' && ShopTax::where('id', $taxId)->where('store_id', $storeId)->doesntExist()) {
+        if ($taxId !== '' && $taxId !== '0' && ShopTax::where('id', $taxId)->where('store_id', $storeId)->doesntExist()) {
             throw ValidationException::withMessages([
                 'form.tax_id' => $this->label('product.tax') . ': invalid store reference',
             ]);
