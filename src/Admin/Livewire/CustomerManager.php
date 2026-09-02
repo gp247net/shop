@@ -78,21 +78,36 @@ class CustomerManager extends ResourcePanel
     }
 
     /**
-     * Current admin store id (falls back to the root store).
+     * Opt into the ResourcePanel store-scope UI. Customers own a single store
+     * (the storefront where they registered — 1-1, like the catalog entities), so
+     * this exposes the store picker on create-at-root and a per-row store label.
+     * No form field depends on the store, so `reset` is empty. Active only when a
+     * multi-store/multi-vendor plugin is installed (single-store parity otherwise).
      *
-     * @return int|string
+     * @return array<string, mixed>|null
+     * @aidlc-story US-SADM-store-content-assignment
+     * @aidlc-adr admin-shell_store-scoped-resource-panel
      */
-    private function storeId()
+    protected function storeScoped(): ?array
     {
-        return session('adminStoreId', defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1);
+        return ['display' => 'email', 'reset' => []];
     }
 
     /**
+     * Store-scoped customer query: root admin sees every store's customers (each
+     * row labelled by its store); a scoped context (store-admin) or a single-store
+     * install filters to the own store.
+     *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     protected function baseQuery()
     {
-        return AdminCustomer::query()->where('store_id', $this->storeId());
+        $query = AdminCustomer::query();
+        if (!($this->storeScopeActive() && $this->isRootScope())) {
+            $query->where('store_id', $this->storeContext());
+        }
+
+        return $query;
     }
 
     /**
@@ -176,6 +191,8 @@ class CustomerManager extends ResourcePanel
      */
     protected function fillForm($model): array
     {
+        // Store is immutable on edit — expose it for the read-only display.
+        $this->formStoreId = (string) $model->store_id;
         $this->loadCustomFields($model->id);
         $this->defaultAddressId = $model->address_id !== null ? (string) $model->address_id : null;
         $this->refreshAddresses();
@@ -227,9 +244,10 @@ class CustomerManager extends ResourcePanel
             $savedId = (string) $this->editingId;
         } else {
             $insert = $mapping['dataInsert'];
-            // WHY: createCustomer does not set store_id; scope to the admin store
-            // so the (store-scoped) list shows the new customer.
-            $insert['store_id'] = $this->storeId();
+            // WHY: createCustomer does not set store_id; a new customer is owned by
+            // the store picked on create (root admin) or the current scoped store
+            // (store-admin), server-authoritative via resolveCreateStore().
+            $insert['store_id'] = $this->resolveCreateStore();
             $customer = ShopCustomer::createCustomer($insert);
             if (function_exists('gp247_customer_created_by_admin')) {
                 gp247_customer_created_by_admin($customer);
@@ -290,7 +308,7 @@ class CustomerManager extends ResourcePanel
             'password' => (string) ($this->form['password'] ?? ''),
             'password_confirmation' => (string) ($this->form['password_confirmation'] ?? ''),
             'status' => empty($this->form['status']) ? 0 : 1,
-            'store_id' => $this->storeId(),
+            'store_id' => $this->resolveCreateStore(),
             'fields' => $this->customFieldsPayload(),
         ];
         foreach (self::FIELDS as $field) {

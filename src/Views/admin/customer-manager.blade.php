@@ -32,6 +32,7 @@
         <x-gp247::tabs :tabs="$tabsMap" :errors="$tabsWithErrors" default="info">
             <div x-show="tab === 'info'" class="space-y-4">
                 <form wire:submit="save" class="space-y-4">
+            @include('gp247-admin::partials.store-scope-picker', ['testid' => 'customer-store-select'])
             @if (gp247_config_admin('customer_email'))
                 <x-gp247::input type="email"
                     :label="gp247_language_render('customer.email') . (gp247_config_admin('customer_email_required') ? ' *' : '')"
@@ -210,7 +211,10 @@
                     @if (gp247_config_admin('customer_email'))
                     <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">{{ $row->email }}</td>
                     @endif
-                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ trim($row->first_name . ' ' . $row->last_name) }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {{ trim($row->first_name . ' ' . $row->last_name) }}
+                        @include('gp247-admin::partials.store-scope-line', ['storeId' => $row->store_id])
+                    </td>
                     @if (gp247_config_admin('customer_address1'))
                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->address1 }}</td>
                     @endif

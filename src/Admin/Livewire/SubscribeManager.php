@@ -34,22 +34,35 @@ class SubscribeManager extends ResourcePanel
     protected bool $keepStateOnSave = true;
 
     /**
-     * Current admin store id (falls back to the root store, mirroring the other
-     * store-scoped shop managers).
+     * Opt into the ResourcePanel store-scope UI. A subscriber belongs to the single
+     * store where they subscribed on the storefront (1-1). Exposes the store picker
+     * on create-at-root and a per-row store label; no dependent field, so `reset`
+     * is empty. Active only when a multi-store/multi-vendor plugin is installed.
      *
-     * @return int|string
+     * @return array<string, mixed>|null
+     * @aidlc-story US-SADM-store-content-assignment
+     * @aidlc-adr admin-shell_store-scoped-resource-panel
      */
-    private function storeId()
+    protected function storeScoped(): ?array
     {
-        return session('adminStoreId', defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1);
+        return ['display' => 'email', 'reset' => []];
     }
 
     /**
+     * Store-scoped subscribe query: root admin sees every store's subscribers (each
+     * row labelled by its store); a scoped context (store-admin) or a single-store
+     * install filters to the own store.
+     *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     protected function baseQuery()
     {
-        return AdminSubscribe::query()->where('store_id', $this->storeId());
+        $query = AdminSubscribe::query();
+        if (!($this->storeScopeActive() && $this->isRootScope())) {
+            $query->where('store_id', $this->storeContext());
+        }
+
+        return $query;
     }
 
     /**
@@ -106,6 +119,9 @@ class SubscribeManager extends ResourcePanel
      */
     protected function fillForm($model): array
     {
+        // Store is immutable on edit — expose it for the read-only display.
+        $this->formStoreId = (string) $model->store_id;
+
         return [
             'email' => (string) $model->email,
             'status' => (int) $model->status,
@@ -143,12 +159,14 @@ class SubscribeManager extends ResourcePanel
         $attributes = [
             'email' => $data['email'],
             'status' => empty($data['status']) ? 0 : 1,
-            'store_id' => $this->storeId(),
         ];
 
         if ($this->editingId !== null) {
+            // Store is immutable on edit — do NOT touch store_id (ADR 1-1).
             AdminSubscribe::findOrFail($this->editingId)->update($attributes);
         } else {
+            // Owned by the store picked on create (root) / the scoped store.
+            $attributes['store_id'] = $this->resolveCreateStore();
             AdminSubscribe::create($attributes);
         }
     }
