@@ -3,7 +3,7 @@
 namespace GP247\Shop\Front\Contracts;
 
 /**
- * Contract a total-method plugin (configCode "Total": coupon, point, …) implements
+ * Contract a total-method plugin (configCode "Promotion"; legacy "Total": coupon, point, …) implements
  * on its AppConfig so the checkout can drive it uniformly, for any template
  * (default or future) without template↔plugin coupling.
  *

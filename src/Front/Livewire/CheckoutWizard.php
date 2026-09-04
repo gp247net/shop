@@ -383,10 +383,32 @@ class CheckoutWizard extends BaseFrontComponent
     }
 
     /**
+     * Active total-method plugins, keyed by plugin key.
+     *
+     * WHY dual-read: the total-method group's configCode was renamed "Total" -> "Promotion"
+     * (modification 20260904T225634). We read the new code first and union the legacy "Total"
+     * so third-party plugins still declaring "Total" (and installs not yet migrated) keep
+     * working; a one-time deprecation warning nudges the migration. NOTE: this is the plugin
+     * configCode, unrelated to the order-total line code 'total' in shop_order_total.
+     *
+     * @return array<string, array<string,mixed>> Merged plugin rows (Promotion wins on collision).
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-006
+     * @aidlc-adr storefront_checkout-total-method-contract
+     */
+    private function activeTotalMethodPlugins(): array
+    {
+        // Single source of truth for total-method discovery (dual-read Promotion ∪ legacy
+        // Total + deprecation warning) shared with ShopCartController's checkout data-prep.
+        return gp247_shop_total_method_modules();
+    }
+
+    /**
      * Resolve a total plugin's AppConfig instance for a mutating action, or null.
-     * Whitelist: the key must be an active plugin with code 'total' whose AppConfig
-     * implements CheckoutTotalMethod. This is the security boundary for the client
-     * -supplied $key on applyTotal/removeTotal.
+     * Whitelist: the key must be an active total-method plugin (configCode "Promotion",
+     * legacy "Total") whose AppConfig implements CheckoutTotalMethod. This is the security
+     * boundary for the client-supplied $key on applyTotal/removeTotal.
      *
      * @param string $key
      * @return CheckoutTotalMethod|null
@@ -394,7 +416,7 @@ class CheckoutWizard extends BaseFrontComponent
     private function resolveTotalPlugin(string $key): ?CheckoutTotalMethod
     {
         $key     = (string) gp247_clean(data: $key, hight: true);
-        $modules = gp247_extension_get_via_code(code: 'total');
+        $modules = $this->activeTotalMethodPlugins();
         if (!array_key_exists($key, $modules)) {
             return null;
         }
@@ -417,7 +439,7 @@ class CheckoutWizard extends BaseFrontComponent
      */
     private function loadTotalPlugins(): array
     {
-        $modules = gp247_extension_get_via_code(code: 'total');
+        $modules = $this->activeTotalMethodPlugins();
         $sources = gp247_extension_get_all_local(type: 'Plugins');
         $result  = [];
 

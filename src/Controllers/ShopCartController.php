@@ -216,8 +216,8 @@ class ShopCartController extends RootFrontController
             }
         }
 
-        //Total
-        $moduleTotal = gp247_extension_get_via_code(code: 'total');
+        //Total — dual-read Promotion ∪ legacy Total (mod 20260904T225634), shared seam.
+        $moduleTotal = gp247_shop_total_method_modules();
         $sourcesTotal = gp247_extension_get_all_local(type: 'Plugins');
         $totalMethod = array();
         foreach ($moduleTotal as $module) {

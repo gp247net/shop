@@ -220,3 +220,37 @@ if (!function_exists('gp247_order_mapping_validate') && !in_array('gp247_order_m
         return $dataMap;
     }
 }
+if (!function_exists('gp247_shop_total_method_modules') && !in_array('gp247_shop_total_method_modules', config('gp247_functions_except', []))) {
+    /**
+     * Active total-method plugins (coupon/discount/point) at checkout, keyed by plugin key.
+     *
+     * WHY dual-read: the total-method group's configCode was renamed "Total" -> "Promotion"
+     * (modification 20260904T225634). Read the new code first and union the legacy "Total"
+     * so third-party plugins still declaring "Total" (and installs not yet migrated via
+     * gp247:update) keep working; a deprecation warning nudges the migration.
+     *
+     * Single source for every checkout total-method discovery (CheckoutWizard Livewire +
+     * ShopCartController data-prep). NOTE: this is the plugin configCode — unrelated to the
+     * order-total LINE code 'total' in shop_order_total.
+     *
+     * @return array<string, array<string,mixed>> Merged plugin rows (Promotion wins on collision).
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-006
+     * @aidlc-adr storefront_checkout-total-method-contract
+     */
+    function gp247_shop_total_method_modules(): array
+    {
+        $promotion = gp247_extension_get_via_code(code: 'Promotion');
+        $legacy    = gp247_extension_get_via_code(code: 'Total');
+
+        if (!empty($legacy)) {
+            logger()->warning('[GP247 checkout] total-method plugin(s) still declare the legacy configCode '
+                . '"Total" (' . implode(', ', array_keys($legacy)) . '). It is deprecated since the '
+                . 'Total->Promotion rename; run gp247:update or set configCode "Promotion".');
+        }
+
+        // Promotion wins on key collision; legacy fills in the rest.
+        return $promotion + $legacy;
+    }
+}
