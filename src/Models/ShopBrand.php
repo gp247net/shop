@@ -119,7 +119,9 @@ class ShopBrand extends Model
         if ($type === null) {
             $data = $data->where($this->getTable().'.id', $key);
         } else {
-            $data = $data->where($type, $key);
+            // WHY: qualify with the base table so this stays safe if a join is
+            // ever added here (a bare column would then be ambiguous, SQL 1052).
+            $data = $data->where($this->getTable().'.'.$type, $key);
         }
         if ($checkActive) {
             $data = $data->where($this->getTable() .'.status', 1);

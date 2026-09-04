@@ -120,6 +120,12 @@ class ShopCategory extends Model
     public function scopeSort($query, $sortBy = null, $sortOrder = 'asc')
     {
         $sortBy = $sortBy ?? 'sort';
+        // WHY: buildQuery joins admin_store (multi-store) alongside the description
+        // left-join, so an unqualified sort column such as 'id'/'created_at'/'status'
+        // would be ambiguous (SQL 1052). Qualify bare column names with the base table.
+        if (strpos($sortBy, '.') === false) {
+            $sortBy = $this->getTable() . '.' . $sortBy;
+        }
         return $query->orderBy($sortBy, $sortOrder);
     }
 
@@ -155,7 +161,10 @@ class ShopCategory extends Model
         if ($type === null) {
             $category = $category->where($this->getTable().'.id', $key);
         } else {
-            $category = $category->where($type, $key);
+            // WHY: qualify with the base table. When multi-store is installed
+            // getDetail joins admin_store (and description is always left-joined),
+            // so a bare column name like 'id' is ambiguous across tables (SQL 1052).
+            $category = $category->where($this->getTable().'.'.$type, $key);
         }
         if ($checkActive) {
             $category = $category->where($this->getTable() .'.status', 1);
