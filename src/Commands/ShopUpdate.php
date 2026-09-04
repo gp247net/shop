@@ -54,11 +54,12 @@ class ShopUpdate extends GP247Command
             return $this->respondFailure('upgrade_failed', 'Shop upgrade failed: '.$e->getMessage());
         }
 
-        // Relabeled + new address labels are refreshed here rather than in the
-        // migration so a site owner's edited translations are only overwritten
-        // when they explicitly opt into the upsert command.
+        // New/renamed language rows shipped by upgrades are refreshed here rather than
+        // in the migrations so a site owner's edited translations are only overwritten
+        // when they explicitly opt into the upsert command. WHY generic: the hint is not
+        // tied to any single upgrade — many upgrades add or rename language keys over time.
         $this->line('');
-        $this->info('Next step: run "php artisan gp247:language-update" to refresh address labels (city/district + renamed address1/2/3).');
+        $this->info('Next step (optional): run "php artisan gp247:language-update" to refresh language rows for any new or renamed keys (upsert — overwrites edited translations).');
 
         return $this->respondSuccess([
             'upgraded'  => true,
