@@ -40,7 +40,7 @@
                          the record and scopes the fields below, so the user picks it up front;
                          changing it resets the store-dependent fields + toasts. Only shown when
                          multi-store/multi-vendor is installed. --}}
-                    @if ($this->storeScopeActive())
+                    @if ($this->storeScopeUiVisible())
                         <div class="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-900/10">
                             <label class="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-200">
                                 {{ gp247_language_render('admin.store.scope_label') }}
@@ -149,7 +149,7 @@
                     </td>
                     <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100">
                         {{ $row->getTitle() ?: $row->alias }}
-                        @if ($this->storeScopeActive())
+                        @if ($this->storeScopeUiVisible())
                             <span class="mt-0.5 block text-xs font-normal text-gray-400 dark:text-gray-500">
                                 <i class="fas fa-store"></i> {{ $this->storeLabel($row->store_id) }}
                             </span>

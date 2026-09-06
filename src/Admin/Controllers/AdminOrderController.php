@@ -109,6 +109,11 @@ class AdminOrderController extends RootAdminController
         $data['storeList']      = $multiStore
             ? ($showAll ? $storeTitles : array_intersect_key($storeTitles, [(string) $scopeStore => true]))
             : [];
+        // Show the store picker only for the ROOT admin: a store-scoped admin is locked
+        // to their own store (forced server-side on post), so the "which store" chrome is
+        // redundant and hidden (US-admin-shell-store-scope-ui-root-only). store_id is still
+        // resolved from the session for them in postCreate().
+        $data['showStorePicker'] = $multiStore && $showAll;
 
         return view('gp247-shop-admin::order-create')
             ->with($data);
@@ -143,8 +148,16 @@ class AdminOrderController extends RootAdminController
         if (gp247_config('use_shipping')) {
             $validate['shipping_method'] = 'required';
         }
-        if (gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed()) {
-            $validate['store_id'] = 'required|string';
+        // store_id is required from the form ONLY for the root admin, who picks it. A
+        // store-scoped admin has no picker (chrome hidden) and their store_id is forced
+        // from the session below, so requiring it from the (absent) form would wrongly
+        // block their submit (US-admin-shell-store-scope-ui-root-only).
+        $multiStoreValidate = gp247_store_check_multi_partner_installed() || gp247_store_check_multi_store_installed();
+        if ($multiStoreValidate) {
+            [, $showAllValidate] = $this->adminScopeStore($multiStoreValidate);
+            if ($showAllValidate) {
+                $validate['store_id'] = 'required|string';
+            }
         }
         if (gp247_config_admin('customer_lastname')) {
             if (gp247_config_admin('customer_lastname_required')) {
