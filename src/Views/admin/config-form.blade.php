@@ -103,10 +103,13 @@
                         </div>
 
                     @elseif ($hasAttrTable)
-                        {{-- Two-column layout: basic settings | attribute table --}}
-                        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        {{-- Config table. When there are basic settings they sit in a left
+                             column; otherwise the table spans full width (mod 20260906T010000
+                             — the customer tab moved its "basic" flags into the table). --}}
+                        <div class="grid grid-cols-1 gap-6 {{ $basicFields->isNotEmpty() ? 'lg:grid-cols-2' : '' }}">
 
-                            {{-- Left: basic settings --}}
+                            {{-- Left: basic settings (only when present) --}}
+                            @if ($basicFields->isNotEmpty())
                             <div class="space-y-3">
                                 @forelse ($basicFields as $field)
                                     @php
@@ -137,6 +140,7 @@
                                     <p class="text-sm text-gray-400">-</p>
                                 @endforelse
                             </div>
+                            @endif
 
                             {{-- Right: attribute table (Field | Value | Required) --}}
                             <div class="overflow-x-auto">

@@ -98,8 +98,12 @@ class ShopConfigForm extends GP247AdminComponent
 
         // --- Customer (global) ---
         $fields = [];
+        // customer_config flags (e.g. "Need verify email") used to be a separate left
+        // "basic" column; they are now the FIRST rows of the single right-hand config
+        // table (value-only, no "required" counterpart) — mod 20260906T010000.
+        $topFields = [];
         foreach ($load('customer_config', $global) as $c) {
-            $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'basic');
+            $topFields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'attribute');
         }
 
         // First name has no config key — it is always used and always required
@@ -110,8 +114,8 @@ class ShopConfigForm extends GP247AdminComponent
             // customer_address1 is always-on in the legacy screen (disabled).
             $attrFields[] = $this->field($c, 'checkbox', 'global', [], $c->key === 'customer_address1', '', 'attribute');
         }
-        // Explicit display order overrides the fragile legacy sort DESC from the DB.
-        foreach ($this->orderCustomerAttrFields($attrFields) as $f) {
+        // customer_config rows first, then the address/profile fields in canonical order.
+        foreach (array_merge($topFields, $this->orderCustomerAttrFields($attrFields)) as $f) {
             $fields[] = $f;
         }
 
@@ -195,7 +199,12 @@ class ShopConfigForm extends GP247AdminComponent
     {
         return [
             'key' => $c->key,
-            'label' => $c->detail,
+            // Fall back to a humanized key when the config row has no `detail` label
+            // (a seeded field whose i18n detail is empty renders as a blank row —
+            // e.g. customer_company, mod 20260906T010000).
+            'label' => ($c->detail === null || $c->detail === '')
+                ? ucfirst(trim(str_replace('_', ' ', preg_replace('/^(customer|product|order)_/', '', (string) $c->key))))
+                : $c->detail,
             'labelSuffix' => $labelSuffix,
             'type' => $type,
             'scope' => $scope,
