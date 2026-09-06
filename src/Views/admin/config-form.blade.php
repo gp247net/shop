@@ -20,6 +20,7 @@
             <div class="mb-4 flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-700">
                 @foreach ($tabs as $tab)
                     <button type="button" x-on:click="tab = '{{ $tab['id'] }}'"
+                        data-testid="shop-admin-config-tab-{{ $tab['id'] }}"
                         :class="tab === '{{ $tab['id'] }}'
                             ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                             : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'"
@@ -246,7 +247,7 @@
             @endforeach
 
             <div class="mt-6 flex items-center justify-end border-t border-gray-200 pt-4 dark:border-gray-700">
-                <x-gp247::button type="submit" wire:loading.attr="disabled">
+                <x-gp247::button type="submit" wire:loading.attr="disabled" data-testid="shop-admin-config-save">
                     <i class="fas fa-save"></i> {{ gp247_language_render('admin.save') }}
                 </x-gp247::button>
             </div>

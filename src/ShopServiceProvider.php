@@ -256,6 +256,45 @@ class ShopServiceProvider extends ServiceProvider
             'gp247-shop-admin',
             classNamespace: 'GP247\\Shop\\Admin\\Livewire',
         );
+
+        $this->registerConfigHubTab();
+    }
+
+    /**
+     * Contribute the shop configuration screen as a tab on the core Configuration
+     * hub (SettingsHub), so every config lives on one screen
+     * (US-SADM-shop-config-into-hub). Core exposes the registry seam; shop plugs in
+     * here without core referencing shop (ADR admin-shell_config-hub-tab-registry).
+     *
+     * Guarded by gp247_shop_installed() — the DB-level install truth, not "package
+     * present" (gp247.md §0): a half-installed shop must not push a tab that would
+     * then fail to render. The tab declares its own authUri so the hub gates it by
+     * `admin_shop_config`, unchanged.
+     *
+     * @return void
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-shop-config-into-hub
+     * @aidlc-adr admin-shell_config-hub-tab-registry
+     */
+    protected function registerConfigHubTab(): void
+    {
+        if (!class_exists(\GP247\Core\AdminShell\Support\SettingsHubTabRegistry::class)) {
+            return;
+        }
+        if (!function_exists('gp247_shop_installed') || !gp247_shop_installed()) {
+            return;
+        }
+
+        $prefix = defined('GP247_ADMIN_PREFIX') ? GP247_ADMIN_PREFIX : 'gp247_admin';
+
+        \GP247\Core\AdminShell\Support\SettingsHubTabRegistry::register(
+            key: 'shop',
+            label: 'admin.menu_titles.shop_config',
+            component: 'gp247-shop-admin::shop-config-form',
+            authUri: $prefix . '/shop_config',
+            order: 10,
+        );
     }
 
     /**

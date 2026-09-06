@@ -159,7 +159,10 @@ class DataShopInitializeSeeder extends Seeder
                 ['parent_id' => $idBlockSetting,'sort' => 70,'title' => 'admin.menu_titles.payment_status','icon' => 'fas fa-recycle','uri' => 'admin::payment_status','key' => null,'type' => 0],
                 ['parent_id' => $idBlockSetting,'sort' => 60,'title' => 'admin.menu_titles.attribute_group','icon' => 'fas fa-braille','uri' => 'admin::attribute_group','key' => null,'type' => 0],
                 ['parent_id' => $idBlockSetting,'sort' => 40,'title' => 'admin.menu_titles.tax','icon' => 'far fa-calendar-minus','uri' => 'admin::tax','key' => null,'type' => 0],
-                ['parent_id' => $idBlockSetting,'sort' => 10,'title' => 'admin.menu_titles.shop_config','icon' => 'fas fa-sliders-h','uri' => 'admin::shop_config','key' => null,'type' => 0],
+                // WHY: shop configuration is now a tab on the core Configuration hub
+                // (store_config) via SettingsHubTabRegistry (US-SADM-shop-config-into-hub,
+                // mod 20260906T104800). No standalone menu item — one entry point. Existing
+                // installs drop the old row via the upgrade migration of the same date.
 
 
             ]

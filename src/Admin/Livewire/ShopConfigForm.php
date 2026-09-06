@@ -6,6 +6,7 @@ use GP247\Core\AdminShell\Infrastructure\GP247AdminComponent;
 use GP247\Core\Models\AdminConfig;
 use GP247\Shop\Models\ShopTax;
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Locked;
 
 /**
  * Shop configuration screen (shop-admin Unit) — modern Livewire/TailAdmin port of
@@ -25,11 +26,34 @@ class ShopConfigForm extends GP247AdminComponent
 {
     protected ?string $permission = 'admin_shop_config';
 
+    /**
+     * Canonical admin path this screen authorizes against (ADR-001 Layer-2).
+     *
+     * Set explicitly so that when this component is embedded as a tab inside the
+     * core Configuration hub (store_config, US-SADM-shop-config-into-hub), both the
+     * view check and save() still gate on `gp247_admin/shop_config` — never the
+     * host's `store_config` path (which would conflate the two permissions;
+     * RISK-SEC-config-rbac-uri-collapse).
+     *
+     * @var string|null
+     */
+    protected ?string $screenUri = 'gp247_admin/shop_config';
+
     /** @var array<string, mixed> Config key => current value (bound via wire:model). */
     public array $values = [];
 
     /** @var string Active admin store id (store-scoped configs target this). */
     public string $storeId = '';
+
+    /**
+     * When set (embedded from MultiStore/config/{store}), per-store groups target
+     * this store's override instead of the viewer's own store — lets root edit a
+     * specific store's customer/order config. #[Locked] so the client cannot forge it.
+     *
+     * @var string|null
+     */
+    #[Locked]
+    public ?string $scopeStoreIdOverride = null;
 
     /**
      * Seed the active store and current config values.
@@ -38,6 +62,12 @@ class ShopConfigForm extends GP247AdminComponent
      */
     public function mount(): void
     {
+        // Pin the canonical screen path (honouring a custom admin prefix) BEFORE
+        // parent::mount() authorizes, so the view check gates on shop_config even
+        // when this component is embedded in the store_config hub.
+        $prefix = defined('GP247_ADMIN_PREFIX') ? GP247_ADMIN_PREFIX : 'gp247_admin';
+        $this->screenUri = $prefix . '/shop_config';
+
         parent::mount();
 
         $this->storeId = (string) session('adminStoreId', defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1);
@@ -58,8 +88,108 @@ class ShopConfigForm extends GP247AdminComponent
     }
 
     /**
+     * The GLOBAL store id (base tier for per-store config: store rows override it).
+     *
+     * @return string
+     */
+    private function globalStoreId(): string
+    {
+        return (string) (defined('GP247_STORE_ID_GLOBAL') ? GP247_STORE_ID_GLOBAL : '0');
+    }
+
+    /**
+     * Whether the current viewer is a store-admin bound to a non-root store.
+     *
+     * WHY session, not a plugin class: adminStoreId is fixed per session by the
+     * resolver (root → ROOT; store-admin → their store), so a non-root value means a
+     * bound store-admin — no dependency on the MultiStore plugin.
+     *
+     * @return bool
+     */
+    private function isBoundStoreAdmin(): bool
+    {
+        $root = (string) (defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : '1');
+        $sid  = (string) session('adminStoreId', $root);
+
+        return $sid !== '' && $sid !== $root;
+    }
+
+    /**
+     * Whether the form is editing a specific store's scope (a bound store-admin, or a
+     * root embed with scopeStoreIdOverride) rather than the global base. In that mode
+     * the global-only product tab is hidden (RISK-SEC-store-admin-edits-global-product).
+     *
+     * @return bool
+     */
+    private function inStoreScope(): bool
+    {
+        return ($this->scopeStoreIdOverride !== null && $this->scopeStoreIdOverride !== '')
+            || $this->isBoundStoreAdmin();
+    }
+
+    /**
+     * Target store id for the per-store groups (customer/order), base = GLOBAL:
+     * override wins, else the bound store-admin's own store, else the GLOBAL base.
+     *
+     * @return string
+     */
+    private function storeScopeId(): string
+    {
+        if ($this->scopeStoreIdOverride !== null && $this->scopeStoreIdOverride !== '') {
+            return (string) $this->scopeStoreIdOverride;
+        }
+        if ($this->isBoundStoreAdmin()) {
+            return (string) session('adminStoreId');
+        }
+
+        return $this->globalStoreId();
+    }
+
+    /**
+     * Persist one config value to a target store, creating a lazy per-store override
+     * row (cloned from the GLOBAL base) when the target row does not yet exist.
+     *
+     * @param string $key    Config key.
+     * @param string $value  New value (already sanitised).
+     * @param string $target Target store id.
+     * @param string $scope  Field scope: global|store|store_scoped.
+     * @return void
+     */
+    private function persistConfig(string $key, string $value, string $target, string $scope): void
+    {
+        $global = $this->globalStoreId();
+
+        if (AdminConfig::where('key', $key)->where('store_id', $target)->exists()) {
+            AdminConfig::where('key', $key)->where('store_id', $target)->update(['value' => $value]);
+            return;
+        }
+
+        // No row at the target yet. For a per-store override, clone the group/code/
+        // detail metadata from the GLOBAL base row so the new row reads back correctly.
+        if ($target !== $global && $scope !== 'global') {
+            $base = AdminConfig::where('key', $key)->where('store_id', $global)->first();
+            if ($base !== null) {
+                AdminConfig::create([
+                    'group' => $base->group,
+                    'code' => $base->code,
+                    'key' => $key,
+                    'value' => $value,
+                    'store_id' => $target,
+                    'sort' => $base->sort,
+                    'detail' => $base->detail,
+                ]);
+            }
+        }
+    }
+
+    /**
      * Build the tabbed field metadata from the same config groups the legacy
      * screen loads. Read-only; used by mount(), render() and save().
+     *
+     * Scope levels (ADR shop-admin_shop-config-scope-levels): product = GLOBAL
+     * (catalog schema, root-only, hidden in store scope); customer/order =
+     * store_scoped (base GLOBAL + per-store override); sendmail/limit/layout/captcha
+     * = store (unchanged).
      *
      * @return array<int, array{id:string, label:string, fields:array<int, array<string, mixed>>}>
      */
@@ -79,40 +209,62 @@ class ShopConfigForm extends GP247AdminComponent
             'keyBy' => 'key',
         ]);
 
+        // Effective loader for the per-store groups (customer/order): the GLOBAL base
+        // provides the field list + labels + default values; a store override (when
+        // editing a specific store) overlays only the values it has set.
+        $editStore = $this->storeScopeId();
+        $loadEff = function (string $code) use ($load, $global, $editStore) {
+            $base = $load($code, $global);
+            if ((string) $editStore === (string) $global) {
+                return $base;
+            }
+            $override = $load($code, $editStore);
+            foreach ($base as $key => $row) {
+                if (isset($override[$key])) {
+                    $row->value = $override[$key]->value;
+                }
+            }
+            return $base;
+        };
+
         $tabs = [];
 
-        // --- Product (global) ---
-        $fields = [];
-        foreach ($load('product_config', $global) as $c) {
-            $fields[] = $c->key === 'product_tax'
-                ? $this->field($c, 'select', 'global', $taxOptions, false, '', 'basic')
-                : $this->field($c, 'checkbox', 'global', [], false, '', 'basic');
+        // --- Product (GLOBAL: catalog schema, root-only) ---
+        // Hidden entirely in store scope so a store-admin / per-store embed cannot edit
+        // the platform-wide product config (RISK-SEC-store-admin-edits-global-product).
+        if (!$this->inStoreScope()) {
+            $fields = [];
+            foreach ($load('product_config', $global) as $c) {
+                $fields[] = $c->key === 'product_tax'
+                    ? $this->field($c, 'select', 'global', $taxOptions, false, '', 'basic')
+                    : $this->field($c, 'checkbox', 'global', [], false, '', 'basic');
+            }
+            foreach ($load('product_config_attribute', $global) as $c) {
+                $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'attribute');
+            }
+            foreach ($load('product_config_attribute_required', $global) as $c) {
+                $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'attribute_required');
+            }
+            $tabs[] = ['id' => 'product', 'label' => 'admin.shop.config_product', 'fields' => $fields];
         }
-        foreach ($load('product_config_attribute', $global) as $c) {
-            $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'attribute');
-        }
-        foreach ($load('product_config_attribute_required', $global) as $c) {
-            $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'attribute_required');
-        }
-        $tabs[] = ['id' => 'product', 'label' => 'admin.shop.config_product', 'fields' => $fields];
 
-        // --- Customer (global) ---
+        // --- Customer (store_scoped: base GLOBAL + per-store override) ---
         $fields = [];
         // customer_config flags (e.g. "Need verify email") used to be a separate left
         // "basic" column; they are now the FIRST rows of the single right-hand config
         // table (value-only, no "required" counterpart) — mod 20260906T010000.
         $topFields = [];
-        foreach ($load('customer_config', $global) as $c) {
-            $topFields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'attribute');
+        foreach ($loadEff('customer_config') as $c) {
+            $topFields[] = $this->field($c, 'checkbox', 'store_scoped', [], false, '', 'attribute', '', $this->customerLangFallback($c->key));
         }
 
         // First name has no config key — it is always used and always required
         // (hardcoded in the register/checkout forms), so it never appeared here.
         // Surface it as a read-only informational row so admins see every field.
         $attrFields = [$this->customerFirstNameField('attribute')];
-        foreach ($load('customer_config_attribute', $global) as $c) {
+        foreach ($loadEff('customer_config_attribute') as $c) {
             // customer_address1 is always-on in the legacy screen (disabled).
-            $attrFields[] = $this->field($c, 'checkbox', 'global', [], $c->key === 'customer_address1', '', 'attribute');
+            $attrFields[] = $this->field($c, 'checkbox', 'store_scoped', [], $c->key === 'customer_address1', '', 'attribute', '', $this->customerLangFallback($c->key));
         }
         // customer_config rows first, then the address/profile fields in canonical order.
         foreach (array_merge($topFields, $this->orderCustomerAttrFields($attrFields)) as $f) {
@@ -120,18 +272,18 @@ class ShopConfigForm extends GP247AdminComponent
         }
 
         $fields[] = $this->customerFirstNameField('attribute_required');
-        foreach ($load('customer_config_attribute_required', $global) as $c) {
-            $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', 'attribute_required');
+        foreach ($loadEff('customer_config_attribute_required') as $c) {
+            $fields[] = $this->field($c, 'checkbox', 'store_scoped', [], false, '', 'attribute_required');
         }
         $tabs[] = ['id' => 'customer', 'label' => 'admin.shop.config_customer', 'fields' => $fields];
 
-        // --- Order (global) ---
+        // --- Order (store_scoped: base GLOBAL + per-store override) ---
         $fields = [];
-        foreach ($load('order_config', $global) as $c) {
+        foreach ($loadEff('order_config') as $c) {
             // WHY: product_buy_out_of_stock only has an effect when product_stock
             // (stock management) is on — surface that relationship as a help note.
             $note = $c->key === 'product_buy_out_of_stock' ? 'admin.order.product_buy_out_of_stock_note' : '';
-            $fields[] = $this->field($c, 'checkbox', 'global', [], false, '', '', $note);
+            $fields[] = $this->field($c, 'checkbox', 'store_scoped', [], false, '', '', $note);
         }
         $tabs[] = ['id' => 'order', 'label' => 'admin.shop.config_order', 'fields' => $fields];
 
@@ -195,15 +347,19 @@ class ShopConfigForm extends GP247AdminComponent
      * @param string $labelSuffix Appended to the label (e.g. " (*)").
      * @return array<string, mixed>
      */
-    private function field($c, string $type, string $scope, array $options = [], bool $disabled = false, string $labelSuffix = '', string $section = '', string $note = ''): array
+    private function field($c, string $type, string $scope, array $options = [], bool $disabled = false, string $labelSuffix = '', string $section = '', string $note = '', string $labelFallback = ''): array
     {
         return [
             'key' => $c->key,
-            // Fall back to a humanized key when the config row has no `detail` label
-            // (a seeded field whose i18n detail is empty renders as a blank row —
-            // e.g. customer_company, mod 20260906T010000).
+            // When the config row has no `detail` label (a seeded field whose i18n
+            // detail is empty renders as a blank row — e.g. customer_company on older
+            // installs, mod 20260906T010000): prefer the caller's canonical lang code
+            // ($labelFallback, resolved by gp247_language_render), otherwise humanize
+            // the key as a last resort.
             'label' => ($c->detail === null || $c->detail === '')
-                ? ucfirst(trim(str_replace('_', ' ', preg_replace('/^(customer|product|order)_/', '', (string) $c->key))))
+                ? ($labelFallback !== ''
+                    ? $labelFallback
+                    : ucfirst(trim(str_replace('_', ' ', preg_replace('/^(customer|product|order)_/', '', (string) $c->key)))))
                 : $c->detail,
             'labelSuffix' => $labelSuffix,
             'type' => $type,
@@ -215,6 +371,26 @@ class ShopConfigForm extends GP247AdminComponent
             // Optional help text (language code) rendered under the field.
             'note' => $note,
         ];
+    }
+
+    /**
+     * Canonical i18n code for a customer config attribute whose DB `detail` is blank.
+     *
+     * Older installs seeded some customer rows (e.g. `customer_company`) with an empty
+     * `detail`, so the label rendered blank. Map the key to its documented lang code
+     * `admin.customer.config_manager.<name>` (name = key without the `customer_`
+     * prefix) so gp247_language_render resolves the real translated label
+     * ("Sử dụng Công Ty" / "Use COMPANY"), matching the seeded language rows.
+     *
+     * @param string $key Config key (e.g. `customer_company`).
+     * @return string Lang code (e.g. `admin.customer.config_manager.company`).
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-005
+     */
+    private function customerLangFallback(string $key): string
+    {
+        return 'admin.customer.config_manager.' . preg_replace('/^customer_/', '', $key);
     }
 
     /**
@@ -289,8 +465,6 @@ class ShopConfigForm extends GP247AdminComponent
     {
         $this->authorizeAction('update');
 
-        $global = defined('GP247_STORE_ID_GLOBAL') ? GP247_STORE_ID_GLOBAL : 0;
-
         foreach ($this->buildTabs() as $tab) {
             foreach ($tab['fields'] as $field) {
                 if ($field['disabled']) {
@@ -315,12 +489,37 @@ class ShopConfigForm extends GP247AdminComponent
                     $value = gp247_clean((string) $this->values[$key]);
                 }
 
-                $targetStore = $field['scope'] === 'global' ? $global : $this->storeId;
-                AdminConfig::where('key', $key)->where('store_id', $targetStore)->update(['value' => $value]);
+                $targetStore = $this->targetStoreForScope($field['scope']);
+                $this->persistConfig($key, (string) $value, $targetStore, $field['scope']);
             }
         }
 
         $this->notify('success', gp247_language_render('admin.msg_change_success'));
+    }
+
+    /**
+     * Resolve the target store id a field of the given scope writes to.
+     *
+     * @param string $scope global|store|store_scoped.
+     * @return string Target store id.
+     */
+    private function targetStoreForScope(string $scope): string
+    {
+        if ($scope === 'global') {
+            return $this->globalStoreId();
+        }
+        if ($scope === 'store_scoped') {
+            // Base = GLOBAL; a bound store-admin / override targets its store row.
+            return $this->storeScopeId();
+        }
+
+        // 'store' (sendmail/limit/layout/captcha): the viewer's own store, but an
+        // override embed retargets to that store so root can edit store X's copy.
+        if ($this->scopeStoreIdOverride !== null && $this->scopeStoreIdOverride !== '') {
+            return (string) $this->scopeStoreIdOverride;
+        }
+
+        return $this->storeId;
     }
 
     /**
