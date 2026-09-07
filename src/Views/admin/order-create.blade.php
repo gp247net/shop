@@ -75,20 +75,32 @@
                         {{ gp247_language_render('admin.customer.list') }}
                     </h3>
 
-                    {{-- Select existing customer --}}
-                    <div class="mb-4">
-                        <label class="{{ $labelCls }}">{{ gp247_language_render('admin.order.select_customer') }}</label>
-                        <select x-model="customerId" @change="loadCustomer"
-                                class="{{ $inputCls }}">
-                            <option value="">— {{ gp247_language_render('admin.order.no_customer') }} —</option>
-                            @foreach ($users as $user)
-                                <option value="{{ $user->id }}"
-                                    {{ old('customer_id') == $user->id ? 'selected' : '' }}>
-                                    {{ $user->email }} — {{ $user->first_name }} {{ $user->last_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <input type="hidden" name="customer_id" :value="customerId">
+                    {{-- Select existing customer — searchable combobox (type to filter by
+                         email/name) reusing the shared core component (P2/P3 ui-tailadmin).
+                         The screen is Blade+Alpine (no Livewire), so auto-fill is re-wired
+                         through the component's bubbling `gp247-ss:change` event: on change
+                         we mirror the id into `customerId` and run loadCustomer() to fetch +
+                         fill the address fields — the same behaviour the old <select>@change
+                         had. Clearing the pick (× button) sets customerId empty (guest order)
+                         and leaves already-filled fields untouched (parity).
+                         See ADR-005 Amendment 2026-09-07 (US-SADM-order-create-customer-searchable). --}}
+                    @php
+                        $customerOptions = [];
+                        foreach ($users as $user) {
+                            $customerOptions[] = [
+                                'id'    => $user->id,
+                                'label' => trim($user->email . ' — ' . $user->first_name . ' ' . $user->last_name),
+                            ];
+                        }
+                    @endphp
+                    <div class="mb-4" x-on:gp247-ss:change="customerId = $event.detail.value; loadCustomer()">
+                        <x-gp247::searchable-select
+                            name="customer_id"
+                            :options="$customerOptions"
+                            :value="old('customer_id')"
+                            :label="gp247_language_render('admin.order.select_customer')"
+                            :placeholder="gp247_language_render('admin.order.no_customer')"
+                            data-testid="shop-admin-order-create-customer-select" />
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
