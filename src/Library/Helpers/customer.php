@@ -199,7 +199,14 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
     {
         $dataInsert = [
             'first_name' => $dataRaw['first_name'] ?? '',
-            'email'      => $dataRaw['email'] ?? '',
+            // WHY: store NULL (not '') when no email is given. The email column is
+            // nullable but carries a UNIQUE index; MySQL allows many NULLs yet only
+            // one '' — so a second email-less customer collided with
+            // `1062 Duplicate entry '' for key gp247_shop_customer_email_unique`.
+            // Validation ('nullable|...|unique') never caught it because Laravel
+            // skips non-implicit rules (incl. unique) on an empty string. Mirrors
+            // the edit path, which already skips empty email. (US-SADM-004)
+            'email'      => (isset($dataRaw['email']) && $dataRaw['email'] !== '') ? $dataRaw['email'] : null,
             'password'   => bcrypt($dataRaw['password']),
         ];
 
