@@ -120,7 +120,7 @@
                         <x-gp247::button size="sm" variant="ghost"
                             title="{{ gp247_language_render('admin.order.record_refund_title') }}"
                             x-on:click="open = true; mode = 'refund'; amount = ''"
-                            data-testid="shop-admin-order-record-refund"><i class="fas fa-rotate-left text-red-600"></i></x-gp247::button>
+                            data-testid="shop-admin-order-record-refund"><i class="fas fa-undo text-red-600"></i></x-gp247::button>
                     @endif
                     <span class="text-right" data-testid="shop-admin-order-received">{{ gp247_currency_render_symbol($received, $cur, false, false) }}</span>
                 </dd>
@@ -132,7 +132,7 @@
                  panel serves both recording money and giving it back. --}}
             <div x-show="open" x-cloak class="mt-2 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                 <div class="mb-3 flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-gray-700">
-                    <i class="fas" :class="mode === 'refund' ? 'fa-rotate-left text-red-500' : 'fa-plus text-green-600'"></i>
+                    <i class="fas" :class="mode === 'refund' ? 'fa-undo text-red-500' : 'fa-plus text-green-600'"></i>
                     <span class="text-sm font-semibold"
                           :class="mode === 'refund' ? 'text-red-600' : 'text-green-700 dark:text-green-500'"
                           x-text="mode === 'refund'
