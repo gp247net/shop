@@ -933,7 +933,9 @@ class ShopProduct extends Model
             }
 
             if (count($this->gp247_category_vendor) && gp247_store_check_multi_partner_installed()) {
-                if (gp247_config_global('MultiVendorPro')) {
+                // WHY the partner helper: honours both the Free (MultiVendor) and Pro
+                // (MultiVendorPro) marketplace editions (ADR multi-vendor_free-pro-split).
+                if (gp247_store_check_multi_partner_installed()) {
                     $vendorProductCategoryClass = '\App\GP247\Plugins\MultiVendorPro\Models\VendorProductCategory';
                     if (class_exists($vendorProductCategoryClass)) {
                         $tablePTC = (new $vendorProductCategoryClass)->getTable();

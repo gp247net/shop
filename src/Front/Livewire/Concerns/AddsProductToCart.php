@@ -99,7 +99,9 @@ trait AddsProductToCart
     {
         $storeId = (string) config('app.storeId');
 
-        if (gp247_config_global('MultiVendorPro') && config('app.storeId') == GP247_STORE_ID_ROOT) {
+        // WHY the partner helper: Free (MultiVendor) and Pro (MultiVendorPro) both
+        // resolve the vendor store (ADR multi-vendor_free-pro-split).
+        if (gp247_store_check_multi_partner_installed() && config('app.storeId') == GP247_STORE_ID_ROOT) {
             $product = (new ShopProduct())->getDetail($productId);
             if ($product) {
                 // WHY: 1-1 ownership — the product's owning store is its scalar store_id.
