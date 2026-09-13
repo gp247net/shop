@@ -229,6 +229,17 @@
     </div>
     {{--// Description tab --}}
 
+    {{--
+        Storefront extension point: anything a plugin wants to show under the
+        product body (reviews, Q&A, size guides…) renders here.
+
+        A plugin appends a renderer to config('gp247-config.front.plugin_hooks')
+        from its own Provider.php and receives $product — so it never has to make
+        every site hand-edit this template. Nothing registered => empty string.
+    --}}
+    {!! gp247_render_plugin_hook('shop_product_detail_bottom', ['product' => $product]) !!}
+    {{--// Storefront extension point --}}
+
     @if ($productRelation->count())
     <div class="mt-12">
         <h2 class="section-title mb-4">{{ gp247_language_render('front.products_recommend') }}</h2>
