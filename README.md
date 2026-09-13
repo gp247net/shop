@@ -11,7 +11,7 @@
 
 Free e-commerce platform for businesses
 
-`composer require GP247/Shop`
+`composer require gp247/shop`
 
 [![Total Downloads](https://poser.pugx.org/GP247/Shop/d/total.svg)](https://packagist.org/packages/GP247/Shop)
 [![Latest Stable Version](https://poser.pugx.org/GP247/Shop/v/stable.svg)](https://packagist.org/packages/GP247/Shop)
@@ -100,11 +100,13 @@ S-Cart already includes all the necessary components. See the full details at th
 
 >`composer create-project gp247/s-cart`
 
-2. Install sample data
+2. Install the platform (auto-detects core + front + shop)
 
->`php artisan sc:install`
+>`php artisan gp247:install`
 
->`php artisan sc:sample`
+3. (Optional) Install sample data
+
+>`php artisan gp247:shop-sample`
 
 
 ## Customization

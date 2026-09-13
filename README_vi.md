@@ -11,7 +11,7 @@
 
 Hệ thống website thương mại điện tử miễn phí cho doanh nghiệp
 
-`composer require GP247/Shop`
+`composer require gp247/shop`
 
 [![Tổng số lượt tải](https://poser.pugx.org/GP247/Shop/d/total.svg)](https://packagist.org/packages/GP247/Shop)
 [![Phiên bản ổn định mới nhất](https://poser.pugx.org/GP247/Shop/v/stable.svg)](https://packagist.org/packages/GP247/Shop)
@@ -99,17 +99,19 @@ return [
 
 
 ### Lựa chọn 2: Sử dụng mã nguồn S-Cart
-S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có thể xem đầy đủ tại [link GitHub của S-Cart](https://github.com/gp247/s-cart).
+S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có thể xem đầy đủ tại [link GitHub của S-Cart](https://github.com/gp247net/s-cart).
 
 1. Cài đặt gói
 
 >`composer create-project gp247/s-cart`
 
-2. Cài đặt dữ liệu
+2. Cài đặt nền tảng (tự nhận diện core + front + shop)
 
->`php artisan sc:install`
+>`php artisan gp247:install`
 
->`php artisan sc:sample`
+3. (Tùy chọn) Cài đặt dữ liệu mẫu
+
+>`php artisan gp247:shop-sample`
 
 
 ## Tùy chỉnh
