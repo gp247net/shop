@@ -1142,9 +1142,46 @@ class ShopProduct extends Model
     }
 
     /**
-     * Show link to vendor
+     * Per-request memo of localized store names, keyed by "storeId|locale".
      *
-     * @return void
+     * WHY: a product grid renders one label per card; AdminStore::getTitle()
+     * queries the description table each call, so without a memo a 12-card
+     * page costs 12 identical queries.
+     *
+     * @var array<string, string>
+     */
+    protected static array $vendorNameMemo = [];
+
+    /**
+     * Localized display name of the store that sells this product, falling
+     * back to the store code when no description exists for the locale.
+     *
+     * @param \GP247\Core\Models\AdminStore $store
+     * @return string
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-product-vendor-label
+     */
+    public static function vendorDisplayName($store): string
+    {
+        $key = $store->id . '|' . gp247_get_locale();
+        if (!array_key_exists($key, static::$vendorNameMemo)) {
+            $name = trim((string) $store->getTitle());
+            static::$vendorNameMemo[$key] = $name !== '' ? $name : (string) $store->code;
+        }
+
+        return static::$vendorNameMemo[$key];
+    }
+
+    /**
+     * Render the "sold by" label (store name + icon, linking to the marketplace
+     * store page). Only on the root marketplace when a multi-partner plugin is
+     * active; returns null otherwise so callers can echo it unconditionally.
+     *
+     * @return string|null
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-product-vendor-label
      */
     public function displayVendor()
     {
@@ -1152,15 +1189,19 @@ class ShopProduct extends Model
             $subPath = 'common.shop_display_store';
             $view = gp247_shop_process_view('GP247TemplatePath::' . gp247_store_info('template'), $subPath);
             gp247_check_view($view);
-            $vendorCode = $this->store?->code;
+            $store = $this->store;
+            $vendorCode = $store?->code;
             $vendorUrl = $this->goToShop($vendorCode);
             return  view(
                 $view,
                 [
                     'vendorCode' => $vendorCode,
+                    'vendorName' => $store ? static::vendorDisplayName($store) : (string) $vendorCode,
                     'vendorUrl' => $vendorUrl,
                 ]
             )->render();
         }
+
+        return null;
     }
 }

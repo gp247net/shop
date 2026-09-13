@@ -460,10 +460,15 @@ if (!function_exists('gp247_get_list_store_of_category_detail') && !in_array('gp
 if (!function_exists('gp247_path_vendor') && !in_array('gp247_path_vendor', config('gp247_functions_except', []))) {
     function gp247_path_vendor($code = null)
         {
-            if ($code) {
-                return gp247_route_front('MultiVendorPro.detail', ['code' => $code]);
-            } else {
+            if (!$code) {
                 return null;
             }
+            // WHY: the marketplace plugin (MultiVendor 1.x+) names its store page
+            // `MultiVendor.detail`; older builds registered `MultiVendorPro.detail`.
+            // Resolving by presence keeps the label linked on both instead of the
+            // dead "#MultiVendorPro.detail" href the fixed name produced.
+            $name = \Illuminate\Support\Facades\Route::has('MultiVendor.detail') ? 'MultiVendor.detail' : 'MultiVendorPro.detail';
+
+            return gp247_route_front($name, ['code' => $code]);
         }
 }
