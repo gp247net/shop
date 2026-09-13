@@ -144,5 +144,13 @@
             <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.totals.balance') }}</td><td class="py-1 text-end">{{ gp247_currency_format($order->balance) }}</td></tr>
         </table>
     </div>
+
+    {{--
+        Storefront extension point (ADR front_storefront-plugin-hooks): plugins
+        such as MultiVendor (dispute box) render under the order without any site
+        editing this template. Nothing registered => empty string.
+    --}}
+    {!! gp247_render_plugin_hook('shop_order_detail_bottom', ['order' => $order]) !!}
+    {{--// Storefront extension point --}}
 @endif
 @endsection
