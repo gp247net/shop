@@ -50,9 +50,13 @@ class ShopInstall extends GP247Command
         $this->runArtisan('db:seed', ['--class' => '\GP247\Shop\Admin\Database\Seeders\DataShopDefaultSeeder', '--force' => true]);
         $this->info('---------------> Seeding database for store root done!');
 
-        // Copy template default
-        $this->runArtisan('vendor:publish', ['--tag' => 'gp247:shop-view-front']);
-
+        // WHY no vendor:publish here any more (modification 20260913T200309):
+        // shop's storefront views are served from this package through the
+        // GP247TemplatePath hint paths, so an install no longer copies them into
+        // app/GP247/Templates/GP247Front. Copying them used to freeze them there
+        // forever — no composer update could ever reach the site again. A site
+        // that wants to edit one publishes just that file:
+        //   php artisan gp247:template-publish GP247Front --file=screen/shop_cart.blade.php
         return $this->respondSuccess(['installed' => true]);
     }
 }

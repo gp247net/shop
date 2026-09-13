@@ -108,7 +108,17 @@ class ShopServiceProvider extends ServiceProvider
             }
 
             $this->loadViewsFrom(__DIR__.'/Views/admin', 'gp247-shop-admin');
-            $this->loadViewsFrom(__DIR__.'/Views/front', 'gp247-shop-front');
+            $this->loadViewsFrom(__DIR__.'/Views/templates/GP247Front', 'gp247-shop-front');
+
+            // Shop's half of the default template (screen/shop_*, account/, auth/,
+            // email/, livewire/, partials/) is served straight from this package:
+            // append it as the last hint path of the template namespace that
+            // gp247/front opened, so an unpublished site still renders every shop
+            // screen (US-TPL-template-vendor-resident, modification 20260913T200309).
+            // WHY appended, not prepended: app/GP247/Templates (a site's published
+            // override) must keep winning, and front's own views come first for the
+            // same reason they do at publish time — the two trees never overlap.
+            $this->loadViewsFrom(__DIR__.'/Views/templates', 'GP247TemplatePath');
 
             // Storefront Livewire (storefront Unit, ADR-006): register the interactive
             // cart/filter/checkout components for the front end. Additive: legacy ajax
@@ -417,7 +427,11 @@ class ShopServiceProvider extends ServiceProvider
             $this->publishes([__DIR__.'/Views/admin' => resource_path('views/vendor/gp247-shop-admin')], 'gp247:shop-view-admin');
             // WHY: 'Default' was removed entirely (modification 20260705T124936,
             // ADR-014 Amend #1) — GP247Front is now the sole/default template.
-            $this->publishes([__DIR__.'/Views/front' => app_path('GP247/Templates/GP247Front')], 'gp247:shop-view-front');
+            // OPT-IN since modification 20260913T200309: gp247:shop-install no
+            // longer runs this. These views are served from the package; a site
+            // publishes them (or single files via gp247:template-publish) only to
+            // override, and then stops receiving updates for what it published.
+            $this->publishes([__DIR__.'/Views/templates/GP247Front' => app_path('GP247/Templates/GP247Front')], 'gp247:shop-view-front');
         }
     }
 
