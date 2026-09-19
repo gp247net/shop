@@ -193,12 +193,75 @@ class ShopProduct extends Model
     */
     public function getFinalPrice()
     {
+        return $this->applyPriceResolvers($this->getRetailPrice());
+    }
+
+    /**
+     * The price a walk-in customer pays: the promotion when one is running, the
+     * list price otherwise — before any extension has an opinion.
+     *
+     * Exposed because a screen that prices ON BEHALF of someone (a shop typing an
+     * order for a customer) needs the shop's own price as the ceiling, while
+     * getFinalPrice() answers for whoever is signed in — which on an admin screen
+     * is nobody.
+     *
+     * @return float
+     */
+    public function getRetailPrice(): float
+    {
         $promotion = $this->processPromotionPrice();
-        if ($promotion != -1) {
-            return $promotion;
-        } else {
-            return $this->price;
+
+        return (float) ($promotion != -1 ? $promotion : $this->price);
+    }
+
+    /**
+     * Let an installed extension price this product for the current buyer.
+     *
+     * WHY a seam and not a feature: "what this particular customer pays" is a
+     * marketplace/B2B concept (dealer groups, negotiated rates) that does not
+     * belong in the shop core, but it HAS to be answered here — this method is
+     * the single place every price comes from, including the one written to
+     * shop_order_detail at checkout. A resolver that answered only on a product
+     * page would show one number and charge another.
+     *
+     * A resolver returns null to mean "no opinion"; the lowest opinion wins, so
+     * an extension can never make a customer pay MORE than the shop's own price.
+     * Registration mirrors the storefront plugin hooks:
+     *
+     *   config(['gp247-config.shop.price_resolvers' => [
+     *       ['key' => 'MyPlugin', 'callback' => [MyPricer::class, 'resolve']],
+     *   ]]);
+     *
+     * The callback receives ($product, $retailPrice) and returns ?float.
+     *
+     * @param float $price The price a walk-in customer would pay.
+     * @return float
+     */
+    protected function applyPriceResolvers(float $price): float
+    {
+        $resolvers = config('gp247-config.shop.price_resolvers', []);
+        if (!is_array($resolvers) || $resolvers === []) {
+            return $price;
         }
+
+        foreach ($resolvers as $resolver) {
+            $callback = $resolver['callback'] ?? null;
+            if (!is_callable($callback)) {
+                continue;
+            }
+            try {
+                $resolved = $callback($this, $price);
+            } catch (\Throwable $e) {
+                // A broken extension must not take the storefront's prices down.
+                gp247_report(msg: 'Price resolver failed ('.($resolver['key'] ?? '?').'): '.$e->getMessage(), channel: null);
+                continue;
+            }
+            if ($resolved !== null && (float) $resolved < $price) {
+                $price = (float) $resolved;
+            }
+        }
+
+        return $price;
     }
 
     /*
