@@ -863,6 +863,46 @@ class ShopProduct extends Model
     }
 
     /**
+     * Table holding the vendor-category links of a marketplace, or null when no
+     * marketplace plugin provides one.
+     *
+     * WHY it looks the class up instead of naming one: the model moved when the
+     * marketplace plugin was split into editions (ADR multi-vendor_free-pro-split).
+     * It now ships with the Free plugin, which the Pro edition installs on top of,
+     * so Free is asked first and the Pro namespace is kept only for a site still
+     * on the pre-split 1.x layout. Naming Pro alone left the storefront's category
+     * filter dead: the join never ran and a category page answered with the whole
+     * shop.
+     *
+     * WHY the try/catch: class_exists() runs the autoloader, and a stale classmap
+     * left behind by an uninstalled edition points a class name at a file that is
+     * no longer there. That raises an include error, which turned a category
+     * filter into a 500 on the storefront. A marketplace plugin that cannot be
+     * resolved must degrade to "no category filter", never take the page down.
+     *
+     * @return string|null
+     */
+    private function vendorProductCategoryTable()
+    {
+        $candidates = [
+            '\App\GP247\Plugins\MultiVendor\Models\VendorProductCategory',
+            '\App\GP247\Plugins\MultiVendorPro\Models\VendorProductCategory',
+        ];
+
+        foreach ($candidates as $class) {
+            try {
+                if (class_exists($class)) {
+                    return (new $class)->getTable();
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get product to  Catgory store
      * @param   [int]  $category
      */
@@ -996,15 +1036,10 @@ class ShopProduct extends Model
             }
 
             if (count($this->gp247_category_vendor) && gp247_store_check_multi_partner_installed()) {
-                // WHY the partner helper: honours both the Free (MultiVendor) and Pro
-                // (MultiVendorPro) marketplace editions (ADR multi-vendor_free-pro-split).
-                if (gp247_store_check_multi_partner_installed()) {
-                    $vendorProductCategoryClass = '\App\GP247\Plugins\MultiVendorPro\Models\VendorProductCategory';
-                    if (class_exists($vendorProductCategoryClass)) {
-                        $tablePTC = (new $vendorProductCategoryClass)->getTable();
-                        $subQuery = $subQuery->leftJoin($tablePTC, $tablePTC . '.product_id', $this->getTable() . '.id');
-                        $subQuery = $subQuery->whereIn($tablePTC . '.vendor_category_id', $this->gp247_category_vendor);
-                    }
+                $tablePTC = $this->vendorProductCategoryTable();
+                if ($tablePTC !== null) {
+                    $subQuery = $subQuery->leftJoin($tablePTC, $tablePTC . '.product_id', $this->getTable() . '.id');
+                    $subQuery = $subQuery->whereIn($tablePTC . '.vendor_category_id', $this->gp247_category_vendor);
                 }
             }
         }
