@@ -34,7 +34,7 @@ class ShopProduct extends Model
     protected $gp247_brand = []; // array brand id
     protected $gp247_supplier = []; // array supplier id
     protected $gp247_range_price = null; // min__max
-    protected $gp247_tag_keyword = null; // keyword-tag alias filter (US-SFRONT-product-tags)
+    protected $gp247_tag_keyword = null; // keyword-tag alias filter (US-LW-product-tag-filter)
     protected static $storeCode = null;
 
     
@@ -705,13 +705,13 @@ class ShopProduct extends Model
     /**
      * Filter the builder to products carrying a keyword tag, identified by the tag's
      * alias (business key). Only active tags match, so a disabled tag hides its
-     * products from the storefront (US-SFRONT-product-tags).
+     * products from the storefront (US-LW-product-tag-filter).
      *
      * @param string $alias Canonical tag alias.
      * @return $this
      *
      * @aidlc-unit storefront
-     * @aidlc-story US-SFRONT-product-tags
+     * @aidlc-story US-LW-product-tag-filter
      * @aidlc-adr shop-admin_product-tag-storage
      */
     private function setTagKeyword($alias)
@@ -884,13 +884,13 @@ class ShopProduct extends Model
 
     /**
      * Get products carrying a keyword tag (by the tag's alias). Storefront entry point
-     * for the /tag/<alias> listing (US-SFRONT-product-tags).
+     * for the /tag/<alias> listing (US-LW-product-tag-filter).
      *
      * @param string $alias Canonical tag alias.
      * @return $this
      *
      * @aidlc-unit storefront
-     * @aidlc-story US-SFRONT-product-tags
+     * @aidlc-story US-LW-product-tag-filter
      */
     public function getProductToTag($alias)
     {
@@ -1047,7 +1047,7 @@ class ShopProduct extends Model
         if ($this->gp247_tag !== 'all') {
             $subQuery = $subQuery->where($this->getTable().'.product_type', $this->gp247_tag);
         }
-        //Filter with keyword tag (US-SFRONT-product-tags): join pivot + tag, active tags only.
+        //Filter with keyword tag (US-LW-product-tag-filter): join pivot + tag, active tags only.
         // The subquery is de-duplicated by product id below, so the join fan-out is harmless.
         if (!empty($this->gp247_tag_keyword)) {
             $tablePivot = GP247_DB_PREFIX.'shop_product_tag_pivot';

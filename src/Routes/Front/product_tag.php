@@ -2,7 +2,7 @@
 
 use GP247\Shop\Controllers\ShopProductTagController;
 
-// Storefront keyword-tag listing (US-SFRONT-product-tags): /tag/<alias> lists every
+// Storefront keyword-tag listing (US-LW-product-tag-filter): /tag/<alias> lists every
 // active product carrying the tag. Route name `shop.tag` is what ShopProductTag::getUrl
 // resolves. Prefix overridable via config, defaulting to `tag`.
 $langUrl = GP247_SEO_LANG ? '{lang?}/' : '';

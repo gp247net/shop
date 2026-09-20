@@ -42,6 +42,21 @@ class ProductFilter extends BaseFrontComponent
     public ?string $initialCategory = null;
 
     /**
+     * Keyword-tag alias pinned by the page (the /tag/<alias> listing).
+     *
+     * Page context like $initialCategory: set via mount(), deliberately NOT #[Url],
+     * because the tag is what the page IS — changing it means visiting another page,
+     * not re-filtering this one. Carries the alias (not the id) to match the
+     * ShopProduct::getProductToTag() business key.
+     *
+     * @var string|null
+     *
+     * @aidlc-story US-LW-product-tag-filter
+     * @aidlc-adr storefront_livewire-page-context-props
+     */
+    public ?string $initialTag = null;
+
+    /**
      * Sort key reflected in the URL as `filter_sort`.
      * Whitelisted against ALLOWED_SORTS before use.
      *
@@ -104,17 +119,41 @@ class ProductFilter extends BaseFrontComponent
     /**
      * Mount the component with optional page-context overrides.
      *
+     * The listing page owns this context: the grid builds its own query and never
+     * renders the $products the controller computed, so a filter the page applies
+     * only reaches the shopper if it is handed over here. A listing page that omits
+     * one silently degrades into a full-catalogue listing
+     * (RISK-TECH-livewire-grid-drops-page-context).
+     *
      * @param string|null $initialCategory Category ID pinned by the controller.
      * @param string      $initialKeyword  Pre-filled keyword (e.g. search page).
+     * @param string|null $initialTag      Keyword-tag alias pinned by the /tag page.
+     * @param string|null $initialBrand    Brand alias pre-selected by the brand page.
      * @return void
+     *
+     * @aidlc-adr storefront_livewire-page-context-props
      */
-    public function mount(?string $initialCategory = null, string $initialKeyword = ''): void
-    {
+    public function mount(
+        ?string $initialCategory = null,
+        string $initialKeyword = '',
+        ?string $initialTag = null,
+        ?string $initialBrand = null
+    ): void {
         $this->initialCategory = $initialCategory;
+        $this->initialTag      = $initialTag;
 
         // Pre-fill keyword only when URL carries no existing value
         if ($this->keyword === '' && $initialKeyword !== '') {
             $this->keyword = $initialKeyword;
+        }
+
+        // Brand is pre-SELECTED rather than pinned: unlike category and tag, the filter
+        // panel offers brands as checkboxes, so the shopper can act on it. Seeding the
+        // existing $brand filter (only when the URL carries none) means the brand page
+        // opens with its own brand ticked and toggling another brand simply re-filters,
+        // instead of intersecting with the page brand and yielding an empty grid.
+        if ($this->brand === '' && $initialBrand !== null && $initialBrand !== '') {
+            $this->brand = $initialBrand;
         }
 
         // Split persisted price string back into transient min/max inputs, converting
@@ -273,6 +312,13 @@ class ProductFilter extends BaseFrontComponent
         if ($this->initialCategory !== null) {
             $arrCate = (new ShopCategory)->getListSub($this->initialCategory);
             $builder->getProductToCategory($arrCate);
+        }
+
+        // Keyword tag: pinned by page context (the /tag/<alias> listing). Joins the
+        // product-tag pivot and matches active tags only, exactly like the controller's
+        // own query — the grid is what the shopper sees, so the filter has to be here.
+        if ($this->initialTag !== null && $this->initialTag !== '') {
+            $builder->getProductToTag($this->initialTag);
         }
 
         // Keyword search

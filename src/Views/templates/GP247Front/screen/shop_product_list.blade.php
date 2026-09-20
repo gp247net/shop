@@ -37,8 +37,15 @@
     @endisset
     {{-- //sub category --}}
 
-    {{-- Product filter + grid (Livewire reactive — US-LW-005) --}}
-    @livewire('gp247-shop-front::product-filter', ['initialCategory' => $categoryId ?? null])
+    {{-- Product filter + grid (Livewire reactive — US-LW-005).
+         The grid builds its own query and ignores $products, so every filter this page
+         stands for has to be handed over here — a missing prop turns the page into a
+         full-catalogue listing without any error (RISK-TECH-livewire-grid-drops-page-context). --}}
+    @livewire('gp247-shop-front::product-filter', [
+        'initialCategory' => $categoryId ?? null,
+        'initialTag'      => $tag->alias ?? null,
+        'initialBrand'    => $brand->alias ?? null,
+    ])
 </div>
 @endsection
 

@@ -9,13 +9,13 @@ use GP247\Shop\Controllers\ShopProductController;
 
 /**
  * Storefront listing of products carrying a keyword tag — the /tag/<alias> page
- * (US-SFRONT-product-tags). Mirrors ShopBrandController: resolve the tag by alias,
+ * (US-LW-product-tag-filter). Mirrors ShopBrandController: resolve the tag by alias,
  * then render the shared product-list view filtered via ShopProduct::getProductToTag.
  * The feature is gated by the `product_tags` config; when off, the page 404s so a
  * disabled feature exposes no route surface.
  *
  * @aidlc-unit storefront
- * @aidlc-story US-SFRONT-product-tags
+ * @aidlc-story US-LW-product-tag-filter
  * @aidlc-adr shop-admin_product-tag-storage
  */
 class ShopProductTagController extends RootFrontController
