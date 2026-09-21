@@ -1297,10 +1297,9 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'front.all_categories','text' => 'All categories','position' => 'front','location' => 'en'],
                 ['code' => 'front.shop_by_category','text' => 'Mua theo danh mục','position' => 'front','location' => 'vi'],
                 ['code' => 'front.shop_by_category','text' => 'Shop by category','position' => 'front','location' => 'en'],
-                // Home promotion strip (blocks/shop_flash_sale.blade.php). The block key keeps its
-                // legacy `flash_sale` name (stored in layout_block.text on every installed site),
-                // but the label says what it shows: plain price promotions, not a timed flash sale
-                // — that is the separate ProductFlashSale plugin. Modification 20260921T231520.
+                // Home promotion strip (blocks/shop_product_promotion.blade.php): plain price
+                // promotions, not a timed flash sale — that is the separate ProductFlashSale
+                // plugin. Modification 20260921T231520 (label), 20260922T062944 (block key).
                 ['code' => 'front.promotion_products','text' => 'Sản phẩm khuyến mãi','position' => 'front','location' => 'vi'],
                 ['code' => 'front.promotion_products','text' => 'Promotion products','position' => 'front','location' => 'en'],
                 // Kept for templates/plugins that still render a genuine flash-sale heading.

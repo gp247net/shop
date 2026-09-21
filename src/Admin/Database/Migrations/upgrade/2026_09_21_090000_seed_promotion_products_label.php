@@ -5,7 +5,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Idempotent upgrade: seed the heading of the home promotion strip
- * (blocks/shop_flash_sale.blade.php) for sites installed before
+ * (blocks/shop_product_promotion.blade.php, named blocks/shop_flash_sale.blade.php
+ * when this migration was written) for sites installed before
  * modification 20260921T231520. Fresh installs get it from DataShopLanguageSeeder.
  *
  * WHY a new code instead of rewriting `front.flash_sale`: the strip lists plain
@@ -14,11 +15,11 @@ use Illuminate\Support\Facades\DB;
  * stock/sold ledger and its own labels. The old code is left in place so a
  * template or plugin still rendering a genuine flash-sale heading keeps its text.
  *
- * The block key itself stays `shop_flash_sale` (it is stored in every installed
- * site's front_layout_block.text — renaming it would make the block vanish); only
- * the visible label changes. The matching block *name* shown in the admin Layout
- * Block screen is renamed by the sibling migration in gp247/front, which owns that
- * table and the GP247Front AppConfig seed.
+ * The block key was still `shop_flash_sale` at this point; it became
+ * `shop_product_promotion` one modification later (20260922T062944), carried over by
+ * its own migration in gp247/front. The block *name* shown in the admin Layout Block
+ * screen is renamed by the sibling migration in gp247/front, which owns that table
+ * and the GP247Front AppConfig seed.
  *
  * insertOrIgnore keeps any text a site owner already edited. No cron/queue
  * (NFR-AVAIL-001). Runs via gp247:shop-update (--path upgrade/), never the

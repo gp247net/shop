@@ -18,10 +18,15 @@
     routinely weeks or months out — a timer over it read as a fake urgency cue
     (it showed "1266:51:16"). Time-boxed selling is the separate ProductFlashSale
     plugin (own stock/sold ledger), not this block, so both the timer and the
-    "Flash Sale" wording were dropped (modification 20260921T231520). The block
-    key/file name stays `shop_flash_sale` on purpose: it is stored in every
-    installed site's layout_block.text, and renaming it would make the block
-    vanish on upgrade.
+    "Flash Sale" wording were dropped (modification 20260921T231520).
+
+    WHY the file was renamed from `shop_flash_sale` (modification 20260922T062944):
+    the Layout Block screen offers blocks by FILE NAME (LayoutBlockManager::
+    getListViewBlock()), so a site owner picked this strip out of a list that also
+    held the ProductFlashSale plugin's `product_flash_sale` — two entries no one
+    could tell apart. The old name was never purely internal. Installed sites are
+    carried over by the upgrade migration in gp247/front, which rewrites
+    front_layout_block.text (it owns that table).
 
     gp247/shop is optional — guard on the model class before touching
     $modelProduct, same pattern as blocks/shop_product_home.blade.php.
