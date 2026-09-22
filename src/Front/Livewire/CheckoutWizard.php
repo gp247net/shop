@@ -84,6 +84,15 @@ class CheckoutWizard extends BaseFrontComponent
      */
     public function mount(): void
     {
+        // A shopper sent back here mid-checkout already answered every step, and
+        // those answers are in session: resume on confirm instead of dropping them
+        // at an empty address form. Happens when the confirm route has no screen
+        // for this template (ShopCartController::_getCheckoutConfirm) — e.g. after
+        // addOrder() bounces them to re-confirm a price that moved.
+        if ($this->resumeCommittedCheckout()) {
+            return;
+        }
+
         $customer = customer()->user();
         if (!$customer) {
             return;
@@ -184,6 +193,46 @@ class CheckoutWizard extends BaseFrontComponent
     public function selectPayment(string $key): void
     {
         $this->paymentMethod = (string) gp247_clean(data: $key, hight: true);
+    }
+
+    /**
+     * Restore a checkout already committed to session and land on the confirm step.
+     *
+     * WHY the fields are copied back: the confirm step prints the address from THIS
+     * component's properties, not from session, so setting $step alone would show a
+     * confirmed order with a blank address. Mirror of commitToSession().
+     *
+     * Guarded on the same step marker the plain controller flow uses, so a shopper
+     * who merely revisits /checkout still starts at step 1.
+     *
+     * @return bool True when the session held a committed checkout.
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-006
+     */
+    private function resumeCommittedCheckout(): bool
+    {
+        $address = session('shippingAddress');
+
+        if (session('step', '') !== 'checkout.confirm' || !is_array($address) || $address === []) {
+            return false;
+        }
+
+        foreach ([
+            'first_name', 'last_name', 'first_name_kana', 'last_name_kana',
+            'email', 'phone', 'city', 'district',
+            'address1', 'address2', 'address3',
+            'postcode', 'country', 'company', 'comment',
+        ] as $field) {
+            $this->{$field} = (string) ($address[$field] ?? '');
+        }
+
+        $this->shippingMethod  = (string) (session('shippingMethod') ?? '');
+        $this->paymentMethod   = (string) (session('paymentMethod') ?? '');
+        $this->address_process = (string) (session('address_process') ?? '');
+        $this->step = 'confirm';
+
+        return true;
     }
 
     /**

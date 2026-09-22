@@ -527,6 +527,27 @@ class ShopCartController extends RootFrontController
 
         $subPath = 'screen.shop_checkout_confirm';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
+
+        // A template does not have to own a separate confirm SCREEN: GP247Front
+        // renders confirm as step 4 of the CheckoutWizard Livewire component on the
+        // checkout screen, so it ships no screen.shop_checkout_confirm at all
+        // (the 1.x blade went away with the core 2.0 port, commit 398bb4d).
+        // Without this branch gp247_check_view() below echoes a bare "view not
+        // found" and exit()s, which is what a shopper actually hit: addOrder()'s
+        // price-changed guard redirects here to re-confirm, so a price moving
+        // mid-checkout ended the checkout on a blank page with no order placed
+        // (RISK-BIZ-price-change-mid-checkout was meant to protect them).
+        // Send them to the wizard instead; the step marker stays set (and is
+        // re-persisted here because processCheckout() only FLASHES it) so
+        // CheckoutWizard::mount() resumes on confirm with their answers intact.
+        // reflash() carries the 'price changed, please review' notice across.
+        if (!view()->exists($view)) {
+            session(['step' => 'checkout.confirm']);
+            session()->reflash();
+
+            return redirect(gp247_route_front('checkout'));
+        }
+
         gp247_check_view($view);
         return view(
             $view,
