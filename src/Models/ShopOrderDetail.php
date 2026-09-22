@@ -111,6 +111,16 @@ class ShopOrderDetail extends Model
         // ╚══════════════════════════════════════════════════════════════════╝
         static::deleting(function ($model) {
             ShopProduct::updateStock($model->product_id, -(float) $model->qty);
+
+            // Symmetric with the stock restore above: a time-boxed sale keeps its own
+            // quota (ProductFlashSale plugin), and removing a line from an order must
+            // give those units back too, or the sale stays "sold out" for goods that
+            // went back on the shelf. Safe on the whole-order path: that one deletes
+            // detail rows through the query builder, so this event does not fire and
+            // the quota is released once, by returnStockToInventory().
+            if (function_exists('gp247_product_flash_release_stock')) {
+                gp247_product_flash_release_stock($model->product_id, (int) $model->qty);
+            }
         });
 
         //Uuid

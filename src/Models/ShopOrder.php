@@ -110,6 +110,14 @@ class ShopOrder extends Model
         DB::connection(GP247_DB_CONNECTION)->transaction(function () {
             foreach ($this->details as $detail) {
                 ShopProduct::updateStock($detail->product_id, -$detail->qty);
+
+                // A time-boxed sale keeps its own quota next to the product stock
+                // (ProductFlashSale plugin). Returning the goods without returning
+                // the quota left the sale reading as sold out while nothing had been
+                // sold — the units were gone for good after one cancelled order.
+                if (function_exists('gp247_product_flash_release_stock')) {
+                    gp247_product_flash_release_stock($detail->product_id, $detail->qty);
+                }
             }
 
             $this->stock_returned_at = gp247_time_now();
@@ -150,6 +158,15 @@ class ShopOrder extends Model
             if ($product !== null && !$product->hasStockForOrder($detail->qty)) {
                 return false;
             }
+
+            // Re-opening also re-creates demand on a time-boxed sale's quota, so it
+            // goes through the same policy as the stock above: refuse the re-open
+            // rather than sell more units than the sale ever offered.
+            if (function_exists('gp247_product_flash_check_over')
+                && !gp247_product_flash_check_over($detail->product_id, $detail->qty)
+            ) {
+                return false;
+            }
         }
 
         // All-or-nothing: take the goods back inside a transaction and re-check the
@@ -161,6 +178,15 @@ class ShopOrder extends Model
             DB::connection(GP247_DB_CONNECTION)->transaction(function () use ($details) {
                 foreach ($details as $detail) {
                     if (!ShopProduct::updateStock($detail->product_id, $detail->qty)) {
+                        throw new \RuntimeException('stock_unavailable');
+                    }
+
+                    // Same atomic re-check for the sale quota. `=== false` (not a
+                    // falsy test) so a plugin version whose helper returns nothing
+                    // is treated as "no opinion" instead of as a refusal.
+                    if (function_exists('gp247_product_flash_update_stock')
+                        && gp247_product_flash_update_stock($detail->product_id, $detail->qty) === false
+                    ) {
                         throw new \RuntimeException('stock_unavailable');
                     }
                 }
@@ -701,9 +727,15 @@ class ShopOrder extends Model
                 $cartDetail['attribute'] = json_encode($cartDetail['attribute']);
                 $this->addOrderDetail($cartDetail);
 
-                //Update stock flash sale
-                if (function_exists('gp247_product_flash_update_stock')) {
-                    gp247_product_flash_update_stock($pID, $cartDetail['qty']);
+                //Update stock flash sale — the quota check above (check_over) is only
+                //advisory: two checkouts can both pass it and then oversell the sale.
+                //`=== false` means the quota was actually taken by someone else, so the
+                //order rolls back exactly like it does for product stock below. A
+                //plugin version whose helper returns nothing keeps the old behaviour.
+                if (function_exists('gp247_product_flash_update_stock')
+                    && gp247_product_flash_update_stock($pID, $cartDetail['qty']) === false
+                ) {
+                    throw new \Exception(gp247_language_render('cart.item_over_qty', ['sku' => $product->sku, 'qty' => $cartDetail['qty']]));
                 }
 
                 //Update stock and sold — atomic decrement. A false result means a
