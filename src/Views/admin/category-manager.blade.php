@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Category manager (shop-admin Unit) — two-panel: add/edit form (left) + list
     (right), on the core ResourcePanel base + multilingual trait (P1/P3). Mirrors
     the legacy category screen: per-language title/keyword/description, alias,

@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Supplier manager (shop-admin Unit) — two-panel: form (left) + list (right) on
     the core ResourcePanel base (P1). UI text via gp247_language_render.
 

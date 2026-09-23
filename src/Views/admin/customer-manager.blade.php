@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Customer manager (shop-admin Unit) — two-panel: add/edit form (left) + list
     (right), on the core ResourcePanel base + custom-fields trait (P1/P3). Mirrors
     the legacy customer screen: config-driven fields + custom fields. Validation /

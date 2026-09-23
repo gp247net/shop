@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Product manager (shop-admin Unit, group F, US-SADM-001) — tabbed add/edit form
     (left) + store-scoped list (right) on the core ResourcePanel base + the
     multilingual (C0) and custom-field (D0) traits. Mirrors the legacy product

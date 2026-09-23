@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Subscribe (newsletter) manager (shop-admin Unit) — two-panel: add/edit form
     (left) + list (right), on the core ResourcePanel base (P1). Mirrors the legacy
     subscribe screen (email + status). UI text via gp247_language_render.

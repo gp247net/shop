@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Order manager (shop-admin Unit, group E, US-SADM-003) — one ResourcePanel
     component, two faces: the base route shows a store-scoped, filterable LIST;
     the edit/{id} route shows a bespoke DETAIL (customer info, line items, total

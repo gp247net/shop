@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Attribute-group manager (shop-admin Unit) — two-panel: add/edit form (left) +
     list (right), on the core ResourcePanel base (P1). Mirrors the legacy
     attribute_group screen (name + type radio/select). UI text via

@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Order detail (group E, US-SADM-003): customer info + line items (products) on
     the left, order settings (status workflow) + totals + history on the right —
     mirroring the create-order screen layout (order-create.blade.php). Status

@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Brand manager (shop-admin Unit) — two-panel: add/edit form (left) + list
     (right), on the core ResourcePanel base (P1). Mirrors the core language
     manager layout. UI text via gp247_language_render.

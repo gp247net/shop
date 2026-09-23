@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     Shared status manager (shop-admin Unit) — two-panel: add/edit form (left) +
     list (right), on the core ResourcePanel base (P1/P3). Used by the order /
     payment / shipping status managers; the component supplies route + title +
