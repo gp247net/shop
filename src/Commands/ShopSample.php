@@ -48,16 +48,39 @@ class ShopSample extends GP247Command
      */
     protected function handleGp247(): int
     {
-        // WHY: sample data spans many tables + bundles/groups; wrap in one
-        // transaction so a mid-run failure never leaves a half-populated
-        // catalog. (MySQL truncate is DDL/implicit-commit, so the clear phase
-        // is not itself rolled back; a failure during creation leaves the
-        // tables empty, never partially seeded.)
+        // WHY the clear phase runs BEFORE the transaction: MySQL TRUNCATE is DDL
+        // and commits implicitly, so inside the transaction it silently ended it
+        // and the final commit failed with "There is no active transaction"
+        // (exit 1 after the data was written). Creation stays in one transaction
+        // so a mid-run failure leaves the tables empty, never partially seeded.
+        $this->clearCatalog();
         DB::connection(GP247_DB_CONNECTION)->transaction(function () {
             $this->seed();
         });
 
         return $this->respondSuccess(['msg' => 'Created sample data successfully!']);
+    }
+
+    /**
+     * Empty the catalog tables the sample replaces.
+     *
+     * Runs outside any transaction on purpose: TRUNCATE commits implicitly on MySQL.
+     *
+     * @return void
+     *
+     * @aidlc-unit system-cli
+     * @aidlc-story US-CLI-005
+     */
+    private function clearCatalog(): void
+    {
+        $this->info('Clearing existing data...');
+        foreach ([
+            'shop_category_description', 'shop_category', 'shop_brand', 'shop_supplier', 'shop_product',
+            'shop_product_description', 'shop_product_category', 'shop_product_promotion',
+            'shop_attribute_group', 'shop_product_attribute',
+        ] as $table) {
+            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.$table)->truncate();
+        }
     }
 
     /**
@@ -70,19 +93,6 @@ class ShopSample extends GP247Command
      */
     private function seed(): void
     {
-            // Clear existing data
-            $this->info('Clearing existing data...');
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category_description')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_category')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_brand')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_supplier')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_description')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_category')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_promotion')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_attribute_group')->truncate();
-            DB::connection(GP247_DB_CONNECTION)->table(GP247_DB_PREFIX.'shop_product_attribute')->truncate();
-
             
             // Create sample categories
             $this->info('Creating sample categories...');
