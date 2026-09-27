@@ -549,8 +549,9 @@ class ProductManager extends ResourcePanel
      */
     private function assertSameStoreRefs(array $data): void
     {
-        // The record's store: picked store on create, own store on edit (immutable).
-        $storeId = $this->currentStore();
+        // The store brand/tax/category must belong to — by default the record's own
+        // store (picked on create, immutable on edit); see referenceStoreId().
+        $storeId = $this->referenceStoreId();
 
         // WHY: brand_id/tax_id use "0" (legacy S-Cart sentinel) or "" to mean "no
         // reference". Only "" was skipped before, so a product with the default
@@ -734,6 +735,62 @@ class ProductManager extends ResourcePanel
     // --- View option helpers ------------------------------------------------
 
     /**
+     * The store whose categories, brands and taxes a product may reference — the
+     * dropdowns list it and assertSameStoreRefs() checks against it. It defaults to
+     * the store that OWNS the record, which is what root admin and MultiStore mean
+     * (1-1 ownership). A screen whose products are filed under another store's
+     * taxonomy says so through a resolver — a shared marketplace files vendor
+     * products under the marketplace (root) categories while the product stays
+     * owned by the vendor. Only the reference store changes; ownership
+     * (currentStore()) never does.
+     *
+     * WHY a resolver registry, not a screen override: which taxonomy a product uses
+     * is a property of the marketplace model, and several screens edit the same
+     * products (the vendor's and the marketplace admin's). Registration mirrors
+     * the price resolvers:
+     *
+     *   config(['gp247-config.shop.product_reference_store_resolvers' => [
+     *       ['key' => 'MyPlugin', 'callback' => [MyTaxonomy::class, 'referenceStore']],
+     *   ]]);
+     *
+     * The callback receives the owner store id (string) and returns ?string; the
+     * first non-null answer wins, and a failing resolver is reported and skipped.
+     *
+     * @return string|int|null
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-store-single-owner
+     * @aidlc-adr shop-admin_product-reference-store
+     */
+    protected function referenceStoreId()
+    {
+        $owner = $this->currentStore();
+        $resolvers = config('gp247-config.shop.product_reference_store_resolvers', []);
+        if (!is_array($resolvers) || $resolvers === []) {
+            return $owner;
+        }
+
+        foreach ($resolvers as $resolver) {
+            $callback = $resolver['callback'] ?? null;
+            if (!is_callable($callback)) {
+                continue;
+            }
+            try {
+                $reference = $callback((string) $owner);
+            } catch (\Throwable $e) {
+                // A broken extension must not take the product screen down.
+                gp247_report(msg: 'Product reference store resolver failed ('.($resolver['key'] ?? '?').'): '.$e->getMessage(), channel: null);
+                continue;
+            }
+            if ($reference !== null && $reference !== '') {
+                return (string) $reference;
+            }
+        }
+
+        return $owner;
+    }
+
+    /**
      * @return array<int|string, string>
      */
     public function categoryOptions(): array
@@ -741,8 +798,8 @@ class ProductManager extends ResourcePanel
         if (!$this->storeScopeActive()) {
             return (array) (new AdminCategory())->getTreeCategoriesAdmin();
         }
-        // Store-scoped: only the picked/record store's categories (none until picked).
-        $store = $this->currentStore();
+        // Store-scoped: only the reference store's categories (none until picked).
+        $store = $this->referenceStoreId();
         if ($store === null || $store === '') {
             return [];
         }
@@ -786,7 +843,7 @@ class ProductManager extends ResourcePanel
     {
         // WHY: 1-1 ownership — only offer brands owned by the record's store so an
         // admin cannot reference another store's brand (RISK-TECH-store-same-store-ref).
-        $store = $this->currentStore();
+        $store = $this->referenceStoreId();
         if ($this->storeScopeActive() && ($store === null || $store === '')) {
             return [];
         }
@@ -808,7 +865,7 @@ class ProductManager extends ResourcePanel
     {
         // WHY: 1-1 ownership — only offer taxes owned by the record's store so an
         // admin cannot reference another store's tax (RISK-TECH-store-same-store-ref).
-        $store = $this->currentStore();
+        $store = $this->referenceStoreId();
         if ($this->storeScopeActive() && ($store === null || $store === '')) {
             return [];
         }
