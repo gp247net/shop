@@ -6,13 +6,16 @@
     renders whichever blocks are configured.
 
     @aidlc-unit admin-shell
-    @aidlc-story US-LW-001
+    @aidlc-story US-LW-001, US-SADM-dashboard-store-scope
     @aidlc-adr ADR-005, ADR-007
 --}}
 @php
     $adminOrder = gp247_shop_admin_model('AdminOrder');
+    // WHY: store-scoped figures — a store-admin session must not see other stores' data
+    // (root/no store = every store). US-SADM-dashboard-store-scope.
+    $dashboardStoreId = session('adminStoreId');
     $topOrders = ($adminOrder && method_exists($adminOrder, 'getTopOrder'))
-        ? $adminOrder::getTopOrder()
+        ? $adminOrder::getTopOrder($dashboardStoreId)
         : collect();
     $orderDetailRoute = \Illuminate\Support\Facades\Route::has('admin_order.detail') ? 'admin_order.detail' : null;
     // Config-driven customer columns (mirror the "latest customers" block /

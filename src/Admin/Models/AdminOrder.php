@@ -7,10 +7,13 @@ use GP247\Shop\Models\ShopOrderStatus;
 use GP247\Shop\Models\ShopOrderTotal;
 use GP247\Shop\Models\ShopOrderTransaction;
 use GP247\Shop\Models\ShopPaymentStatus;
+use GP247\Shop\Admin\Models\Concerns\ScopesDashboardStore;
 use Cache;
 
 class AdminOrder extends ShopOrder
 {
+    use ScopesDashboardStore;
+
     public static $mapStyleStatus = [
         '1' => 'info', //new
         '2' => 'primary', //processing
@@ -397,23 +400,22 @@ class AdminOrder extends ShopOrder
     {
         $query->whereNotIn('status', [ShopOrderStatus::CANCELED, ShopOrderStatus::FAILED]);
 
-        $root = defined('GP247_STORE_ID_ROOT') ? GP247_STORE_ID_ROOT : 1;
-        if ($storeId !== null && (string) $storeId !== (string) $root) {
-            $query->where('store_id', $storeId);
-        }
-
-        return $query;
+        return self::applyDashboardStore($query, $storeId);
     }
 
 
     /**
-     * Get total order of system
+     * Dashboard KPI: number of orders, store-scoped (root/null = every store).
      *
-     * @return  [type]  [return description]
+     * @param int|string|null $storeId Null/root = all stores; otherwise this store only.
+     * @return int
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-dashboard-store-scope
      */
-    public static function getTotalOrder()
+    public static function getTotalOrder($storeId = null)
     {
-        return self::count();
+        return self::applyDashboardStore(self::query(), $storeId)->count();
     }
 
 
@@ -429,13 +431,17 @@ class AdminOrder extends ShopOrder
     }
     
     /**
-     * Get total order of system
+     * Dashboard "latest orders": the 10 newest orders, store-scoped (root/null = every store).
      *
-     * @return  [type]  [return description]
+     * @param int|string|null $storeId Null/root = all stores; otherwise this store only.
+     * @return \Illuminate\Database\Eloquent\Collection
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-dashboard-store-scope
      */
-    public static function getTopOrder()
+    public static function getTopOrder($storeId = null)
     {
-        return self::with('orderStatus')
+        return self::applyDashboardStore(self::with('orderStatus'), $storeId)
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();

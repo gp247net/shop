@@ -7,20 +7,23 @@
     `<x-gp247::stat-card>` (core, Views/admin/components).
 
     @aidlc-unit admin-shell
-    @aidlc-story US-LW-001, US-AUI-005
+    @aidlc-story US-LW-001, US-AUI-005, US-SADM-dashboard-store-scope
     @aidlc-adr ADR-005, ADR-007
 --}}
 @php
     $adminOrder = gp247_shop_admin_model('AdminOrder');
     $adminProduct = gp247_shop_admin_model('AdminProduct');
     $adminCustomer = gp247_shop_admin_model('AdminCustomer');
+    // WHY: store-scoped figures — a store-admin session must not see other stores' data
+    // (root/no store = every store). US-SADM-dashboard-store-scope.
+    $dashboardStoreId = session('adminStoreId');
 
     $stats = [];
 
     if ($adminOrder) {
         $stats[] = [
             'label' => gp247_language_render('admin.dashboard.total_order'),
-            'value' => number_format(method_exists($adminOrder, 'getTotalOrder') ? $adminOrder::getTotalOrder() : $adminOrder::count()),
+            'value' => number_format(method_exists($adminOrder, 'getTotalOrder') ? $adminOrder::getTotalOrder($dashboardStoreId) : $adminOrder::count()),
             'icon' => 'fas fa-shopping-cart',
             'color' => 'emerald',
             'url' => \Illuminate\Support\Facades\Route::has('admin_order.index') ? gp247_route_admin('admin_order.index') : null,
@@ -30,7 +33,7 @@
     if ($adminProduct) {
         $stats[] = [
             'label' => gp247_language_render('admin.dashboard.total_product'),
-            'value' => number_format(method_exists($adminProduct, 'getTotalProduct') ? $adminProduct::getTotalProduct() : $adminProduct::count()),
+            'value' => number_format(method_exists($adminProduct, 'getTotalProduct') ? $adminProduct::getTotalProduct($dashboardStoreId) : $adminProduct::count()),
             'icon' => 'fas fa-tags',
             'color' => 'sky',
             'url' => \Illuminate\Support\Facades\Route::has('admin_product.index') ? gp247_route_admin('admin_product.index') : null,
@@ -40,7 +43,7 @@
     if ($adminCustomer) {
         $stats[] = [
             'label' => gp247_language_render('admin.dashboard.total_customer'),
-            'value' => number_format(method_exists($adminCustomer, 'getTotalCustomer') ? $adminCustomer::getTotalCustomer() : $adminCustomer::count()),
+            'value' => number_format(method_exists($adminCustomer, 'getTotalCustomer') ? $adminCustomer::getTotalCustomer($dashboardStoreId) : $adminCustomer::count()),
             'icon' => 'fas fa-users',
             'color' => 'amber',
             'url' => \Illuminate\Support\Facades\Route::has('admin_customer.index') ? gp247_route_admin('admin_customer.index') : null,

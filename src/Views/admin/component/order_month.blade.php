@@ -8,16 +8,19 @@
     no separate chart library. Sibling block: order_year.blade.php.
 
     @aidlc-unit admin-shell
-    @aidlc-story US-LW-001, US-AUI-005
+    @aidlc-story US-LW-001, US-AUI-005, US-SADM-dashboard-store-scope
     @aidlc-adr ADR-004, ADR-005, ADR-007
 --}}
 @php
     $adminOrder = gp247_shop_admin_model('AdminOrder');
+    // WHY: store-scoped figures — a store-admin session must not see other stores' data
+    // (root/no store = every store). US-SADM-dashboard-store-scope.
+    $dashboardStoreId = session('adminStoreId');
 
     // Daily order counts for the trailing month.
     $monthSeries = [];
     if ($adminOrder && method_exists($adminOrder, 'getSumOrderTotalInMonth')) {
-        $monthTotals = collect($adminOrder::getSumOrderTotalInMonth())->keyBy('md');
+        $monthTotals = collect($adminOrder::getSumOrderTotalInMonth($dashboardStoreId))->keyBy('md');
         $monthPeriod = new \DatePeriod(
             new \DateTime('-1 month'),
             new \DateInterval('P1D'),

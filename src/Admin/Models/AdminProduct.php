@@ -10,6 +10,8 @@ use GP247\Shop\Models\ShopCategory;
 
 class AdminProduct extends ShopProduct
 {
+    use \GP247\Shop\Admin\Models\Concerns\ScopesDashboardStore;
+
     /**
      * Get product detail in admin
      *
@@ -168,13 +170,17 @@ class AdminProduct extends ShopProduct
     }
 
     /**
-     * Get total product of system
+     * Dashboard KPI: number of products, store-scoped (root/null = every store).
      *
-     * @return  [type]  [return description]
+     * @param int|string|null $storeId Null/root = all stores; otherwise this store only.
+     * @return int
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-dashboard-store-scope
      */
-    public static function getTotalProduct()
+    public static function getTotalProduct($storeId = null)
     {
-        return self::count();
+        return self::applyDashboardStore(self::query(), $storeId)->count();
     }
     
 

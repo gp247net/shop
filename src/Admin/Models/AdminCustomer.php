@@ -7,6 +7,8 @@ use GP247\Shop\Models\ShopCustomerAddress;
 
 class AdminCustomer extends ShopCustomer
 {
+    use \GP247\Shop\Admin\Models\Concerns\ScopesDashboardStore;
+
     protected static $getListTitleAdmin = null;
     protected static $getListCustomerGroupByParentAdmin = null;
     private static $getList = null;
@@ -95,34 +97,43 @@ class AdminCustomer extends ShopCustomer
     }
 
     /**
-     * Get total customer of system
+     * Dashboard KPI: number of customers, store-scoped (root/null = every store).
      *
-     * @return  [type]  [return description]
+     * @param int|string|null $storeId Null/root = all stores; otherwise this store only.
+     * @return int
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-dashboard-store-scope
      */
-    public static function getTotalCustomer()
+    public static function getTotalCustomer($storeId = null)
     {
-        return self::count();
+        return self::applyDashboardStore(self::query(), $storeId)->count();
     }
 
 
     /**
-     * Get total customer of system
+     * Dashboard "latest customers": the 10 newest customers, store-scoped (root/null = every store).
      *
-     * @return  [type]  [return description]
+     * @param int|string|null $storeId Null/root = all stores; otherwise this store only.
+     * @return \Illuminate\Database\Eloquent\Collection
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-dashboard-store-scope
      */
-    public static function getTopCustomer()
+    public static function getTopCustomer($storeId = null)
     {
         // Guard on the real operating condition (class autoloads AND the
         // social_accounts table exists), not just class presence: the plugin
         // source ships in app/GP247, so class_exists() is true even when the
         // plugin is uninstalled and the table is missing -> eager-load crash.
         if (self::socialAccountEnabled()) {
-            return \GP247\Shop\Models\ShopCustomer::with('socialAccount')
+            return self::applyDashboardStore(\GP247\Shop\Models\ShopCustomer::with('socialAccount'), $storeId)
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get();
         } else {
-            return self::orderBy('created_at', 'desc')
+            return self::applyDashboardStore(self::query(), $storeId)
+            ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
         }
