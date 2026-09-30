@@ -109,9 +109,17 @@ class ShopCartController extends RootFrontController
             return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_empty', ['item' => 'Cart Store'])]);
         }
 
+        $cart = $cartGroup[$storeId];
+
+        // WHY: validate every qty-* before touching the cart, so a tampered/bot
+        // request neither 500s nor gets its junk read as "qty 0 = remove line"
+        // (RISK-TECH-checkout-prepare-raw-qty).
+        if ($this->hasMalformedCheckoutQty($cart, $data)) {
+            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.have_error')]);
+        }
+
         //Check minimum
         $arrCheckQty = [];
-        $cart = $cartGroup[$storeId];
         foreach ($cart as $key => $row) {
             //Qty get from input
             $qtyUpdate = round((float)($data['qty-'.$row->rowId] ?? 0), 2);
@@ -126,7 +134,9 @@ class ShopCartController extends RootFrontController
                     ->with(['error' => gp247_language_render('cart.qty_must_be_whole_number')]);
             }
 
-            $arrCheckQty[$row->id] = ($arrCheckQty[$row->rowId] ?? 0) + ($data['qty-'.$row->rowId] ?? 0);
+            // WHY: the minimum applies per product, so lines of the same product
+            // with different attributes are summed under the product id.
+            $arrCheckQty[$row->id] = ($arrCheckQty[$row->id] ?? 0) + $qtyUpdate;
         }
         $arrProductMinimum = ShopProduct::whereIn('id', array_keys($arrCheckQty))->pluck('minimum', 'id')->all();
         $arrErrorQty = [];
@@ -144,6 +154,36 @@ class ShopCartController extends RootFrontController
         session(['storeCheckout' => $storeId]);
 
         return redirect(gp247_route_front('checkout'));
+    }
+
+
+    /**
+     * Tell whether any submitted qty-<rowId> field of the store's cart lines is not a plain number.
+     *
+     * A field that is absent keeps the historical meaning (qty 0); a field that is present must be a
+     * numeric scalar. An empty input reaches here as null (ConvertEmptyStringsToNull) and is malformed.
+     *
+     * @param iterable $cart Cart lines of the store being checked out.
+     * @param array    $data Request payload.
+     * @return bool True when at least one present qty field is malformed.
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-004
+     */
+    private function hasMalformedCheckoutQty(iterable $cart, array $data): bool
+    {
+        foreach ($cart as $row) {
+            $field = 'qty-'.$row->rowId;
+            if (!array_key_exists($field, $data)) {
+                continue;
+            }
+            $qty = $data[$field];
+            if (!is_scalar($qty) || !is_numeric($qty)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
