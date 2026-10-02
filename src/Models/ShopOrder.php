@@ -83,7 +83,7 @@ class ShopOrder extends Model
      * Cancelling an order is what returns stock. Until this existed, DELETING an order
      * was the only documented way to get goods back, so an admin who wanted the goods
      * had to destroy the document — which is exactly what the user guide told them to do
-     * (`gp247-docs/s-cart/product-stock-management_vi.md`).
+     * (`gp247-docs/s-cart/product/product-stock-management_vi.md`).
      *
      * `stock_returned_at` is not bookkeeping for its own sake: without it, an order that
      * is cancelled, re-opened and cancelled again would hand the same goods back twice.
