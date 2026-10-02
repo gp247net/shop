@@ -228,6 +228,81 @@ class ShopServiceProvider extends ServiceProvider
             ),
         ]);
 
+        $this->registerPaymentRequestPurposes();
+
+    }
+
+    /**
+     * Payment requests (money in/out outside checkout) belong to the shop: register their
+     * defaults — the free-form purpose, the "recorded by hand" gateway — the two order
+     * purposes (collect an order's balance, refund an order), the shop's currency list
+     * (code => decimals) and the encrypted link-token column. Payment plugins add their
+     * gateways and purposes to the same `gp247-config.payment` arrays.
+     *
+     * WHY whole-array writes: purpose keys contain dots ("order.balance"), which
+     * dot-notation config() would split into nested keys.
+     *
+     * @return void
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-SADM-order-payment-request-balance
+     * @aidlc-story US-SADM-order-payment-request-refund
+     */
+    private function registerPaymentRequestPurposes(): void
+    {
+        $payment = (array) config('gp247-config.payment', []);
+        // Defaults first, so whatever a payment plugin registered (gateways, purposes)
+        // is kept whichever provider ran first.
+        $payment['purposes'] = array_merge([
+            'free' => [
+                'label' => 'admin.payment_request.purpose_free',
+                'directions' => ['in', 'out'],
+                'resolver' => null,
+            ],
+        ], (array) ($payment['purposes'] ?? []), [
+            \GP247\Shop\Payment\OrderBalancePurpose::KEY => [
+                'label' => 'admin.order.payment_request_purpose_balance',
+                'directions' => ['in'],
+                'resolver' => \GP247\Shop\Payment\OrderBalancePurpose::class,
+                'available' => [\GP247\Shop\Payment\OrderPurpose::class, 'available'],
+                'subject' => [
+                    'types' => [\GP247\Shop\Payment\OrderPurpose::SUBJECT_TYPE => 'admin.order.payment_request_subject_order'],
+                    'label' => 'admin.order.payment_request_subject_order',
+                    'help' => 'admin.order.payment_request_subject_help',
+                ],
+            ],
+            \GP247\Shop\Payment\OrderRefundPurpose::KEY => [
+                'label' => 'admin.order.payment_request_purpose_refund',
+                'directions' => ['out'],
+                'resolver' => \GP247\Shop\Payment\OrderRefundPurpose::class,
+                'available' => [\GP247\Shop\Payment\OrderPurpose::class, 'available'],
+                'subject' => [
+                    'types' => [\GP247\Shop\Payment\OrderPurpose::SUBJECT_TYPE => 'admin.order.payment_request_subject_order'],
+                    'label' => 'admin.order.payment_request_subject_order',
+                    'help' => 'admin.order.payment_request_subject_help',
+                ],
+            ],
+        ]);
+        // WHY a [class, method] callable and not a closure: config:cache must be able to
+        // serialise the config.
+        $payment['currencies'] ??= [\GP247\Shop\Payment\OrderPurpose::class, 'currencyCatalog'];
+        $payment['currency_labels'] ??= [\GP247\Shop\Payment\OrderPurpose::class, 'currencyLabels'];
+        $payment['gateways'] = array_merge([
+            'manual' => [
+                'label' => 'admin.payment_request.gateway_manual',
+                'capabilities' => ['collect', 'refund', 'payout'],
+                'driver' => \GP247\Shop\Payment\Gateways\ManualGateway::class,
+            ],
+        ], (array) ($payment['gateways'] ?? []));
+        config(['gp247-config.payment' => $payment]);
+
+        // The payment link token is encrypted at rest: let gp247:doctor and the key
+        // rotation cover it (they skip the column while the table is not there yet).
+        $security = (array) config('gp247-config.security', []);
+        $columns = (array) ($security['encrypted_columns'] ?? []);
+        $columns['payment_request'] = array_values(array_unique(array_merge((array) ($columns['payment_request'] ?? []), ['public_token_enc'])));
+        $security['encrypted_columns'] = $columns;
+        config(['gp247-config.security' => $security]);
     }
 
     /**

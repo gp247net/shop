@@ -215,5 +215,37 @@
         @endif
 
         <div class="flex items-center justify-between font-bold"><dt class="text-gray-700 dark:text-gray-200">{{ gp247_language_render('order.totals.balance') }}</dt><dd class="text-right {{ $balanceCls }}" data-testid="shop-admin-order-balance">{{ gp247_currency_render_symbol($balance, $cur, false, false) }}</dd></div>
+
+        {{-- Payment requests of this order (core): collect the balance through a pay link,
+             or give the money back — the order ledger above is written when money moves. --}}
+        @if (method_exists($this, 'orderPaymentRequests') && ($this->canCreatePaymentRequest('balance') || $this->canCreatePaymentRequest('refund') || $this->orderPaymentRequests()->isNotEmpty()))
+            <div class="border-t border-gray-100 pt-3 dark:border-gray-700" data-testid="shop-admin-order-payment-requests">
+                <dt class="mb-2 text-xs uppercase tracking-wide text-gray-400">{{ gp247_language_render('admin.order.payment_request_block') }}</dt>
+                <dd class="space-y-1">
+                    @foreach ($this->orderPaymentRequests() as $payReq)
+                        <div class="flex items-center justify-between gap-2 py-1 text-xs" wire:key="payreq-{{ $payReq->id }}" data-testid="shop-admin-order-payment-request-item">
+                            <a href="{{ route('admin.payment_request.edit', ['id' => $payReq->id]) }}" class="text-blue-600 dark:text-blue-400">
+                                #{{ $payReq->id }} · {{ gp247_language_render('admin.payment_request.direction_' . $payReq->direction) }} · {{ gp247_language_render('admin.payment_request.status_' . $payReq->display_status) }}
+                            </a>
+                            <span class="{{ $payReq->direction === 'out' ? 'text-red-600' : 'text-green-700 dark:text-green-500' }}">
+                                {{ $payReq->direction === 'out' ? '-' : '+' }}{{ gp247_currency_render_symbol($payReq->amount, $cur, false, false) }}
+                            </span>
+                        </div>
+                    @endforeach
+                    <div class="flex items-center justify-end gap-2">
+                        @if ($this->canCreatePaymentRequest('balance'))
+                            <x-gp247::button size="sm" variant="secondary" wire:click="createPaymentRequest('balance')" data-testid="shop-admin-order-create-balance-request">
+                                <i class="fas fa-link"></i> {{ gp247_language_render('admin.order.payment_request_create_balance') }}
+                            </x-gp247::button>
+                        @endif
+                        @if ($this->canCreatePaymentRequest('refund'))
+                            <x-gp247::button size="sm" variant="secondary" wire:click="createPaymentRequest('refund')" data-testid="shop-admin-order-create-refund-request">
+                                <i class="fas fa-undo text-red-600"></i> {{ gp247_language_render('admin.order.payment_request_create_refund') }}
+                            </x-gp247::button>
+                        @endif
+                    </div>
+                </dd>
+            </div>
+        @endif
     </dl>
 </x-gp247::card>

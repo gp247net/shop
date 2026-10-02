@@ -956,6 +956,122 @@ class OrderManager extends ResourcePanel
     }
 
     /**
+     * Create a core payment request for this order and open it: `balance` collects what
+     * is still due (the payment link is issued right away), `refund` gives the order's
+     * money back to the customer. Needs the order write permission AND the payment
+     * request screen's write permission.
+     *
+     * @param string $kind balance | refund
+     * @return void
+     * @throws \GP247\Core\AdminShell\Domain\AuthorizationException When denied.
+     *
+     * @aidlc-story US-SADM-order-payment-request-balance
+     * @aidlc-story US-SADM-order-payment-request-refund
+     */
+    public function createPaymentRequest(string $kind): void
+    {
+        $this->authorizeAction('update');
+        $order = $this->currentOrder();
+        if ($order === null || !$this->canCreatePaymentRequest($kind)) {
+            return;
+        }
+
+        $service = app(\GP247\Shop\Payment\PaymentRequestService::class);
+        $isBalance = $kind === 'balance';
+        try {
+            $request = $service->create([
+                'direction' => $isBalance ? 'in' : 'out',
+                'purpose' => $isBalance ? \GP247\Shop\Payment\OrderBalancePurpose::KEY : \GP247\Shop\Payment\OrderRefundPurpose::KEY,
+                'amount' => $isBalance ? $this->orderDue($order) : (float) $order->received,
+                'currency' => (string) $order->currency,
+                'subject_type' => \GP247\Shop\Payment\OrderPurpose::SUBJECT_TYPE,
+                'subject_id' => (string) $order->id,
+                'store_id' => (string) $order->store_id,
+                'party_name' => trim((string) $order->first_name . ' ' . (string) $order->last_name) ?: null,
+                'party_email' => $order->email ?: null,
+                'party_phone' => $order->phone ?: null,
+                'description' => gp247_language_render($isBalance ? 'admin.order.payment_request_desc_balance' : 'admin.order.payment_request_desc_refund', ['id' => $order->id]),
+                'expires_at' => $isBalance ? now()->addDays(7)->format('Y-m-d') : null,
+                'created_by' => (string) $this->adminId() ?: null,
+            ]);
+            if ($isBalance && Route::has(\GP247\Shop\Payment\PaymentRequestService::PAY_ROUTE)) {
+                $service->issuePublicLink($request);
+            }
+        } catch (\InvalidArgumentException | \DomainException $e) {
+            $this->notify('error', $e->getMessage());
+
+            return;
+        }
+
+        $this->logHistory('Payment request #' . $request->id . ' created (' . $request->purpose . ', ' . $request->amount . ' ' . $request->currency . ')', (int) ($order->status ?? 0));
+        $this->redirect(route('admin.payment_request.edit', ['id' => $request->id]));
+    }
+
+    /**
+     * Whether the current admin may create a payment request of this kind for the open
+     * order, and whether the order has money for it (due for `balance`, received for `refund`).
+     *
+     * @param string $kind balance | refund
+     * @return bool
+     */
+    public function canCreatePaymentRequest(string $kind): bool
+    {
+        if (!in_array($kind, ['balance', 'refund'], true)
+            || !class_exists(\GP247\Shop\Payment\PaymentRequestService::class)
+            || !\GP247\Shop\Payment\PaymentRequestService::ready()
+            || !Route::has('admin.payment_request.edit')) {
+            return false;
+        }
+        $purpose = $kind === 'balance' ? \GP247\Shop\Payment\OrderBalancePurpose::KEY : \GP247\Shop\Payment\OrderRefundPurpose::KEY;
+        if (!app(\GP247\Shop\Payment\PurposeRegistry::class)->isAvailable($purpose)) {
+            return false;
+        }
+        $user = app(\GP247\Core\AdminShell\Domain\AdminUserContract::class);
+        $prefix = defined('GP247_ADMIN_PREFIX') ? GP247_ADMIN_PREFIX : 'gp247_admin';
+        if (!$user->isAdministrator() && !$user->canAccessUrl($prefix . '/payment_request', 'POST')) {
+            return false;
+        }
+        $order = $this->currentOrder();
+        if ($order === null) {
+            return false;
+        }
+
+        return $kind === 'balance' ? $this->orderDue($order) > 0 : (float) $order->received > 0;
+    }
+
+    /**
+     * Payment requests raised for the open order, newest first.
+     *
+     * @return \Illuminate\Support\Collection<int, \GP247\Shop\Payment\Models\PaymentRequest>
+     */
+    public function orderPaymentRequests(): \Illuminate\Support\Collection
+    {
+        if ($this->editingId === null
+            || !class_exists(\GP247\Shop\Payment\PaymentRequestService::class)
+            || !\GP247\Shop\Payment\PaymentRequestService::ready()) {
+            return collect();
+        }
+        try {
+            return \GP247\Shop\Payment\Models\PaymentRequest::where('subject_type', \GP247\Shop\Payment\OrderPurpose::SUBJECT_TYPE)
+                ->where('subject_id', (string) $this->editingId)
+                ->orderByDesc('id')
+                ->limit(20)
+                ->get();
+        } catch (\Throwable $e) {
+            return collect(); // core not upgraded yet (no payment_request table)
+        }
+    }
+
+    /**
+     * @param \GP247\Shop\Models\ShopOrder $order
+     * @return float What is still due on the order.
+     */
+    private function orderDue($order): float
+    {
+        return max(0.0, round((float) $order->total - (float) $order->received, 3));
+    }
+
+    /**
      * Refuse to move money into an accounting period the books are closed on.
      *
      * WHY function_exists and not a dependency: period closing belongs to the InOut

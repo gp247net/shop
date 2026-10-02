@@ -50,6 +50,14 @@ class ShopInstall extends GP247Command
         $this->runArtisan('db:seed', ['--class' => '\GP247\Shop\Admin\Database\Seeders\DataShopDefaultSeeder', '--force' => true]);
         $this->info('---------------> Seeding database for store root done!');
 
+        // Payment requests live in an upgrade migration (idempotent, add-only) so existing
+        // sites get them through gp247:shop-update; a fresh install runs it here. Its
+        // tables are not in the shop's create-tables migration on purpose: shop-uninstall
+        // drops those, and the money ledger must survive a reinstall.
+        \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '2026_10_01_200000_install_payment_request')->delete();
+        $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade/2026_10_01_200000_install_payment_request.php']);
+        $this->info('---------------> Payment requests ready!');
+
         // WHY no vendor:publish here any more (modification 20260913T200309):
         // shop's storefront views are served from this package through the
         // GP247TemplatePath hint paths, so an install no longer copies them into
