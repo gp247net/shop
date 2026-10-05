@@ -1106,7 +1106,28 @@ class ShopCartController extends RootFrontController
     private function _clearCart($instance = 'cart')
     {
         (new Cart)->instance($instance)->destroy();
-        return redirect(gp247_route_front($instance));
+        return redirect($this->listPageUrl($instance));
+    }
+
+    /**
+     * URL of the page that lists a cart instance — where remove/clear send the shopper back.
+     *
+     * WHY a map and not gp247_route_front($instance): only the cart page is named after its
+     * instance; wishlist/compare are cart.wishlist / cart.compare. An unknown name made the
+     * helper fall back to the current URL — the remove/clear link itself — so the browser
+     * looped until "too many redirects".
+     *
+     * @param string $instance 'cart'|'default'|'wishlist'|'compare'
+     * @return string
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-004
+     */
+    private function listPageUrl($instance): string
+    {
+        $pages = ['wishlist' => 'cart.wishlist', 'compare' => 'cart.compare'];
+
+        return gp247_route_front($pages[$instance] ?? 'cart');
     }
 
     /**
@@ -1137,12 +1158,12 @@ class ShopCartController extends RootFrontController
     private function _removeItem($instance = 'cart', $id = null)
     {
         if ($id === null) {
-            return redirect(gp247_route_front($instance));
+            return redirect($this->listPageUrl($instance));
         }
         if (array_key_exists($id, (new Cart)->instance($instance)->content()->toArray())) {
             (new Cart)->instance($instance)->remove($id);
         }
-        return redirect(gp247_route_front($instance));
+        return redirect($this->listPageUrl($instance));
     }
 
     
