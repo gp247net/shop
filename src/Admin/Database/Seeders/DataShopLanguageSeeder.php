@@ -720,6 +720,8 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'cart.validation.paymentMethod_required','text' => 'Phương thức thanh toán là bắt buộc','position' => 'cart','location' => 'vi'],
                 ['code' => 'cart.add_to_cart_success','text' => 'Thêm vào :instance thành công','position' => 'cart','location' => 'vi'],
                 ['code' => 'cart.add_to_cart_success','text' => 'Add to :instance success','position' => 'cart','location' => 'en'],
+                ['code' => 'cart.remove_from_cart_success','text' => 'Đã gỡ khỏi :instance','position' => 'cart','location' => 'vi'],
+                ['code' => 'cart.remove_from_cart_success','text' => 'Removed from :instance','position' => 'cart','location' => 'en'],
                 ['code' => 'cart.item_exist_in_cart','text' => 'This item is already in stock in the :instance','position' => 'cart','location' => 'en'],
                 ['code' => 'cart.item_exist_in_cart','text' => 'Item này đã có trong :instance rồi','position' => 'cart','location' => 'vi'],
                 ['code' => 'cart.item_over_qty','text' => 'SKU :sku insufficient quantity. You have placed :qty','position' => 'cart','location' => 'en'],

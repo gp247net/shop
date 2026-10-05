@@ -96,6 +96,14 @@
             @endif
             {{--// Button add to cart --}}
 
+            {{-- Wishlist / compare: shown even when the product cannot be bought (group, out of sale) --}}
+            @if (gp247_config('product_use_button_wishlist') || gp247_config('product_use_button_compare'))
+            <div class="mt-3">
+                @livewire('gp247-shop-front::product-actions', ['productId' => $product->id], key('product-actions-'.$product->id))
+            </div>
+            @endif
+            {{--// Wishlist / compare --}}
+
             {{-- Show attribute --}}
             @if (gp247_config('product_attribute'))
             <div id="product-detail-attr">
