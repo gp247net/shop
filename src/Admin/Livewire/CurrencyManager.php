@@ -195,7 +195,9 @@ class CurrencyManager extends ResourcePanel
         if ($this->editingId !== null) {
             ShopCurrency::findOrFail($this->editingId)->update($attributes);
         } else {
-            ShopCurrency::create($attributes);
+            $created = ShopCurrency::create($attributes);
+            // ResourcePanel create contract: expose the new id so save() edits it in place.
+            $this->editingId = (string) $created->id;
         }
     }
 

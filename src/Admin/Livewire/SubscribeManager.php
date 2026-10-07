@@ -167,7 +167,9 @@ class SubscribeManager extends ResourcePanel
         } else {
             // Owned by the store picked on create (root) / the scoped store.
             $attributes['store_id'] = $this->resolveCreateStore();
-            AdminSubscribe::create($attributes);
+            $created = AdminSubscribe::create($attributes);
+            // ResourcePanel create contract: expose the new id so save() edits it in place.
+            $this->editingId = (string) $created->id;
         }
     }
 

@@ -264,6 +264,8 @@ class CustomerManager extends ResourcePanel
                 $this->form = $this->fillForm($model);
             }
             $this->syncEditUrl($savedId);
+            // Same as ResourcePanel::save(): follow the record (new / re-sorted) to its page.
+            $this->showRecordPage($savedId);
             $this->notify('success', gp247_language_render('admin.save_success'));
 
             return;

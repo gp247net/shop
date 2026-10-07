@@ -200,7 +200,9 @@ class SupplierManager extends ResourcePanel
             // WHY: 1-1 ownership — a new supplier is owned by the store picked on
             // create (root admin) or the current scoped store (store-admin/switcher).
             $attributes['store_id'] = $this->resolveCreateStore();
-            ShopSupplier::create($attributes);
+            $created = ShopSupplier::create($attributes);
+            // ResourcePanel create contract: expose the new id so save() edits it in place.
+            $this->editingId = (string) $created->id;
         }
     }
 

@@ -121,7 +121,9 @@ abstract class AbstractStatusManager extends ResourcePanel
         if ($this->editingId !== null) {
             $class::findOrFail($this->editingId)->update(['name' => $data['name']]);
         } else {
-            $class::create(['name' => $data['name']]);
+            $created = $class::create(['name' => $data['name']]);
+            // ResourcePanel create contract: expose the new id so save() edits it in place.
+            $this->editingId = (string) $created->id;
         }
     }
 

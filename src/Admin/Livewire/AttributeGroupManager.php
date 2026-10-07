@@ -172,7 +172,9 @@ class AttributeGroupManager extends ResourcePanel
             // WHY: 1-1 ownership — a new group is owned by the store picked on create
             // (root admin) or the current scoped store (store-admin / switcher).
             $attributes['store_id'] = $this->resolveCreateStore();
-            ShopAttributeGroup::create($attributes);
+            $created = ShopAttributeGroup::create($attributes);
+            // ResourcePanel create contract: expose the new id so save() edits it in place.
+            $this->editingId = (string) $created->id;
         }
     }
 
