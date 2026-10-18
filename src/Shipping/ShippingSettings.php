@@ -2,6 +2,8 @@
 
 namespace GP247\Shop\Shipping;
 
+use GP247\Core\AdminShell\Infrastructure\ReadinessCheck;
+use GP247\Core\Models\AdminConfig;
 use GP247\Shop\Shipping\Data\ShippingAddress;
 
 /**
@@ -13,6 +15,7 @@ use GP247\Shop\Shipping\Data\ShippingAddress;
  * @aidlc-unit shop-shipping
  * @aidlc-story US-shop-shipping-origin-config
  * @aidlc-story US-shop-shipping-cod
+ * @aidlc-story US-shop-shipping-readiness-check
  */
 final class ShippingSettings
 {
@@ -88,6 +91,83 @@ final class ShippingSettings
     public static function codAutoRecord(string $storeId): bool
     {
         return (bool) (int) self::get('shipping_cod_auto_record', $storeId, 0);
+    }
+
+    /**
+     * What a store still needs before a carrier can quote — the single source behind the
+     * warnings of the Shipping tab and the "Check before use" box of every shipping plugin
+     * (US-shop-shipping-readiness-check, NFR-MAINT-plugin-readiness-single-source). Reads
+     * the settings fresh (not the per-request gp247_config cache) and never calls a carrier.
+     *
+     * @param string               $storeId     Store being checked (GLOBAL = the shared base).
+     * @param string|null          $providerKey Plugin key that must be enabled for the store (null = any carrier).
+     * @param array<string, mixed> $overrides   Values being edited but not saved yet (the Shipping tab).
+     * @return array<int, ReadinessCheck> shipping_enabled, customer_city, customer_ward, origin, provider_enabled.
+     */
+    public static function readiness(string $storeId, ?string $providerKey = null, array $overrides = []): array
+    {
+        $v = static fn (string $key): string => array_key_exists($key, $overrides)
+            ? trim((string) $overrides[$key])
+            : self::fresh($key, $storeId);
+        $on = static fn (string $key): bool => !in_array($v($key), ['', '0'], true);
+        $hub = self::adminUrl('admin_config.index');
+        $shippingTab = gp247_language_quickly('admin.shipping.fix_shipping_tab', 'Shop configuration → Shipping');
+        $customerTab = gp247_language_quickly('admin.shipping.fix_customer_tab', 'Shop configuration → Customer');
+
+        $checks = [
+            ReadinessCheck::failIf(!$on('use_shipping'), 'shipping_enabled',
+                gp247_language_quickly('admin.shipping.warn_shipping_off', 'Shipping is off: shoppers cannot choose a delivery method at checkout.'),
+                ReadinessCheck::ERROR, $hub, $shippingTab,
+                gp247_language_quickly('admin.shipping.ready_shipping_on', 'Shipping is on at checkout.')),
+            ReadinessCheck::failIf(!$on('customer_city'), 'customer_city', gp247_language_render('admin.shipping.warn_city'),
+                ReadinessCheck::ERROR, $hub, $customerTab,
+                gp247_language_quickly('admin.shipping.ready_city', 'Customer addresses ask for the province / city.')),
+            ReadinessCheck::failIf(!$on('customer_ward') && !$on('customer_district'), 'customer_ward', gp247_language_render('admin.shipping.warn_ward'),
+                ReadinessCheck::ERROR, $hub, $customerTab,
+                gp247_language_quickly('admin.shipping.ready_ward', 'Customer addresses ask for the ward or district.')),
+            ReadinessCheck::failIf($v('shipping_origin_province') === '' || $v('shipping_origin_address') === '' || $v('shipping_origin_phone') === '',
+                'origin', gp247_language_render('admin.shipping.warn_origin'), ReadinessCheck::ERROR, $hub, $shippingTab,
+                gp247_language_quickly('admin.shipping.ready_origin', 'The pick-up warehouse has a province, street address and phone.')),
+        ];
+
+        $plugins = self::adminUrl('admin_plugin.index');
+        $pluginsLabel = gp247_language_quickly('admin.shipping.fix_plugins', 'Extension → Plugins');
+        if ($providerKey !== null) {
+            $enabled = self::fresh($providerKey, $storeId) === '1' && ShippingProviderRegistry::instance()->provider($providerKey) !== null;
+            $checks[] = ReadinessCheck::failIf(!$enabled, 'provider_enabled',
+                gp247_language_quickly('admin.shipping.warn_provider_off', 'This carrier is not enabled for this store.'), ReadinessCheck::ERROR, $plugins, $pluginsLabel,
+                gp247_language_quickly('admin.shipping.ready_provider', 'This carrier is enabled for this store.'));
+        } else {
+            $checks[] = ReadinessCheck::failIf(ShippingProviderRegistry::instance()->enabled() === [], 'provider_enabled',
+                gp247_language_render('admin.shipping.warn_no_provider'), ReadinessCheck::ERROR, $plugins, $pluginsLabel,
+                gp247_language_quickly('admin.shipping.ready_any_provider', 'At least one carrier is enabled for this store.'));
+        }
+
+        return $checks;
+    }
+
+    /**
+     * @param string $key     Config key.
+     * @param string $storeId Store id.
+     * @return string The store row, else the GLOBAL row — read from the table, not the request cache.
+     */
+    private static function fresh(string $key, string $storeId): string
+    {
+        $global = (string) (defined('GP247_STORE_ID_GLOBAL') ? GP247_STORE_ID_GLOBAL : 0);
+        $rows = AdminConfig::where('key', $key)->whereIn('store_id', array_values(array_unique([$storeId, $global])))->get(['store_id', 'value'])
+            ->mapWithKeys(static fn (AdminConfig $row): array => [(string) $row->store_id => trim((string) $row->value)]);
+        $value = (string) ($rows[$storeId] ?? '');
+
+        return $value !== '' ? $value : (string) ($rows[$global] ?? '');
+    }
+
+    /**
+     * @param string $route Admin route name.
+     * @return string URL, or '' when the route is not registered.
+     */
+    private static function adminUrl(string $route): string
+    {
+        return function_exists('gp247_route_admin') && \Illuminate\Support\Facades\Route::has($route) ? (string) gp247_route_admin($route) : '';
     }
 
     /**

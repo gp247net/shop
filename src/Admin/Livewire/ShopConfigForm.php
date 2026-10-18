@@ -608,14 +608,14 @@ class ShopConfigForm extends GP247AdminComponent
      * Status, carriers and missing prerequisites shown at the top of the Shipping tab,
      * computed from the values on screen (so the warnings follow unsaved edits).
      *
-     * @return array{on: bool, providers: array<int, array<string, mixed>>, warnings: array<int, string>, pluginsUrl: string}
+     * @return array{on: bool, providers: array<int, array<string, mixed>>, warnings: array<int, string>, pluginsUrl: string} warnings are translated sentences.
      *
      * @aidlc-unit shop-shipping
      * @aidlc-story US-shop-shipping-origin-config
+     * @aidlc-story US-shop-shipping-readiness-check
      */
     private function shippingOverview(): array
     {
-        $v = fn (string $key): string => trim((string) ($this->values[$key] ?? ''));
         $registry = \GP247\Shop\Shipping\ShippingProviderRegistry::instance();
         $providers = [];
         foreach (array_keys($registry->enabled()) as $key) {
@@ -630,18 +630,15 @@ class ShopConfigForm extends GP247AdminComponent
             ];
         }
 
+        // WHY one source: plugin settings screens show the same conditions (US-shop-shipping-readiness-check).
+        // The on/off switch has its own status strip here, so it is not repeated as a warning.
+        $edited = array_intersect_key($this->values, array_flip(['use_shipping', 'customer_city', 'customer_ward', 'customer_district',
+            'shipping_origin_province', 'shipping_origin_address', 'shipping_origin_phone']));
         $warnings = [];
-        if (array_key_exists('customer_city', $this->values) && empty($this->values['customer_city'])) {
-            $warnings[] = 'admin.shipping.warn_city';
-        }
-        if (array_key_exists('customer_ward', $this->values) && empty($this->values['customer_ward']) && empty($this->values['customer_district'])) {
-            $warnings[] = 'admin.shipping.warn_ward';
-        }
-        if ($v('shipping_origin_province') === '' || $v('shipping_origin_address') === '' || $v('shipping_origin_phone') === '') {
-            $warnings[] = 'admin.shipping.warn_origin';
-        }
-        if ($providers === []) {
-            $warnings[] = 'admin.shipping.warn_no_provider';
+        foreach (\GP247\Shop\Shipping\ShippingSettings::readiness($this->storeScopeId(), null, $edited) as $check) {
+            if (!$check->passed() && $check->key !== 'shipping_enabled') {
+                $warnings[] = $check->message;
+            }
         }
 
         return [
