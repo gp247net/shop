@@ -32,6 +32,18 @@ return [
             'GP247_PREFIX_MEMBER_CHANGE_INFO' => env('GP247_PREFIX_MEMBER_CHANGE_INFO', 'change-infomation'),
         ],
 
+        // Shipping provider registry (mod 20261017T185906, ADR shop-shipping_provider-capability-contract).
+        // A shipping plugin adds itself in its Provider.php:
+        //   config(['gp247-config.shop.shipping_providers.<PluginKey>' => ['driver' => Class, 'capabilities' => [...]]]);
+        'shipping_providers' => [],
+        // Payment plugins whose orders are paid in cash on delivery (COD amount of a shipment).
+        'cod_payment_methods' => ['CashPayment'],
+        'shipping' => [
+            // Carrier webhook: {prefix}/shipping/webhook/{pluginKey} (outside the storefront group).
+            'webhook_prefix' => env('GP247_SHIPPING_WEBHOOK_PREFIX', 'shipping/webhook'),
+            'webhook_throttle' => env('GP247_SHIPPING_WEBHOOK_THROTTLE', '120,1'),
+        ],
+
         // Product delivery-type valid values (formerly 'product_tag'). Renamed to
         // 'product_type' alongside the shop_product.tag -> product_type column rename
         // (compat-foundation_product-type-rename). Distinct from the new keyword-tag feature.

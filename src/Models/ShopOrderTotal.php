@@ -249,6 +249,25 @@ class ShopOrderTotal extends Model
     {
         $arrShipping = [];
         $shippingMethod = session('shippingMethod') ?? '';
+        // Standard shipping layer: bill the rate the shopper chose (snapshot), already
+        // converted carrier currency → display once by RateService (ADR
+        // shop-shipping_rate-snapshot-and-currency). No snapshot ⇒ the getInfo() path below.
+        $snapshot = $shippingMethod ? \GP247\Shop\Shipping\ShippingCheckout::resolveForTotals((string) $shippingMethod) : null;
+        if ($snapshot === null && $shippingMethod
+            && \GP247\Shop\Shipping\ShippingProviderRegistry::instance()->definition((string) $shippingMethod) !== null) {
+            // A contract provider without a price: no line (addOrder refuses the order), never
+            // the getInfo() fallback below — it is 0 for such providers.
+            return [];
+        }
+        if ($snapshot !== null) {
+            return [
+                'title' => $snapshot->title,
+                'code' => 'shipping',
+                'value' => $snapshot->displayAmount,
+                'text' => gp247_currency_render_symbol($snapshot->displayAmount),
+                'sort' => self::POSITION_SHIPPING_METHOD,
+            ];
+        }
         if ($shippingMethod) {
             $moduleClass = gp247_extension_get_namespace(type: 'Plugins', key: $shippingMethod);
             $moduleClass = $moduleClass . '\AppConfig';

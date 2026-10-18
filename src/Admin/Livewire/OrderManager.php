@@ -38,7 +38,7 @@ class OrderManager extends ResourcePanel
     /** Editable header/status fields surfaced on the detail screen. */
     private const FIELDS = [
         'email', 'first_name', 'last_name', 'phone', 'company', 'country',
-        'postcode', 'city', 'district', 'address1', 'address2', 'address3',
+        'postcode', 'city', 'district', 'ward', 'address1', 'address2', 'address3',
         'comment', 'payment_method', 'shipping_method',
     ];
 
@@ -50,7 +50,7 @@ class OrderManager extends ResourcePanel
      * an admin can correct any part of the shipping snapshot (QĐ-6).
      */
     private const HEADER_FIELDS = [
-        'first_name', 'last_name', 'phone', 'company', 'city', 'district',
+        'first_name', 'last_name', 'phone', 'company', 'city', 'district', 'ward',
         'address1', 'address2', 'address3', 'country', 'postcode',
         'comment', 'payment_method', 'shipping_method',
     ];
@@ -291,11 +291,12 @@ class OrderManager extends ResourcePanel
             // array_filter drops empty parts so an order stored before city/district
             // existed still renders exactly as before.
             'address' => implode(' ', array_filter([
-                (string) ($model->city ?? ''), (string) ($model->district ?? ''),
+                (string) ($model->city ?? ''), (string) ($model->district ?? ''), (string) ($model->ward ?? ''),
                 (string) $model->address1, (string) $model->address2, (string) $model->address3,
             ])),
             'city' => (string) ($model->city ?? ''),
             'district' => (string) ($model->district ?? ''),
+            'ward' => (string) ($model->ward ?? ''),
             'address1' => (string) $model->address1,
             'address2' => (string) $model->address2,
             'address3' => (string) $model->address3,
@@ -374,6 +375,20 @@ class OrderManager extends ResourcePanel
 
             return $entry;
         })->all();
+    }
+
+    /**
+     * Store scope handed to the embedded shipping panel (locked there): null when the
+     * viewer manages every store's orders, else the viewer's store.
+     *
+     * @return string|null
+     *
+     * @aidlc-unit shop-admin
+     * @aidlc-story US-shop-shipping-shipment-lifecycle
+     */
+    public function shipmentPanelStoreScope(): ?string
+    {
+        return $this->showAllStores() ? null : (string) $this->storeId();
     }
 
     /**
@@ -610,6 +625,7 @@ class OrderManager extends ResourcePanel
             // before these were enabled must not be forced to backfill them.
             'form.city' => 'nullable|string|max:100',
             'form.district' => 'nullable|string|max:100',
+            'form.ward' => 'nullable|string|max:100',
             'form.address1' => gp247_config_admin('customer_address1') ? 'required|string|max:100' : 'nullable|string|max:100',
             // address2/3 and postcode are additional, always-optional parts of
             // the snapshot the admin may correct (QĐ-6).
@@ -673,6 +689,7 @@ class OrderManager extends ResourcePanel
             'form.company' => $this->label('customer.company'),
             'form.city' => $this->label('customer.city'),
             'form.district' => $this->label('customer.district'),
+            'form.ward' => $this->label('customer.ward'),
             'form.address1' => $this->label('customer.address1'),
             'form.address2' => $this->label('customer.address2'),
             'form.address3' => $this->label('customer.address3'),

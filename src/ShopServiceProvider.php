@@ -136,6 +136,10 @@ class ShopServiceProvider extends ServiceProvider
             // admin views untouched. shop inherits from core, not from front.
             $this->registerAdminShell();
 
+            // Carrier webhooks of the standard shipping layer: outside the storefront
+            // middleware group on purpose (ADR shop-shipping_webhook-routing).
+            $this->loadRoutesFrom(__DIR__.'/Routes/Webhook/shipping.php');
+
             //Add module to homepage admin
             gp247_add_module('homepage', 'gp247-shop-admin::component.order_month');
             gp247_add_module('homepage', 'gp247-shop-admin::component.order_year');

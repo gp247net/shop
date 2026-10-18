@@ -70,6 +70,13 @@
             @error('district')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
         </div>
     @endif
+    @if (gp247_config('customer_ward'))
+        <div>
+            <label class="label">{{ gp247_language_render('customer.ward') }}</label>
+            <input type="text" class="input @error('ward') input-error @enderror" name="ward" @if (gp247_config('customer_ward_required')) required @endif value="{{ old('ward', $address['ward']) }}">
+            @error('ward')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+    @endif
 
     <div>
         <label class="label">{{ gp247_language_render('customer.address1') }}</label>

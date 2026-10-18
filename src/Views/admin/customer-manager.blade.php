@@ -83,6 +83,10 @@
                 <x-gp247::input :label="gp247_language_render('customer.district')" name="district"
                     wire:model="form.district" :error="$errors->first('form.district')" />
             @endif
+            @if (gp247_config_admin('customer_ward'))
+                <x-gp247::input :label="gp247_language_render('customer.ward')" name="ward"
+                    wire:model="form.ward" :error="$errors->first('form.ward')" />
+            @endif
 
             @if (gp247_config_admin('customer_address1') || true)
                 <x-gp247::input :label="gp247_language_render('customer.address1')" name="address1"

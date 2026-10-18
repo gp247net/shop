@@ -291,6 +291,7 @@ class AdminOrderController extends RootAdminController
             'currency'        => $data['currency'],
             'city'            => $data['city'] ?? '',
             'district'        => $data['district'] ?? '',
+            'ward'        => $data['ward'] ?? '',
             'address1'        => $data['address1'] ?? '',
             'address2'        => $data['address2'] ?? '',
             'address3'        => $data['address3'] ?? '',
@@ -663,7 +664,7 @@ class AdminOrderController extends RootAdminController
             // Canonical order (city -> district -> address1..3 -> country); drop
             // empty segments so old/optional fields don't leave dangling commas.
             $data['address']         = implode(', ', array_filter([
-                $order['city'], $order['district'], $order['address1'],
+                $order['city'], $order['district'], $order['ward'] ?? '', $order['address1'],
                 $order['address2'], $order['address3'], $order['country'],
             ]));
             $data['phone']           = $order['phone'];

@@ -63,6 +63,10 @@
                 <x-gp247::input :label="gp247_language_render('customer.district')" name="addr_district"
                     wire:model="addressForm.district" :error="$errors->first('addressForm.district')" />
             @endif
+            @if (gp247_config_admin('customer_ward'))
+                <x-gp247::input :label="gp247_language_render('customer.ward')" name="addr_ward"
+                    wire:model="addressForm.ward" :error="$errors->first('addressForm.ward')" />
+            @endif
             <x-gp247::input :label="gp247_language_render('customer.address1')" name="addr_address1"
                 wire:model="addressForm.address1" :error="$errors->first('addressForm.address1')" />
             @if (gp247_config_admin('customer_address2'))

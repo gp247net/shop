@@ -64,6 +64,8 @@
                             @endforelse
                         </div>
 
+                    @elseif ($tab['id'] === 'shipping')
+                        @include('gp247-shop-admin::partials.config-shipping-tab', ['tab' => $tab, 'shippingOverview' => $shippingOverview ?? []])
                     @elseif ($tab['id'] === 'limit')
                         {{-- Limit per page: 3-column table (Detail | Key | Value) --}}
                         <div class="overflow-x-auto">

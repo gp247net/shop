@@ -110,6 +110,13 @@
                     @error('form.district')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 @endif
+                @if (gp247_config_admin('customer_ward'))
+                <div>
+                    <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ gp247_language_render('customer.ward') }}</label>
+                    <input type="text" wire:model="form.ward" data-testid="shop-admin-order-info-ward" class="{{ $inputCls }}">
+                    @error('form.ward')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @endif
 
                 @if (gp247_config_admin('customer_address1'))
                 <div>
@@ -253,6 +260,10 @@
         </x-gp247::card>
 
         @include('gp247-shop-admin::partials.order-totals')
+        {{-- Standard shipping layer: shipments of this order (Unit shop-shipping, mod 20261017T185906). --}}
+        @if (\GP247\Shop\Shipping\ShipmentService::available())
+            <livewire:gp247-shop-admin::order-shipment-panel :order-id="(string) $editingId" :scope-store-id="$this->shipmentPanelStoreScope()" :key="'order-shipment-'.$editingId" />
+        @endif
         @include('gp247-shop-admin::partials.order-history')
     </div>
 </div>

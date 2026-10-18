@@ -58,6 +58,12 @@ class ShopInstall extends GP247Command
         $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade/2026_10_01_200000_install_payment_request.php']);
         $this->info('---------------> Payment requests ready!');
 
+        // Standard shipping layer (shipments, rate snapshot, ward): same reasoning — an
+        // idempotent add-only upgrade migration, run here on a fresh install.
+        \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '2026_10_17_100000_install_shop_shipping')->delete();
+        $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade/2026_10_17_100000_install_shop_shipping.php']);
+        $this->info('---------------> Shipping layer ready!');
+
         // WHY no vendor:publish here any more (modification 20260913T200309):
         // shop's storefront views are served from this package through the
         // GP247TemplatePath hint paths, so an install no longer copies them into

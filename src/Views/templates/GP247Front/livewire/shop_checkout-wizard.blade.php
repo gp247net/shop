@@ -44,7 +44,7 @@
                 <option value="">{{ gp247_language_render('cart.change_address') }}</option>
                 @foreach ($customer->addresses as $addr)
                 <option value="{{ $addr->id }}" @selected($address_process == $addr->id)>
-                    {{ $addr->first_name.' '.$addr->last_name.', '.trim($addr->city.' '.$addr->district.' '.$addr->address1.' '.$addr->address2.' '.$addr->address3) }}
+                    {{ $addr->first_name.' '.$addr->last_name.', '.trim($addr->city.' '.$addr->district.' '.($addr->ward ?? '').' '.$addr->address1.' '.$addr->address2.' '.$addr->address3) }}
                 </option>
                 @endforeach
                 <option value="new" @selected($address_process === 'new')>{{ gp247_language_render('cart.add_new_address') }}</option>
@@ -132,6 +132,13 @@
                 @error('district')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
             </div>
             @endif
+            @if ($fieldConfig['ward']['show'] ?? false)
+            <div>
+                <label class="block text-sm font-medium text-ink-700 mb-1">{{ gp247_language_render('cart.ward') }} @if ($fieldConfig['ward']['required'])<span class="text-red-500">*</span>@endif</label>
+                <input type="text" wire:model="ward" class="input @error('ward') input-error @enderror" data-testid="checkout-address-ward">
+                @error('ward')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+            @endif
             @if ($fieldConfig['address1']['show'])
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-ink-700 mb-1">{{ gp247_language_render('cart.address1') }} @if ($fieldConfig['address1']['required'])<span class="text-red-500">*</span>@endif</label>
@@ -182,6 +189,9 @@
         @if ($errors->has('shippingMethod'))
         <div class="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3 mb-4">{{ $errors->first('shippingMethod') }}</div>
         @endif
+        @if (!empty($shippingRateError))
+        <div class="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3 mb-4" data-testid="checkout-shipping-rate-error">{{ $shippingRateError }}</div>
+        @endif
 
         <div class="space-y-3">
             @forelse ($shippingPlugins as $key => $info)
@@ -192,11 +202,13 @@
                     id="sm_{{ $key }}"
                     class="accent-brand-600"
                     wire:click="selectShipping('{{ e($key) }}')"
+                    data-testid="checkout-shipping-rate-{{ $key }}"
                     @checked($shippingMethod === $key)
                 >
                 <span class="text-sm">
                     {{ $info['title'] ?? $key }}
-                    @if (!empty($info['value']))<span class="text-ink-400"> &ndash; {{ $info['value'] }}</span>@endif
+                    @if (!empty($info['value']))<span class="text-ink-400"> &ndash; {{ $info['text'] ?? $info['value'] }}</span>@endif
+                    @if (!empty($info['eta_max']))<span class="block text-xs text-ink-400">{{ gp247_language_render('cart.shipping_eta_days', ['min' => $info['eta_min'] ?? $info['eta_max'], 'max' => $info['eta_max']]) }}</span>@endif
                 </span>
             </label>
             @empty
@@ -258,7 +270,7 @@
             <h3 class="text-sm font-semibold text-ink-500 mb-2">{{ gp247_language_render('cart.checkout') }}</h3>
             <p class="text-sm text-ink-700 leading-relaxed">
                 {{ $first_name }} {{ $last_name }}<br>
-                {{ $city ? $city.', ' : '' }}{{ $district ? $district.', ' : '' }}{{ $address1 }}{{ $address2 ? ', '.$address2 : '' }}{{ $address3 ? ', '.$address3 : '' }}<br>
+                {{ $city ? $city.', ' : '' }}{{ $district ? $district.', ' : '' }}{{ ($ward ?? '') ? $ward.', ' : '' }}{{ $address1 }}{{ $address2 ? ', '.$address2 : '' }}{{ $address3 ? ', '.$address3 : '' }}<br>
                 {{ $country }} {{ $postcode }}<br>
                 {{ $email }} / {{ $phone }}
             </p>

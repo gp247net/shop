@@ -179,6 +179,15 @@
                             @error('district')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
                         @endif
+                        @if (gp247_config_admin('customer_ward'))
+                        <div>
+                            <label class="{{ $labelCls }}">{{ gp247_language_render('cart.ward') }}{{ gp247_config_admin('customer_ward_required') ? ' *' : '' }}</label>
+                            <input type="text" name="ward" x-model="fields.ward"
+                                {{ gp247_config_admin('customer_ward_required') ? 'required' : '' }}
+                                class="{{ $inputCls }}">
+                            @error('ward')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        @endif
 
                         {{-- address1 — config-driven --}}
                         @if (gp247_config_admin('customer_address1'))
@@ -549,6 +558,7 @@ function orderCreate() {
             'country'    => old('country',    ''),
             'city'       => old('city',       ''),
             'district'   => old('district',   ''),
+            'ward'   => old('ward',   ''),
             'address1'   => old('address1',   ''),
             'address2'   => old('address2',   ''),
             'address3'   => old('address3',   ''),
@@ -582,6 +592,7 @@ function orderCreate() {
             this.fields.country    = u.country    ?? '';
             this.fields.city       = u.city       ?? '';
             this.fields.district   = u.district   ?? '';
+            this.fields.ward   = u.ward   ?? '';
             this.fields.address1   = u.address1   ?? '';
             this.fields.address2   = u.address2   ?? '';
             this.fields.address3   = u.address3   ?? '';

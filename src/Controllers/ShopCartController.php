@@ -92,6 +92,8 @@ class ShopCartController extends RootFrontController
         // token, so a genuinely new order gets a new token (the confirm step stamps
         // it) — US-LW-checkout-idempotency.
         session()->forget('checkoutToken');
+        // A new checkout starts without a previously quoted shipping rate (US-shop-shipping-rate-snapshot).
+        \GP247\Shop\Shipping\ShippingCheckout::forget();
 
         $data = request()->all();
 
@@ -280,6 +282,7 @@ class ShopCartController extends RootFrontController
                     'email'           => $customer->email,
                     'city'            => $address->city,
                     'district'        => $address->district,
+                    'ward'        => $address->ward,
                     'address1'        => $address->address1,
                     'address2'        => $address->address2,
                     'address3'        => $address->address3,
@@ -298,6 +301,7 @@ class ShopCartController extends RootFrontController
                     'email'           => $customer->email,
                     'city'            => $customer->city,
                     'district'        => $customer->district,
+                    'ward'        => $customer->ward,
                     'address1'        => $customer->address1,
                     'address2'        => $customer->address2,
                     'address3'        => $customer->address3,
@@ -319,6 +323,7 @@ class ShopCartController extends RootFrontController
                 'email'           => '',
                 'city'            => '',
                 'district'        => '',
+                'ward'        => '',
                 'address1'        => '',
                 'address2'        => '',
                 'address3'        => '',
@@ -434,6 +439,7 @@ class ShopCartController extends RootFrontController
                     'country'         => request('country'),
                     'city'            => request('city'),
                     'district'        => request('district'),
+                    'ward'            => request('ward'),
                     'address1'        => request('address1'),
                     'address2'        => request('address2'),
                     'address3'        => request('address3'),
@@ -665,6 +671,13 @@ class ShopCartController extends RootFrontController
         // saw (RISK-BIZ-price-change-mid-checkout, US-LW-checkout-total-freshness). On a
         // mismatch beyond a rounding tolerance, send them back to re-confirm the new
         // price rather than proceed.
+        // A carrier of the shipping layer that cannot price this parcel refuses the order
+        // instead of billing nothing (US-shop-shipping-rate-snapshot, review 2026-10-17).
+        if (gp247_config('use_shipping') && \GP247\Shop\Shipping\ShippingCheckout::isUnquotable((string) $shippingMethod)) {
+            return redirect(gp247_route_front('checkout'))
+                ->with(['error' => gp247_language_render('cart.shipping_rate_none')]);
+        }
+
         $freshDataTotal = ShopOrderTotal::processDataTotal(ShopOrderTotal::getObjectOrderTotal());
         $displayedTotal = (new ShopOrderTotal)->sumValueTotal('total', $dataTotal);
         $freshTotal     = (new ShopOrderTotal)->sumValueTotal('total', $freshDataTotal);
@@ -741,6 +754,9 @@ class ShopCartController extends RootFrontController
         if (!empty($shippingAddress['district'])) {
             $dataOrder['district']       = $shippingAddress['district'];
         }
+        if (!empty($shippingAddress['ward'])) {
+            $dataOrder['ward']       = $shippingAddress['ward'];
+        }
         if (!empty($shippingAddress['address1'])) {
             $dataOrder['address1']       = $shippingAddress['address1'];
         }
@@ -813,6 +829,17 @@ class ShopCartController extends RootFrontController
             return redirect(gp247_route_front('order.success'))->with(['orderID' => $newOrder['orderID']]);
         }
 
+        // Store the rate the shopper chose on the order (shipping_service + JSON snapshot).
+        // WHY after createOrder(): it html-escapes every string column, which would break JSON
+        // (US-shop-shipping-rate-snapshot, ADR shop-shipping_rate-snapshot-and-currency).
+        $chosenRate = \GP247\Shop\Shipping\ShippingCheckout::snapshot();
+        if ($chosenRate !== null && $chosenRate->pluginKey === $shippingMethod) {
+            ShopOrder::where('id', $newOrder['orderID'])->update([
+                'shipping_service' => $chosenRate->serviceCode !== '' ? $chosenRate->serviceCode : null,
+                'shipping_rate'    => json_encode($chosenRate->toArray(), JSON_UNESCAPED_UNICODE),
+            ]);
+        }
+
         //Set session info order
         session(['dataOrder' => $dataOrder]);
         session(['arrCartDetail' => $arrCartDetail]);
@@ -830,6 +857,7 @@ class ShopCartController extends RootFrontController
                 'postcode'        => $shippingAddress['postcode'] ?? '',
                 'city'            => $shippingAddress['city'] ?? '',
                 'district'        => $shippingAddress['district'] ?? '',
+                'ward'        => $shippingAddress['ward'] ?? '',
                 'address1'        => $shippingAddress['address1'] ?? '',
                 'address2'        => $shippingAddress['address2'] ?? '',
                 'address3'        => $shippingAddress['address3'] ?? '',
@@ -1325,6 +1353,7 @@ class ShopCartController extends RootFrontController
     {
         session()->forget('paymentMethod'); //destroy paymentMethod
         session()->forget('shippingMethod'); //destroy shippingMethod
+        \GP247\Shop\Shipping\ShippingCheckout::forget(); //destroy shipping rate snapshot + quotes
         session()->forget('totalMethod'); //destroy totalMethod
         session()->forget('otherMethod'); //destroy otherMethod
         session()->forget('dataTotal'); //destroy dataTotal

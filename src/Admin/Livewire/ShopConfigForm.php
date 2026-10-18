@@ -280,12 +280,45 @@ class ShopConfigForm extends GP247AdminComponent
         // --- Order (store_scoped: base GLOBAL + per-store override) ---
         $fields = [];
         foreach ($loadEff('order_config') as $c) {
+            if ($c->key === 'use_shipping') {
+                continue; // shown on the Shipping tab (US-shop-shipping-origin-config)
+            }
             // WHY: product_buy_out_of_stock only has an effect when product_stock
             // (stock management) is on — surface that relationship as a help note.
             $note = $c->key === 'product_buy_out_of_stock' ? 'admin.order.product_buy_out_of_stock_note' : '';
             $fields[] = $this->field($c, 'checkbox', 'store_scoped', [], false, '', '', $note);
         }
         $tabs[] = ['id' => 'order', 'label' => 'admin.shop.config_order', 'fields' => $fields];
+
+        // --- Shipping (store_scoped): pick-up origin + defaults shared by every carrier
+        // (US-shop-shipping-origin-config, mod 20261017T185906). Absent until the site ran
+        // gp247:shop-update, so the tab only appears once its rows exist.
+        $rows = [];
+        foreach ($loadEff('order_config') as $c) {
+            if ($c->key === 'use_shipping') {
+                $rows[$c->key] = $c;
+            }
+        }
+        foreach ($loadEff('shipping_config') as $c) {
+            $rows[$c->key] = $c;
+        }
+        $fields = [];
+        // WHY a fixed layout instead of the rows' `sort`: the core loader sorts DESC by
+        // default and the fields read as blocks (status → warehouse → parcel → tracking).
+        foreach (self::SHIPPING_LAYOUT as $key => [$group, $type]) {
+            if (!isset($rows[$key])) {
+                continue;
+            }
+            $field = $this->field($rows[$key], $type, 'store_scoped', [], false, '', '', 'admin.shipping.hint_' . $key);
+            $field['group'] = $group;
+            if ($key === 'use_shipping') {
+                $field['label'] = 'admin.shipping.enable';
+            }
+            $fields[] = $field;
+        }
+        if (count($fields) > 1) {
+            $tabs[] = ['id' => 'shipping', 'label' => 'admin.shop.config_shipping', 'fields' => $fields];
+        }
 
         // --- Sendmail (store) ---
         $fields = [];
@@ -464,6 +497,7 @@ class ShopConfigForm extends GP247AdminComponent
     public function save(): void
     {
         $this->authorizeAction('update');
+        $this->validateShippingValues();
 
         foreach ($this->buildTabs() as $tab) {
             foreach ($tab['fields'] as $field) {
@@ -523,12 +557,109 @@ class ShopConfigForm extends GP247AdminComponent
     }
 
     /**
+     * Shipping tab layout: key => [block, field type], in display order.
+     *
+     * @var array<string, array{0: string, 1: string}>
+     */
+    private const SHIPPING_LAYOUT = [
+        'use_shipping' => ['status', 'checkbox'],
+        'shipping_origin_name' => ['origin', 'text'],
+        'shipping_origin_phone' => ['origin', 'text'],
+        'shipping_origin_country' => ['origin', 'text'],
+        'shipping_origin_province' => ['origin', 'text'],
+        'shipping_origin_ward' => ['origin', 'text'],
+        'shipping_origin_district' => ['origin', 'text'],
+        'shipping_origin_address' => ['origin', 'text'],
+        'shipping_default_weight' => ['parcel', 'number'],
+        'shipping_sync_interval' => ['tracking', 'number'],
+        'shipping_cod_auto_record' => ['tracking', 'checkbox'],
+    ];
+
+    /**
+     * Reject shipping values a carrier cannot use, before anything is saved.
+     *
+     * @return void
+     * @throws \Illuminate\Validation\ValidationException
+     *
+     * @aidlc-unit shop-shipping
+     * @aidlc-story US-shop-shipping-origin-config
+     */
+    private function validateShippingValues(): void
+    {
+        $rules = [];
+        $attributes = [];
+        foreach ([
+            'shipping_default_weight' => 'nullable|integer|min:1|max:100000',
+            'shipping_sync_interval' => 'nullable|integer|min:5|max:1440',
+            'shipping_origin_country' => 'nullable|alpha|size:2',
+            'shipping_origin_phone' => 'nullable|string|max:30',
+        ] as $key => $rule) {
+            if (array_key_exists($key, $this->values)) {
+                $rules['values.' . $key] = $rule;
+                $attributes['values.' . $key] = (string) gp247_language_render('admin.shipping.' . substr($key, strlen('shipping_')));
+            }
+        }
+        if ($rules !== []) {
+            $this->validate($rules, [], $attributes);
+        }
+    }
+
+    /**
+     * Status, carriers and missing prerequisites shown at the top of the Shipping tab,
+     * computed from the values on screen (so the warnings follow unsaved edits).
+     *
+     * @return array{on: bool, providers: array<int, array<string, mixed>>, warnings: array<int, string>, pluginsUrl: string}
+     *
+     * @aidlc-unit shop-shipping
+     * @aidlc-story US-shop-shipping-origin-config
+     */
+    private function shippingOverview(): array
+    {
+        $v = fn (string $key): string => trim((string) ($this->values[$key] ?? ''));
+        $registry = \GP247\Shop\Shipping\ShippingProviderRegistry::instance();
+        $providers = [];
+        foreach (array_keys($registry->enabled()) as $key) {
+            $definition = (array) ($registry->definition($key) ?? []);
+            $route = (string) ($definition['settings_route'] ?? '');
+            $class = gp247_extension_get_namespace(type: 'Plugins', key: $key) . '\\AppConfig';
+            $providers[] = [
+                'key' => $key,
+                'title' => class_exists($class) ? (string) ((new $class)->title ?: $key) : $key,
+                'caps' => $registry->capabilities($key),
+                'url' => ($route !== '' && \Illuminate\Support\Facades\Route::has($route)) ? gp247_route_admin($route) : '',
+            ];
+        }
+
+        $warnings = [];
+        if (array_key_exists('customer_city', $this->values) && empty($this->values['customer_city'])) {
+            $warnings[] = 'admin.shipping.warn_city';
+        }
+        if (array_key_exists('customer_ward', $this->values) && empty($this->values['customer_ward']) && empty($this->values['customer_district'])) {
+            $warnings[] = 'admin.shipping.warn_ward';
+        }
+        if ($v('shipping_origin_province') === '' || $v('shipping_origin_address') === '' || $v('shipping_origin_phone') === '') {
+            $warnings[] = 'admin.shipping.warn_origin';
+        }
+        if ($providers === []) {
+            $warnings[] = 'admin.shipping.warn_no_provider';
+        }
+
+        return [
+            'on' => !empty($this->values['use_shipping']),
+            'providers' => $providers,
+            'warnings' => $warnings,
+            'pluginsUrl' => function_exists('gp247_route_admin') ? gp247_route_admin('admin_plugin.index') : '#',
+        ];
+    }
+
+    /**
      * @return View
      */
     public function render(): View
     {
         return view('gp247-shop-admin::config-form', [
             'tabs' => $this->buildTabs(),
+            'shippingOverview' => $this->shippingOverview(),
             'sendmailStatus' => (bool) (function_exists('gp247_config_admin') ? gp247_config_admin('email_action_mode') : false),
             'adminConfigUrl' => function_exists('gp247_route_admin') ? gp247_route_admin('admin_config.index') : '#',
         ])->layout('gp247-admin::layouts.admin', [

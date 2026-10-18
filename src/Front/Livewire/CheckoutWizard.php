@@ -8,7 +8,13 @@ use GP247\Shop\Front\Contracts\CheckoutTotalMethod;
 use GP247\Shop\Models\ShopAttributeGroup;
 use GP247\Shop\Models\ShopOrderTotal;
 use GP247\Shop\Services\CartItem;
+use GP247\Shop\Shipping\Data\RateRequest;
+use GP247\Shop\Shipping\Data\RateSnapshot;
+use GP247\Shop\Shipping\RateRequestFactory;
+use GP247\Shop\Shipping\RateService;
+use GP247\Shop\Shipping\ShippingCheckout;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Locked;
 
 /**
  * Livewire wizard component for the checkout flow (US-LW-006).
@@ -44,6 +50,8 @@ class CheckoutWizard extends BaseFrontComponent
     // City/district precede address1 (canonical order); both default OFF via config.
     public string $city            = '';
     public string $district        = '';
+    // Ward (phuong/xa) — default OFF via config customer_ward (US-CMP-address-ward).
+    public string $ward            = '';
     public string $address1        = '';
     public string $address2        = '';
     public string $address3        = '';
@@ -55,8 +63,36 @@ class CheckoutWizard extends BaseFrontComponent
     /** @var string Saved-address ID being applied, 'new', or '' (manual entry). */
     public string $address_process = '';
 
-    /** @var string Selected shipping plugin key. */
+    /**
+     * Selected shipping rate id: the plugin key, or "<pluginKey>:<service>" when the
+     * carrier offers several services. session('shippingMethod') always holds the
+     * plugin key (US-shop-shipping-rate-snapshot).
+     *
+     * @var string
+     */
     public string $shippingMethod = '';
+
+    /**
+     * Rates quoted for the current address, keyed by rate id (RateSnapshot::toArray()).
+     *
+     * WHY locked: prices are server state — a client must never write them
+     * (shipping price integrity, review 2026-10-17).
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    #[Locked]
+    public array $shippingRates = [];
+
+    /** @var array<string, mixed> RateRequest::toArray() the rates were quoted for. */
+    #[Locked]
+    public array $shippingRateRequest = [];
+
+    /** @var bool Rates were quoted for the current address. */
+    #[Locked]
+    public bool $shippingQuoted = false;
+
+    /** @var string Message shown when no carrier can serve the address. */
+    public string $shippingRateError = '';
 
     /** @var string Selected payment plugin key. */
     public string $paymentMethod = '';
@@ -108,6 +144,7 @@ class CheckoutWizard extends BaseFrontComponent
             $this->phone           = (string) ($address->phone           ?? '');
             $this->city            = (string) ($address->city            ?? '');
             $this->district        = (string) ($address->district        ?? '');
+            $this->ward            = (string) ($address->ward            ?? '');
             $this->address1        = (string) ($address->address1        ?? '');
             $this->address2        = (string) ($address->address2        ?? '');
             $this->address3        = (string) ($address->address3        ?? '');
@@ -123,6 +160,7 @@ class CheckoutWizard extends BaseFrontComponent
             $this->phone           = (string) ($customer->phone           ?? '');
             $this->city            = (string) ($customer->city            ?? '');
             $this->district        = (string) ($customer->district        ?? '');
+            $this->ward            = (string) ($customer->ward            ?? '');
             $this->address1        = (string) ($customer->address1        ?? '');
             $this->address2        = (string) ($customer->address2        ?? '');
             $this->address3        = (string) ($customer->address3        ?? '');
@@ -164,6 +202,7 @@ class CheckoutWizard extends BaseFrontComponent
         $this->phone           = (string) ($address->phone           ?? '');
         $this->city            = (string) ($address->city            ?? '');
         $this->district        = (string) ($address->district        ?? '');
+        $this->ward            = (string) ($address->ward            ?? '');
         $this->address1        = (string) ($address->address1        ?? '');
         $this->address2        = (string) ($address->address2        ?? '');
         $this->address3        = (string) ($address->address3        ?? '');
@@ -172,17 +211,117 @@ class CheckoutWizard extends BaseFrontComponent
     }
 
     /**
-     * Select a shipping plugin and immediately persist it to session so
-     * ShopOrderTotal::processDataTotal() can calculate shipping costs on the
-     * confirm step.
+     * Select a shipping rate and immediately persist it to session so
+     * ShopOrderTotal::processDataTotal() bills exactly the quoted price on the
+     * confirm step: the rate snapshot goes to session('shippingRate'), the plugin
+     * key to session('shippingMethod') (US-shop-shipping-rate-snapshot).
      *
-     * @param string $key Plugin key (e.g. 'shipping_flat_rate').
+     * @param string $key Rate id ('<pluginKey>' or '<pluginKey>:<service>').
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-006
+     * @aidlc-story US-shop-shipping-rate-snapshot
      */
     public function selectShipping(string $key): void
     {
         $this->shippingMethod = (string) gp247_clean(data: $key, hight: true);
+
+        // The snapshot is re-derived on the server for the address and cart as they are
+        // NOW (session-cached quote: no extra carrier call) — never taken from component
+        // state the browser round-trips.
+        if ($this->shippingQuoted) {
+            $request = $this->currentRateRequest();
+            $snapshot = RateService::instance()->find($request, $this->shippingMethod);
+            if ($snapshot !== null) {
+                ShippingCheckout::remember($snapshot, $request);
+            } else {
+                ShippingCheckout::forget();
+            }
+        }
         // WHY: processDataTotal() reads session('shippingMethod') — must be set before confirm render.
-        session(['shippingMethod' => $this->shippingMethod]);
+        session(['shippingMethod' => $this->pluginKeyOf($this->shippingMethod)]);
+    }
+
+    /**
+     * Plugin key of a rate id (the part before ':' when the carrier has several services).
+     *
+     * @param string $rateId Rate id.
+     * @return string
+     */
+    private function pluginKeyOf(string $rateId): string
+    {
+        $known = $this->shippingRates[$rateId]['plugin_key'] ?? null;
+        if (is_string($known) && $known !== '') {
+            return $known;
+        }
+
+        return explode(':', $rateId, 2)[0];
+    }
+
+    /**
+     * Quote every enabled carrier for the address being entered (not yet committed to
+     * session) and the checkout cart. A previously chosen rate quoted for a different
+     * request is dropped so the shopper chooses again (US-shop-shipping-checkout-rates).
+     *
+     * @return void
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-shop-shipping-checkout-rates
+     */
+    private function quoteShippingRates(): void
+    {
+        $request = $this->currentRateRequest();
+        $answer = RateService::instance()->quote($request);
+
+        $this->shippingRates = array_map(static fn (RateSnapshot $s): array => $s->toArray(), $answer['rates']);
+        $this->shippingRateRequest = $request->toArray();
+        $this->shippingQuoted = true;
+        $this->shippingRateError = $answer['rates'] === [] ? (string) gp247_language_render('cart.shipping_rate_none') : '';
+
+        $chosen = ShippingCheckout::snapshot();
+        if ($chosen !== null && !$chosen->matches($request)) {
+            ShippingCheckout::forget();
+        }
+        if ($this->shippingMethod !== '' && !array_key_exists($this->shippingMethod, $this->shippingRates)) {
+            $this->shippingMethod = '';
+        }
+    }
+
+    /**
+     * @return RateRequest The parcel for the address being entered and the checkout cart.
+     */
+    private function currentRateRequest(): RateRequest
+    {
+        return RateRequestFactory::fromCheckout(
+            $this->addressBlock(),
+            (array) (session('dataCheckout') ?? []),
+            ShippingCheckout::storeId(),
+            $this->paymentMethod,
+        );
+    }
+
+    /**
+     * The address being entered, in the shop's address-block shape.
+     *
+     * @return array<string, string>
+     */
+    private function addressBlock(): array
+    {
+        return [
+            'first_name' => $this->first_name,
+            'last_name'  => $this->last_name,
+            'email'      => $this->email,
+            'phone'      => $this->phone,
+            'city'       => $this->city,
+            'district'   => $this->district,
+            'ward'       => $this->ward,
+            'address1'   => $this->address1,
+            'address2'   => $this->address2,
+            'address3'   => $this->address3,
+            'postcode'   => $this->postcode,
+            'country'    => $this->country,
+            'company'    => $this->company,
+        ];
     }
 
     /**
@@ -220,7 +359,7 @@ class CheckoutWizard extends BaseFrontComponent
 
         foreach ([
             'first_name', 'last_name', 'first_name_kana', 'last_name_kana',
-            'email', 'phone', 'city', 'district',
+            'email', 'phone', 'city', 'district', 'ward',
             'address1', 'address2', 'address3',
             'postcode', 'country', 'company', 'comment',
         ] as $field) {
@@ -228,6 +367,11 @@ class CheckoutWizard extends BaseFrontComponent
         }
 
         $this->shippingMethod  = (string) (session('shippingMethod') ?? '');
+        $chosen = ShippingCheckout::snapshot();
+        if ($chosen !== null && $chosen->pluginKey === $this->shippingMethod) {
+            $this->shippingMethod = $chosen->rateId;
+            $this->shippingRates = [$chosen->rateId => $chosen->toArray()];
+        }
         $this->paymentMethod   = (string) (session('paymentMethod') ?? '');
         $this->address_process = (string) (session('address_process') ?? '');
         $this->step = 'confirm';
@@ -281,6 +425,9 @@ class CheckoutWizard extends BaseFrontComponent
         $this->validate($rules, $dataMap['messages']);
 
         $next = $this->nextStepId();
+        if ($next === 'shipping') {
+            $this->quoteShippingRates();
+        }
         if ($next === 'confirm') {
             $this->commitToSession();
         }
@@ -301,7 +448,7 @@ class CheckoutWizard extends BaseFrontComponent
             $this->commitToSession();
         } else {
             // Persist early so processDataTotal() can read it on confirm.
-            session(['shippingMethod' => $this->shippingMethod]);
+            session(['shippingMethod' => $this->pluginKeyOf($this->shippingMethod)]);
         }
         $this->step = $next;
     }
@@ -340,7 +487,7 @@ class CheckoutWizard extends BaseFrontComponent
         $c = fn(string $v): string => (string) gp247_clean(data: $v, hight: true);
 
         session([
-            'shippingMethod'  => $c($this->shippingMethod),
+            'shippingMethod'  => $c($this->pluginKeyOf($this->shippingMethod)),
             'paymentMethod'   => $c($this->paymentMethod),
             'address_process' => $c($this->address_process),
             'shippingAddress' => [
@@ -352,6 +499,7 @@ class CheckoutWizard extends BaseFrontComponent
                 'phone'           => $c($this->phone),
                 'city'            => $c($this->city),
                 'district'        => $c($this->district),
+                'ward'            => $c($this->ward),
                 'address1'        => $c($this->address1),
                 'address2'        => $c($this->address2),
                 'address3'        => $c($this->address3),
@@ -601,6 +749,7 @@ class CheckoutWizard extends BaseFrontComponent
             'name_kana' => $field('customer_name_kana'),
             'city'      => $field('customer_city'),
             'district'  => $field('customer_district'),
+            'ward'      => $field('customer_ward'),
             'address1'  => $field('customer_address1'),
             'address2'  => $field('customer_address2'),
             'address3'  => $field('customer_address3'),
@@ -624,6 +773,30 @@ class CheckoutWizard extends BaseFrontComponent
     {
         if (!gp247_config('use_shipping')) {
             return [];
+        }
+
+        // Quoted rates (contract providers + legacy plugins through the adapter), in the
+        // shape templates already read: [rateId => title/value/image…] — so a template
+        // override written for the old plugin list keeps working (ADR
+        // shop-shipping_legacy-getinfo-adapter, RISK-TECH-shipping-template-override-compat).
+        if ($this->shippingQuoted) {
+            $result = [];
+            foreach ($this->shippingRates as $rateId => $rate) {
+                $result[$rateId] = [
+                    'title'        => (string) ($rate['title'] ?? $rateId),
+                    'key'          => (string) ($rate['plugin_key'] ?? $rateId),
+                    'code'         => 'Shipping',
+                    'value'        => (float) ($rate['display_amount'] ?? 0),
+                    'text'         => gp247_currency_render_symbol((float) ($rate['display_amount'] ?? 0)),
+                    'image'        => '',
+                    'plugin_key'   => (string) ($rate['plugin_key'] ?? ''),
+                    'service_code' => (string) ($rate['service_code'] ?? ''),
+                    'eta_min'      => $rate['eta_min_days'] ?? null,
+                    'eta_max'      => $rate['eta_max_days'] ?? null,
+                ];
+            }
+
+            return $result;
         }
 
         $modules = gp247_extension_get_via_code(code: 'shipping');

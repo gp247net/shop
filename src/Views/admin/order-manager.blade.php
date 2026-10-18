@@ -82,7 +82,7 @@
                         @if ($showEmail)
                             <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $row->email }}</td>
                         @endif
-                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($row->city . ' ' . $row->district . ' ' . $row->address1 . ' ' . $row->address2 . ' ' . $row->address3) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ trim($row->city . ' ' . $row->district . ' ' . ($row->ward ?? '') . ' ' . $row->address1 . ' ' . $row->address2 . ' ' . $row->address3) }}</td>
                         {{-- @aidlc-story US-SADM-order-currency-display (A4) @aidlc-adr shop_currency-display-precision --}}
                         {{-- Render each order's total in the order's OWN snapshot currency (shop_order.currency),
                              format-only (onlyRender, no exchange_rate re-conversion — the stored total is already

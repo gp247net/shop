@@ -133,6 +133,13 @@ if (!function_exists('gp247_customer_address_mapping') && !in_array('gp247_custo
                 : config('validation.customer.district_null', 'nullable|string|max:100');
             $dataAddress['district'] = $dataRaw['district']??'';
         }
+
+        if (gp247_config('customer_ward')) {
+            $validate['ward'] = gp247_config('customer_ward_required')
+                ? config('validation.customer.ward_required', 'required|string|max:100')
+                : config('validation.customer.ward_null', 'nullable|string|max:100');
+            $dataAddress['ward'] = $dataRaw['ward']??'';
+        }
         if (gp247_config('customer_address2')) {
             $validate['address2'] = config('validation.customer.address2_required', 'required|string|max:100');
             $dataAddress['address2'] = $dataRaw['address2']??'';
@@ -159,6 +166,7 @@ if (!function_exists('gp247_customer_address_mapping') && !in_array('gp247_custo
             'first_name.required' => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.first_name')]),
             'city.required'       => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.city')]),
             'district.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.district')]),
+            'ward.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.ward')]),
             'address1.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.required'   => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -171,6 +179,7 @@ if (!function_exists('gp247_customer_address_mapping') && !in_array('gp247_custo
             'first_name.max'      => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.first_name')]),
             'city.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.city')]),
             'district.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.district')]),
+            'ward.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.ward')]),
             'address1.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.max'        => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -264,6 +273,17 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             }
             if (!empty($dataRaw['district'])) {
                 $dataInsert['district'] = $dataRaw['district'];
+            }
+        }
+
+        if (gp247_config('customer_ward')) {
+            if (gp247_config('customer_ward_required')) {
+                $validate['ward'] = config('validation.customer.ward_required', 'required|string|max:100');
+            } else {
+                $validate['ward'] = config('validation.customer.ward_null', 'nullable|string|max:100');
+            }
+            if (!empty($dataRaw['ward'])) {
+                $dataInsert['ward'] = $dataRaw['ward'];
             }
         }
 
@@ -406,6 +426,7 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             'password.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.password')]),
             'city.required'        => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.city')]),
             'district.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.district')]),
+            'ward.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.ward')]),
             'address1.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -424,6 +445,7 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             'email.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.email')]),
             'city.max'             => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.city')]),
             'district.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.district')]),
+            'ward.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.ward')]),
             'address1.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -522,6 +544,17 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
             }
             if (!empty($dataRaw['district'])) {
                 $dataUpdate['district'] = $dataRaw['district'];
+            }
+        }
+
+        if (gp247_config('customer_ward')) {
+            if (gp247_config('customer_ward_required')) {
+                $validate['ward'] = config('validation.customer.ward_required', 'required|string|max:100');
+            } else {
+                $validate['ward'] = config('validation.customer.ward_null', 'nullable|string|max:100');
+            }
+            if (!empty($dataRaw['ward'])) {
+                $dataUpdate['ward'] = $dataRaw['ward'];
             }
         }
 
@@ -656,6 +689,7 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
             'password.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.password')]),
             'city.required'        => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.city')]),
             'district.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.district')]),
+            'ward.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.ward')]),
             'address1.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.required'    => gp247_language_render('validation.required', ['attribute'=> gp247_language_render('customer.address3')]),
@@ -674,6 +708,7 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
             'email.max'            => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.email')]),
             'city.max'             => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.city')]),
             'district.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.district')]),
+            'ward.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.ward')]),
             'address1.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address1')]),
             'address2.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address2')]),
             'address3.max'         => gp247_language_render('validation.max', ['attribute'=> gp247_language_render('customer.address3')]),

@@ -43,6 +43,9 @@
                     @if (gp247_config('customer_district'))
                         <tr><td class="py-1 text-ink-500">{{ gp247_language_render('customer.district') }}</td><td class="py-1 font-medium">{{ $address['district'] }}</td></tr>
                     @endif
+                    @if (gp247_config('customer_ward'))
+                        <tr><td class="py-1 text-ink-500">{{ gp247_language_render('customer.ward') }}</td><td class="py-1 font-medium">{{ $address['ward'] }}</td></tr>
+                    @endif
                     <tr><td class="py-1 text-ink-500">{{ gp247_language_render('customer.address1') }}</td><td class="py-1 font-medium">{{ $address['address1'] }}</td></tr>
                     @if (gp247_config('customer_address2'))
                         <tr><td class="py-1 text-ink-500">{{ gp247_language_render('customer.address2') }}</td><td class="py-1 font-medium">{{ $address['address2'] }}</td></tr>
