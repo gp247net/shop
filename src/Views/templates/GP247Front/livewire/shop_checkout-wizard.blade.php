@@ -236,6 +236,10 @@
 
         <div class="space-y-3">
             @forelse ($paymentPlugins as $key => $info)
+            {{-- WHY the note sits outside the <label>: it is instructions to read, not part of the
+                 click target. Only the selected method shows it; selectPayment() re-renders server-side
+                 (mod 20261018T095824, ADR storefront_payment-method-note). Plain text, always escaped; a non-string note is ignored. --}}
+            <div>
             <label for="pm_{{ $key }}" class="flex items-center gap-3 rounded-lg border border-ink-200 px-4 py-3 cursor-pointer has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
                 <input
                     type="radio"
@@ -247,6 +251,10 @@
                 >
                 <span class="text-sm">{{ $info['title'] ?? $key }}</span>
             </label>
+            @if ($paymentMethod === $key && is_string($info['note'] ?? null) && trim($info['note']) !== '')
+            <p class="mt-2 rounded-lg bg-ink-50 px-4 py-3 text-sm text-ink-700 leading-relaxed" data-testid="checkout-payment-note-{{ $key }}">{{ trim($info['note']) }}</p>
+            @endif
+            </div>
             @empty
             <p class="text-sm text-ink-400">{{ gp247_language_quickly('cart.no_payment_method', 'No payment method available.') }}</p>
             @endforelse
@@ -275,6 +283,16 @@
                 {{ $email }} / {{ $phone }}
             </p>
         </div>
+
+        @if ($paymentMethod !== '' && isset($paymentPlugins[$paymentMethod]))
+        <div class="card p-5" data-testid="checkout-confirm-payment">
+            <h3 class="text-sm font-semibold text-ink-500 mb-2">{{ gp247_language_render('cart.payment_method') }}</h3>
+            <p class="text-sm font-medium text-ink-700">{{ $paymentPlugins[$paymentMethod]['title'] ?? $paymentMethod }}</p>
+            @if (is_string($paymentPlugins[$paymentMethod]['note'] ?? null) && trim($paymentPlugins[$paymentMethod]['note']) !== '')
+            <p class="mt-2 text-sm text-ink-700 leading-relaxed" data-testid="checkout-confirm-payment-note">{{ trim($paymentPlugins[$paymentMethod]['note']) }}</p>
+            @endif
+        </div>
+        @endif
 
         @if ($processedItems && count($processedItems))
         {{-- WHY: render per-line price + attributes from gp247_cart_process_data()
