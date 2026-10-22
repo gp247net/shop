@@ -3,6 +3,7 @@
 namespace GP247\Shop\Admin\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use GP247\Core\Database\Seeders\LocaleRows;
 use GP247\Core\Models\Languages;
 
 /**
@@ -26,6 +27,13 @@ class DataShopLanguageSeeder extends Seeder
     protected $useUpsert = false;
 
     /**
+     * Rows gathered by writeLang() while dataLang() walks the inline groups.
+     *
+     * @var array
+     */
+    protected $buffer = [];
+
+    /**
      * Enable upsert mode so existing (code, location) rows are overwritten with
      * the package defaults instead of being skipped. Off by default to protect
      * translations a site owner may have edited via the admin Language manager.
@@ -40,31 +48,74 @@ class DataShopLanguageSeeder extends Seeder
     }
 
     /**
-     * Persist language rows using the active write strategy.
-     *
-     * insertOrIgnore (default) keeps rows already present; upsert overwrites
-     * text/position with the package defaults, matching on the (code, location)
-     * unique key.
+     * Collect one inline group of language rows; run() persists them with the
+     * active write strategy — insertOrIgnore (default) keeps rows already
+     * present, upsert overwrites text/position on the (code, location) key.
      *
      * @param array $rows
      * @return void
      */
     protected function writeLang(array $rows)
     {
-        if ($this->useUpsert) {
-            Languages::upsert($rows, ['code', 'location'], ['text', 'position']);
-        } else {
-            Languages::insertOrIgnore($rows);
+        // WHY buffer: the inline groups below are collected by dataLang() so the
+        // extra default locales (Locales/<code>.php) can borrow their positions and
+        // the upgrade path can reuse the exact same rows.
+        array_push($this->buffer, ...$rows);
+    }
+
+    /**
+     * Insert (or upsert) rows in chunks that stay inside driver placeholder limits.
+     *
+     * @param array $rows
+     * @return void
+     */
+    protected function persist(array $rows)
+    {
+        foreach (array_chunk($rows, 500) as $chunk) {
+            if ($this->useUpsert) {
+                Languages::upsert($chunk, ['code', 'location'], ['text', 'position']);
+            } else {
+                Languages::insertOrIgnore($chunk);
+            }
         }
     }
 
     /**
-     * Seed shop language rows. Skips existing (code, location) by default;
-     * overwrites them when upsert mode is enabled via useUpsert().
+     * Seed shop language rows (en, vi and every Locales/<code>.php locale). Skips
+     * existing (code, location) by default; overwrites them when upsert mode is
+     * enabled via useUpsert().
      *
      * @return void
      */
     public function run()
+    {
+        $this->persist($this->dataLang());
+    }
+
+    /**
+     * All default language rows of the package, without touching the database.
+     *
+     * @return array
+     *
+     * @aidlc-story US-CMP-japanese-default-locale
+     * @aidlc-adr compat-foundation_locale-data-files
+     */
+    public function dataLang()
+    {
+        $this->buffer = [];
+        $this->collectDefaultRows();
+        $rows = $this->buffer;
+        $this->buffer = [];
+
+        return array_merge($rows, LocaleRows::fromFile(__DIR__.'/Locales/ja.php', 'ja', $rows));
+    }
+
+    /**
+     * Inline en/vi groups, each handed to writeLang().
+     *
+     * @return void
+     */
+    protected function collectDefaultRows()
     {
         // Payment requests: admin screen + public pay page (mod 20260929T060454; moved from core/front 2026-10-01).
         $this->writeLang([
@@ -1148,7 +1199,9 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'customer.account_already','text' => 'Bạn đã tài khoản chưa?','position' => 'customer','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.title','text' => ' Config customer','position' => 'admin.customer.config_manager','location' => 'en'],
                 ['code' => 'admin.customer.config_manager.field','text' => 'Field config','position' => 'admin.customer.config_manager','location' => 'en'],
+                ['code' => 'admin.customer.config_manager.field','text' => 'Cấu hình trường','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.value','text' => 'Value','position' => 'admin.customer.config_manager','location' => 'en'],
+                ['code' => 'admin.customer.config_manager.value','text' => 'Giá trị','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.first_name','text' => 'Use first name','position' => 'admin.customer.config_manager','location' => 'en'],
                 ['code' => 'admin.customer.config_manager.email','text' => 'Use email','position' => 'admin.customer.config_manager','location' => 'en'],
                 ['code' => 'admin.customer.config_manager.lastname','text' => 'Use last name','position' => 'admin.customer.config_manager','location' => 'en'],
@@ -1174,7 +1227,7 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'admin.customer.config_manager.lastname','text' => 'Sử dụng họ','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.name_kana','text' => 'Sử dụng tên kana','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.firstname_kana','text' => 'Sử dụng tên kana','position' => 'admin.customer.config_manager','location' => 'vi'],
-                ['code' => 'admin.customer.config_manager.lasttname_kana','text' => 'Sử dụng họ kana','position' => 'admin.customer.config_manager','location' => 'vi'],
+                ['code' => 'admin.customer.config_manager.lastname_kana','text' => 'Sử dụng họ kana','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.city','text' => 'Sử dụng tỉnh/thành phố','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.district','text' => 'Sử dụng quận/huyện','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.address1','text' => 'Sử dụng địa chỉ chính','position' => 'admin.customer.config_manager','location' => 'vi'],
@@ -1187,7 +1240,7 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'admin.customer.config_manager.birthday','text' => 'Sử dụng ngày sinh','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.sex','text' => 'Sử dụng giới tính','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.phone','text' => 'Sử dụng số điện thoại','position' => 'admin.customer.config_manager','location' => 'vi'],
-                ['code' => 'admin.customer.config_manager.required','text' => 'Bắt buộc','position' => 'admin.customer.config_manager','location' => 'vi'],
+                ['code' => 'admin.customer.config_manager.reqired','text' => 'Bắt buộc','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.customer_verify','text' => 'Cần xác thực email','position' => 'admin.customer.config_manager','location' => 'vi'],
                 ['code' => 'admin.customer.config_manager.customer_verify','text' => 'Need verify email','position' => 'admin.customer.config_manager','location' => 'en'],
                 ['code' => 'admin.customer.config_manager.welcome_customer','text' => 'Gửi mail chào mừng','position' => 'admin.customer.config_manager','location' => 'vi'],
@@ -1779,6 +1832,45 @@ class DataShopLanguageSeeder extends Seeder
             ['code' => 'admin.layout_block_page.shop_auth',             'text' => 'Đăng nhập / Đăng ký', 'position' => 'admin.layout_block', 'location' => 'vi'],
             ['code' => 'admin.layout_block_page.shop_search',           'text' => 'Search (shop)',      'position' => 'admin.layout_block', 'location' => 'en'],
             ['code' => 'admin.layout_block_page.shop_search',           'text' => 'Tìm kiếm (cửa hàng)', 'position' => 'admin.layout_block', 'location' => 'vi'],
+        ]);
+
+        // "Check before use" box of shipping / payment plugin settings screens (mod 20261018T185359, 20261018T203509).
+        // Sites installed earlier get them from the matching upgrade migrations; ReadinessLabelSeedTest keeps both in step.
+        $this->writeLang([
+            ['code' => 'admin.shipping.warn_shipping_off','text' => 'Vận chuyển đang tắt: khách không chọn được cách giao hàng ở trang thanh toán.','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.warn_shipping_off','text' => 'Shipping is off: shoppers cannot choose a delivery method at checkout.','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.warn_provider_off','text' => 'Hãng vận chuyển này chưa được bật cho cửa hàng này.','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.warn_provider_off','text' => 'This carrier is not enabled for this store.','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.ready_shipping_on','text' => 'Vận chuyển đang bật ở trang thanh toán.','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.ready_shipping_on','text' => 'Shipping is on at checkout.','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.ready_city','text' => 'Địa chỉ khách có ô Tỉnh/Thành phố.','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.ready_city','text' => 'Customer addresses ask for the province / city.','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.ready_ward','text' => 'Địa chỉ khách có ô Phường/Xã hoặc Quận/Huyện.','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.ready_ward','text' => 'Customer addresses ask for the ward or district.','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.ready_origin','text' => 'Kho lấy hàng đã có tỉnh, địa chỉ chi tiết và số điện thoại.','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.ready_origin','text' => 'The pick-up warehouse has a province, street address and phone.','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.ready_provider','text' => 'Hãng vận chuyển này đang bật cho cửa hàng.','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.ready_provider','text' => 'This carrier is enabled for this store.','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.ready_any_provider','text' => 'Đã có hãng vận chuyển bật cho cửa hàng.','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.ready_any_provider','text' => 'At least one carrier is enabled for this store.','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.fix_shipping_tab','text' => 'Cấu hình cửa hàng → Vận chuyển','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.fix_shipping_tab','text' => 'Shop configuration → Shipping','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.fix_customer_tab','text' => 'Cấu hình cửa hàng → Khách hàng','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.fix_customer_tab','text' => 'Shop configuration → Customer','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.shipping.fix_plugins','text' => 'Phần mở rộng → Tiện ích','position' => 'admin.shipping','location' => 'vi'],
+            ['code' => 'admin.shipping.fix_plugins','text' => 'Extension → Plugins','position' => 'admin.shipping','location' => 'en'],
+            ['code' => 'admin.payment.warn_payment_off','text' => 'Bước thanh toán đang tắt ở trang thanh toán: khách không được hỏi cách trả tiền.','position' => 'admin.payment','location' => 'vi'],
+            ['code' => 'admin.payment.warn_payment_off','text' => 'The payment step is off at checkout: shoppers are never asked how to pay.','position' => 'admin.payment','location' => 'en'],
+            ['code' => 'admin.payment.ready_payment_on','text' => 'Bước thanh toán đang bật ở trang thanh toán.','position' => 'admin.payment','location' => 'vi'],
+            ['code' => 'admin.payment.ready_payment_on','text' => 'The payment step is on at checkout.','position' => 'admin.payment','location' => 'en'],
+            ['code' => 'admin.payment.warn_provider_off','text' => 'Phương thức thanh toán này chưa được bật cho cửa hàng này.','position' => 'admin.payment','location' => 'vi'],
+            ['code' => 'admin.payment.warn_provider_off','text' => 'This payment method is not enabled for this store.','position' => 'admin.payment','location' => 'en'],
+            ['code' => 'admin.payment.ready_provider','text' => 'Phương thức thanh toán này đang bật cho cửa hàng.','position' => 'admin.payment','location' => 'vi'],
+            ['code' => 'admin.payment.ready_provider','text' => 'This payment method is enabled for this store.','position' => 'admin.payment','location' => 'en'],
+            ['code' => 'admin.payment.fix_order_tab','text' => 'Cấu hình cửa hàng → Đơn hàng','position' => 'admin.payment','location' => 'vi'],
+            ['code' => 'admin.payment.fix_order_tab','text' => 'Shop configuration → Order','position' => 'admin.payment','location' => 'en'],
+            ['code' => 'admin.payment.fix_plugins','text' => 'Phần mở rộng → Tiện ích','position' => 'admin.payment','location' => 'vi'],
+            ['code' => 'admin.payment.fix_plugins','text' => 'Extension → Plugins','position' => 'admin.payment','location' => 'en'],
         ]);
     }
 }

@@ -126,15 +126,7 @@ class DataShopInitializeSeeder extends Seeder
 
 
 
-        ShopCurrency::insertOrIgnore(
-           [
-                // WHY is_base: USD is the explicit base (functional) currency — all
-                // product prices/costs/promotions are stored in USD; VND converts via
-                // exchange_rate (ADR currency-base-system-scope). Exactly one is_base=1.
-                ['id' => '1','name' => 'USD Dola','code' => 'USD','symbol' => '$','exchange_rate' => '1','precision' => '2','symbol_first' => '1','thousands' => ',','status' => '1','is_base' => '1','sort' => '0'],
-                ['id' => '2','name' => 'VietNam Dong','code' => 'VND','symbol' => '₫','exchange_rate' => '20000','precision' => '0','symbol_first' => '0','thousands' => ',','status' => '1','is_base' => '0','sort' => '1'],
-           ]
-        );
+        ShopCurrency::insertOrIgnore($this->dataCurrency());
 
         AdminMenu::insertOrIgnore(
             [
@@ -207,6 +199,26 @@ class DataShopInitializeSeeder extends Seeder
         // Language rows are seeded by the dedicated DataShopLanguageSeeder so
         // they can be refreshed independently of the shop's menu/config data.
         $this->call(DataShopLanguageSeeder::class);
+    }
+
+    /**
+     * Default currencies of a fresh install.
+     *
+     * @return array
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-base-currency-explicit, US-CMP-jpy-default-currency
+     */
+    public function dataCurrency()
+    {
+        return [
+            // WHY is_base: USD is the explicit base (functional) currency — all
+            // product prices/costs/promotions are stored in USD; VND and JPY convert via
+            // exchange_rate (ADR currency-base-system-scope). Exactly one is_base=1.
+            ['id' => '1','name' => 'USD Dola','code' => 'USD','symbol' => '$','exchange_rate' => '1','precision' => '2','symbol_first' => '1','thousands' => ',','status' => '1','is_base' => '1','sort' => '0'],
+            ['id' => '2','name' => 'VietNam Dong','code' => 'VND','symbol' => '₫','exchange_rate' => '20000','precision' => '0','symbol_first' => '0','thousands' => ',','status' => '1','is_base' => '0','sort' => '1'],
+            ['id' => '3','name' => 'Japanese Yen','code' => 'JPY','symbol' => '¥','exchange_rate' => '150','precision' => '0','symbol_first' => '1','thousands' => ',','status' => '1','is_base' => '0','sort' => '2'],
+        ];
     }
 
     public function dataPaymentStatus() {

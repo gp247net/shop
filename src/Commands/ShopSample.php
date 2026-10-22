@@ -119,6 +119,11 @@ class ShopSample extends GP247Command
                             'name' => 'Food',
                             'keyword' => 'food, cuisine',
                             'description' => 'Food and cuisine category'
+                        ],
+                        'ja' => [
+                            'name' => 'グルメ',
+                            'keyword' => 'グルメ, 料理',
+                            'description' => 'グルメ・料理のカテゴリー'
                         ]
                     ]
                 ],
@@ -141,6 +146,11 @@ class ShopSample extends GP247Command
                             'name' => 'Pho Nam Dinh',
                             'keyword' => 'pho nam dinh, food',
                             'description' => 'Category of Pho Nam Dinh products'
+                        ],
+                        'ja' => [
+                            'name' => 'ナムディン・フォー',
+                            'keyword' => 'ナムディン, フォー, グルメ',
+                            'description' => 'ナムディン・フォーの商品カテゴリー'
                         ]
                     ]
                 ],
@@ -162,6 +172,11 @@ class ShopSample extends GP247Command
                             'name' => 'Nem Chua Thanh Hoa',
                             'keyword' => 'nem chua thanh hoa, food',
                             'description' => 'Category of Nem Chua Thanh Hoa products'
+                        ],
+                        'ja' => [
+                            'name' => 'タインホア・ネムチュア',
+                            'keyword' => 'タインホア, ネムチュア, グルメ',
+                            'description' => 'タインホア・ネムチュアの商品カテゴリー'
                         ]
                     ]
                 ],
@@ -183,6 +198,11 @@ class ShopSample extends GP247Command
                             'name' => 'Bun Cha Ha Noi',
                             'keyword' => 'bun cha ha noi, food',
                             'description' => 'Category of Bun Cha Ha Noi products'
+                        ],
+                        'ja' => [
+                            'name' => 'ハノイ・ブンチャー',
+                            'keyword' => 'ハノイ, ブンチャー, グルメ',
+                            'description' => 'ハノイ・ブンチャーの商品カテゴリー'
                         ]
                     ]
                 ],
@@ -204,6 +224,11 @@ class ShopSample extends GP247Command
                             'name' => 'Travel',
                             'keyword' => 'travel, destinations',
                             'description' => 'Travel and destinations category'
+                        ],
+                        'ja' => [
+                            'name' => '旅行',
+                            'keyword' => '旅行, 観光地',
+                            'description' => '旅行・観光地のカテゴリー'
                         ]
                     ]
                 ],
@@ -225,6 +250,11 @@ class ShopSample extends GP247Command
                             'name' => 'Ha Long Bay',
                             'keyword' => 'ha long bay, travel',
                             'description' => 'Category of products and services at Ha Long Bay'
+                        ],
+                        'ja' => [
+                            'name' => 'ハロン湾',
+                            'keyword' => 'ハロン湾, 旅行',
+                            'description' => 'ハロン湾の商品・サービスのカテゴリー'
                         ]
                     ]
                 ],
@@ -246,6 +276,11 @@ class ShopSample extends GP247Command
                             'name' => 'Phong Nha Cave',
                             'keyword' => 'phong nha cave, travel',
                             'description' => 'Category of products and services at Phong Nha Cave'
+                        ],
+                        'ja' => [
+                            'name' => 'フォンニャ洞窟',
+                            'keyword' => 'フォンニャ洞窟, 旅行',
+                            'description' => 'フォンニャ洞窟の商品・サービスのカテゴリー'
                         ]
                     ]
                 ],
@@ -267,6 +302,11 @@ class ShopSample extends GP247Command
                             'name' => 'Trang An',
                             'keyword' => 'trang an, travel',
                             'description' => 'Category of products and services at Trang An'
+                        ],
+                        'ja' => [
+                            'name' => 'チャンアン',
+                            'keyword' => 'チャンアン, 旅行',
+                            'description' => 'チャンアンの商品・サービスのカテゴリー'
                         ]
                     ]
                 ],
@@ -288,6 +328,11 @@ class ShopSample extends GP247Command
                             'name' => 'Culture',
                             'keyword' => 'culture, art',
                             'description' => 'Culture and art category'
+                        ],
+                        'ja' => [
+                            'name' => '文化',
+                            'keyword' => '文化, アート',
+                            'description' => '文化・アートのカテゴリー'
                         ]
                     ]
                 ],
@@ -309,6 +354,11 @@ class ShopSample extends GP247Command
                             'name' => 'Bat Trang Pottery',
                             'keyword' => 'bat trang pottery, ceramics',
                             'description' => 'Category of Bat Trang pottery products'
+                        ],
+                        'ja' => [
+                            'name' => 'バッチャン焼',
+                            'keyword' => 'バッチャン焼, 陶磁器',
+                            'description' => 'バッチャン焼の商品カテゴリー'
                         ]
                     ]
                 ],
@@ -330,6 +380,11 @@ class ShopSample extends GP247Command
                             'name' => 'Dong Ho Paintings',
                             'keyword' => 'dong ho paintings, folk paintings',
                             'description' => 'Category of Dong Ho folk paintings'
+                        ],
+                        'ja' => [
+                            'name' => 'ドンホー版画',
+                            'keyword' => 'ドンホー版画, 民画',
+                            'description' => 'ドンホー民画のカテゴリー'
                         ]
                     ]
                 ],
@@ -351,6 +406,11 @@ class ShopSample extends GP247Command
                             'name' => 'Nga Son Rush Mats',
                             'keyword' => 'nga son rush mats, rush mats',
                             'description' => 'Category of Nga Son rush mat products'
+                        ],
+                        'ja' => [
+                            'name' => 'ガーソンのい草ゴザ',
+                            'keyword' => 'ガーソン, い草ゴザ, ゴザ',
+                            'description' => 'ガーソン産い草ゴザの商品カテゴリー'
                         ]
                     ]
                 ],
@@ -372,6 +432,11 @@ class ShopSample extends GP247Command
                             'name' => 'Fruits',
                             'keyword' => 'fruits, fresh fruits',
                             'description' => 'Fresh fruits category'
+                        ],
+                        'ja' => [
+                            'name' => 'フルーツ',
+                            'keyword' => 'フルーツ, 新鮮な果物',
+                            'description' => '新鮮なフルーツのカテゴリー'
                         ]
                     ]
                 ],
@@ -393,6 +458,11 @@ class ShopSample extends GP247Command
                             'name' => 'Southern Fruits',
                             'keyword' => 'southern fruits, vietnamese fruits',
                             'description' => 'Category of Southern Vietnam specialty fruits'
+                        ],
+                        'ja' => [
+                            'name' => '南部のフルーツ',
+                            'keyword' => '南部フルーツ, ベトナムの果物',
+                            'description' => 'ベトナム南部の特産フルーツのカテゴリー'
                         ]
                     ]
                 ],
@@ -414,6 +484,11 @@ class ShopSample extends GP247Command
                             'name' => 'Lychee',
                             'keyword' => 'lychee, bac giang lychee',
                             'description' => 'Category of lychee products'
+                        ],
+                        'ja' => [
+                            'name' => 'ライチ',
+                            'keyword' => 'ライチ, バクザン産ライチ',
+                            'description' => 'ライチの商品カテゴリー'
                         ]
                     ]
                 ],
@@ -435,6 +510,11 @@ class ShopSample extends GP247Command
                             'name' => 'Longan',
                             'keyword' => 'longan, hung yen longan',
                             'description' => 'Category of Hung Yen longan products'
+                        ],
+                        'ja' => [
+                            'name' => 'ロンガン',
+                            'keyword' => 'ロンガン, フンイエン産ロンガン',
+                            'description' => 'フンイエン産ロンガンの商品カテゴリー'
                         ]
                     ]
                 ]
@@ -627,6 +707,14 @@ class ShopSample extends GP247Command
                             'keyword' => 'sample, product',
                             'description' => 'Short description for sample product ' . $productNumber,
                             'content' => '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>'
+                        ],
+                        'ja' => [
+                            'product_id' => $productId,
+                            'lang' => 'ja',
+                            'name' => 'サンプル商品 ' . $productNumber . ' - 日本語',
+                            'keyword' => 'サンプル, 商品',
+                            'description' => 'サンプル商品 ' . $productNumber . ' の短い説明',
+                            'content' => '<p>こちらはサンプル商品の説明用のダミーテキストです。実際の商品情報に合わせて内容を編集してください。素材、サイズ、使い方などの詳細をここに記載できます。<br>品質にこだわった商品を、お求めやすい価格でお届けします。ご不明な点がございましたら、お気軽にお問い合わせください。</p><p>こちらはサンプル商品の説明用のダミーテキストです。実際の商品情報に合わせて内容を編集してください。素材、サイズ、使い方などの詳細をここに記載できます。<br>品質にこだわった商品を、お求めやすい価格でお届けします。ご不明な点がございましたら、お気軽にお問い合わせください。</p>'
                         ]
                     ];
 
@@ -723,6 +811,14 @@ class ShopSample extends GP247Command
                     'keyword' => 'sample, product',
                     'description' => 'Short description for sample product ' . $i,
                     'content' => '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>'
+                ],
+                'ja' => [
+                    'product_id' => $productId,
+                    'lang' => 'ja',
+                    'name' => 'セット商品 ' . $i . ' - 日本語',
+                    'keyword' => 'サンプル, 商品',
+                    'description' => 'サンプル商品 ' . $i . ' の短い説明',
+                    'content' => '<p>こちらはサンプル商品の説明用のダミーテキストです。実際の商品情報に合わせて内容を編集してください。素材、サイズ、使い方などの詳細をここに記載できます。<br>品質にこだわった商品を、お求めやすい価格でお届けします。ご不明な点がございましたら、お気軽にお問い合わせください。</p><p>こちらはサンプル商品の説明用のダミーテキストです。実際の商品情報に合わせて内容を編集してください。素材、サイズ、使い方などの詳細をここに記載できます。<br>品質にこだわった商品を、お求めやすい価格でお届けします。ご不明な点がございましたら、お気軽にお問い合わせください。</p>'
                 ]
             ];
             // Create product
@@ -819,6 +915,14 @@ class ShopSample extends GP247Command
                     'keyword' => 'sample, product',
                     'description' => 'Short description for sample product ' . $i,
                     'content' => '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>'
+                ],
+                'ja' => [
+                    'product_id' => $productId,
+                    'lang' => 'ja',
+                    'name' => 'グループ商品 ' . $i . ' - 日本語',
+                    'keyword' => 'サンプル, 商品',
+                    'description' => 'サンプル商品 ' . $i . ' の短い説明',
+                    'content' => '<p>こちらはサンプル商品の説明用のダミーテキストです。実際の商品情報に合わせて内容を編集してください。素材、サイズ、使い方などの詳細をここに記載できます。<br>品質にこだわった商品を、お求めやすい価格でお届けします。ご不明な点がございましたら、お気軽にお問い合わせください。</p><p>こちらはサンプル商品の説明用のダミーテキストです。実際の商品情報に合わせて内容を編集してください。素材、サイズ、使い方などの詳細をここに記載できます。<br>品質にこだわった商品を、お求めやすい価格でお届けします。ご不明な点がございましたら、お気軽にお問い合わせください。</p>'
                 ]
             ];
             // Create product

@@ -64,6 +64,11 @@ class ShopInstall extends GP247Command
         $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade/2026_10_17_100000_install_shop_shipping.php']);
         $this->info('---------------> Shipping layer ready!');
 
+        // Japanese twins of labels the shipping migration just seeded (they are not
+        // in the language seeder, so the seeder could not add them).
+        \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '2026_10_23_090000_seed_japanese_migration_labels')->delete();
+        $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade/2026_10_23_090000_seed_japanese_migration_labels.php']);
+
         // WHY no vendor:publish here any more (modification 20260913T200309):
         // shop's storefront views are served from this package through the
         // GP247TemplatePath hint paths, so an install no longer copies them into
