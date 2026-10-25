@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
  * @aidlc-story US-shop-shipping-tracking-webhook
  * @aidlc-adr shop-shipping_webhook-routing
  */
-Route::post(trim((string) config('gp247-config.shop.shipping.webhook_prefix', 'shipping/webhook'), '/') . '/{pluginKey}', [ShippingWebhookController::class, 'handle'])
+Route::post(trim((string) config('gp247-config.shop.shipping.webhook_prefix', 'shipping/webhook'), '/') . '/{pluginKey}', [gp247_namespace(ShippingWebhookController::class), 'handle'])
     ->where('pluginKey', '[A-Za-z0-9_]{1,100}')
     ->middleware('throttle:' . config('gp247-config.shop.shipping.webhook_throttle', '120,1'))
     ->name('shop.shipping.webhook');

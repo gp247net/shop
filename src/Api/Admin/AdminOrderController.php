@@ -10,11 +10,11 @@ class AdminOrderController extends RootFrontController
 {
 
     /**
-     * Get the order list
+     * Get the order list (admin API `order/list`).
      *
-     * @return [json] user object
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function orders(Request $request)
+    public function getOrderList(Request $request)
     {
         $orders = (new ShopOrder)
                 ->with('details')
@@ -24,11 +24,11 @@ class AdminOrderController extends RootFrontController
     }
 
     /**
-     * Get order detail
+     * Get order detail (admin API `order/detail/{id}`).
      *
-     * @return [json] order object
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function orderDetail(Request $request, $id)
+    public function getOrderDetail(Request $request, $id)
     {
         $order = (new ShopOrder)->where('id', $id)
                 ->with('details')

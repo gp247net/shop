@@ -85,7 +85,8 @@ class ShopBrandController extends RootFrontController
     {
         $brand = (new ShopBrand)->getDetail($alias, $type = 'alias');
         if ($brand) {
-            $dataSearch = (new ShopProductController)->processFilter(['sort', 'price']);
+            $productController = gp247_namespace(ShopProductController::class);
+            $dataSearch = (new $productController)->processFilter(['sort', 'price']);
             
             $products = (new ShopProduct);
             if (!empty($dataSearch['sort'])) {

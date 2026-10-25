@@ -8,6 +8,6 @@ use Illuminate\Support\Facades\Route;
 // through livewire/update; the POST create/edit/delete routes are removed. RBAC
 // slug derives from the component (admin_tax), so authz is unchanged.
 Route::group(['prefix' => 'tax'], function () {
-    Route::get('/', TaxManager::class)->name('admin_tax.index');
-    Route::get('/edit/{id}', TaxManager::class)->name('admin_tax.edit');
+    Route::get('/', gp247_namespace(TaxManager::class))->name('admin_tax.index');
+    Route::get('/edit/{id}', gp247_namespace(TaxManager::class))->name('admin_tax.edit');
 });

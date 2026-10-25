@@ -6,6 +6,6 @@ use Illuminate\Support\Facades\Route;
 // manager in-place. Address management is now handled inline via Livewire
 // actions; the separate address GET/POST routes are removed. RBAC unchanged.
 Route::group(['prefix' => 'customer'], function () {
-    Route::get('/', CustomerManager::class)->name('admin_customer.index');
-    Route::get('/edit/{id}', CustomerManager::class)->name('admin_customer.edit');
+    Route::get('/', gp247_namespace(CustomerManager::class))->name('admin_customer.index');
+    Route::get('/edit/{id}', gp247_namespace(CustomerManager::class))->name('admin_customer.edit');
 });

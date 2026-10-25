@@ -20,12 +20,12 @@ use Illuminate\Support\Facades\Route;
 // (US-SADM-order-delete-money-guard AC7, mod 20260830T091705, QĐ-1=A).
 // RBAC slug unchanged.
 Route::group(['prefix' => 'order'], function () {
-    Route::get('/', OrderManager::class)->name('admin_order.index');
-    Route::get('/detail/{id}', OrderManager::class)->name('admin_order.detail');
-    Route::get('create', AdminOrderController::class . '@create')->name('admin_order.create');
+    Route::get('/', gp247_namespace(OrderManager::class))->name('admin_order.index');
+    Route::get('/detail/{id}', gp247_namespace(OrderManager::class))->name('admin_order.detail');
+    Route::get('create', gp247_namespace(AdminOrderController::class) . '@create')->name('admin_order.create');
 
-    Route::post('/create', AdminOrderController::class . '@postCreate')->name('admin_order.post_create');
-    Route::get('/product_search', AdminOrderController::class . '@getSearchProduct')->name('admin_order.product_search');
-    Route::get('/user_info', AdminOrderController::class . '@getInfoUser')->name('admin_order.user_info');
-    Route::get('/invoice', AdminOrderController::class . '@invoice')->name('admin_order.invoice');
+    Route::post('/create', gp247_namespace(AdminOrderController::class) . '@postCreate')->name('admin_order.post_create');
+    Route::get('/product_search', gp247_namespace(AdminOrderController::class) . '@getSearchProduct')->name('admin_order.product_search');
+    Route::get('/user_info', gp247_namespace(AdminOrderController::class) . '@getInfoUser')->name('admin_order.user_info');
+    Route::get('/invoice', gp247_namespace(AdminOrderController::class) . '@invoice')->name('admin_order.invoice');
 });

@@ -91,7 +91,8 @@ class ShopCategoryController extends RootFrontController
         $category = (new ShopCategory)->getDetail($alias, $type = 'alias');
 
         if ($category) {
-            $dataSearch = (new ShopProductController)->processFilter(['sort', 'price', 'brand']);
+            $productController = gp247_namespace(ShopProductController::class);
+            $dataSearch = (new $productController)->processFilter(['sort', 'price', 'brand']);
             $products = (new ShopProduct);
 
             //Filter category

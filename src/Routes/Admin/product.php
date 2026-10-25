@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Route;
 // on one page; separate create/build/group GET routes still exist for deep
 // links. POST create/edit/delete/clone removed; RBAC slug unchanged.
 Route::group(['prefix' => 'product'], function () {
-    Route::get('/', ProductManager::class)->name('admin_product.index');
-    Route::get('create', ProductManager::class)->name('admin_product.create');
-    Route::get('build_create', ProductManager::class)->name('admin_product.build_create');
-    Route::get('group_create', ProductManager::class)->name('admin_product.group_create');
-    Route::get('/edit/{id}', ProductManager::class)->name('admin_product.edit');
+    Route::get('/', gp247_namespace(ProductManager::class))->name('admin_product.index');
+    Route::get('create', gp247_namespace(ProductManager::class))->name('admin_product.create');
+    Route::get('build_create', gp247_namespace(ProductManager::class))->name('admin_product.build_create');
+    Route::get('group_create', gp247_namespace(ProductManager::class))->name('admin_product.group_create');
+    Route::get('/edit/{id}', gp247_namespace(ProductManager::class))->name('admin_product.edit');
 });

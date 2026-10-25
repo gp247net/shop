@@ -5,6 +5,6 @@ use Illuminate\Support\Facades\Route;
 // Currency — cutover (PA-1): legacy URLs render the modern Livewire two-panel
 // manager in-place. POST create/edit/delete removed; RBAC slug unchanged.
 Route::group(['prefix' => 'currency'], function () {
-    Route::get('/', CurrencyManager::class)->name('admin_currency.index');
-    Route::get('/edit/{id}', CurrencyManager::class)->name('admin_currency.edit');
+    Route::get('/', gp247_namespace(CurrencyManager::class))->name('admin_currency.index');
+    Route::get('/edit/{id}', gp247_namespace(CurrencyManager::class))->name('admin_currency.edit');
 });

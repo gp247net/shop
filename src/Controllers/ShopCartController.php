@@ -878,7 +878,7 @@ class ShopCartController extends RootFrontController
         if (class_exists($paymentMethod) && method_exists($paymentMethod, 'processOrder')) {
             return (new $paymentMethod)->processOrder();
         }else{
-            return (new ShopCartController)->completeOrder();
+            return $this->completeOrder();
         }
     }
 

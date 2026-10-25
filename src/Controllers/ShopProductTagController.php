@@ -63,7 +63,8 @@ class ShopProductTagController extends RootFrontController
             return $this->itemNotFound();
         }
 
-        $dataSearch = (new ShopProductController)->processFilter(['sort', 'price']);
+        $productController = gp247_namespace(ShopProductController::class);
+        $dataSearch = (new $productController)->processFilter(['sort', 'price']);
 
         $products = (new ShopProduct);
         if (!empty($dataSearch['sort'])) {

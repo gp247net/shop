@@ -5,6 +5,6 @@ use Illuminate\Support\Facades\Route;
 // Category — cutover (PA-1): legacy URLs render the modern Livewire two-panel
 // manager in-place. POST create/edit/delete removed; RBAC slug unchanged.
 Route::group(['prefix' => 'category'], function () {
-    Route::get('/', CategoryManager::class)->name('admin_category.index');
-    Route::get('/edit/{id}', CategoryManager::class)->name('admin_category.edit');
+    Route::get('/', gp247_namespace(CategoryManager::class))->name('admin_category.index');
+    Route::get('/edit/{id}', gp247_namespace(CategoryManager::class))->name('admin_category.edit');
 });
