@@ -115,8 +115,8 @@ class DataShopDefaultSeeder extends Seeder
             ['group' => 'gp247_cart','code' => 'sendmail_config','key' => 'welcome_customer','value' => '0','sort' => '1','detail' => 'admin.sendmail_config.welcome_customer','store_id' => $storeId],
             ['group' => 'gp247_cart','code' => 'sendmail_config','key' => 'order_success_to_admin','value' => '0','sort' => '2','detail' => 'admin.sendmail_config.order_success_to_admin','store_id' => $storeId],
             ['group' => 'gp247_cart','code' => 'sendmail_config','key' => 'order_success_to_customer','value' => '0','sort' => '3','detail' => 'admin.sendmail_config.order_success_to_cutomer','store_id' => $storeId],
-            ['group' => 'gp247_cart','code' => 'sendmail_config','key' => 'contact_to_customer','value' => '0','sort' => '4','detail' => 'admin.sendmail_config.contact_to_customer','store_id' => $storeId],
-            ['group' => 'gp247_cart','code' => 'sendmail_config','key' => 'contact_to_admin','value' => '1','sort' => '5','detail' => 'admin.sendmail_config.contact_to_admin','store_id' => $storeId],
+            // WHY: contact_to_admin / contact_to_customer are seeded by gp247/front (code
+            // contact_config) — the contact form lives there (US-SADM-sendmail-contact-handover).
 
 
         ];
