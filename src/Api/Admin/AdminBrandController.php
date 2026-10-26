@@ -2,7 +2,10 @@
 
 namespace GP247\Shop\Api\Admin;
 
+
+use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Core\Api\Support\ApiStoreScope;
 use Illuminate\Http\Request;
 use GP247\Shop\Models\ShopBrand;
 
@@ -15,7 +18,7 @@ class AdminBrandController extends RootFrontController
      */
     public function getBrandList(Request $request)
     {
-        $brands = (new ShopBrand)
+        $brands = ApiStoreScope::apply((new ShopBrand)->newQuery())
                 ->jsonPaginate();
         return response()->json($brands, 200);
     }
@@ -27,18 +30,11 @@ class AdminBrandController extends RootFrontController
      */
     public function getBrandDetail(Request $request, $id)
     {
-        $brand = (new ShopBrand)->where('id', $id)
+        $brand = ApiStoreScope::apply((new ShopBrand)->newQuery())->where('id', $id)
                 ->first();
-        if ($brand) {
-            $dataReturn = $brand;
-        } else {
-            $dataReturn = [
-                'error' => 1,
-                'msg' => 'Not found',
-                'detail' => 'Category not found or no permission!',
-            ];
-
+        if (!$brand) {
+            return ApiErrorResponder::notFound();
         }
-        return response()->json($dataReturn, 200);
+        return response()->json($brand, 200);
     }
 }

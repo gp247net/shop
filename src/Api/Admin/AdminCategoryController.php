@@ -2,7 +2,10 @@
 
 namespace GP247\Shop\Api\Admin;
 
+
+use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Core\Api\Support\ApiStoreScope;
 use Illuminate\Http\Request;
 use GP247\Shop\Models\ShopCategory;
 
@@ -15,7 +18,7 @@ class AdminCategoryController extends RootFrontController
      */
     public function getCategoryList(Request $request)
     {
-        $categories = (new ShopCategory)
+        $categories = ApiStoreScope::apply((new ShopCategory)->newQuery())
                 ->with('descriptions')
                 ->jsonPaginate();
         return response()->json($categories, 200);
@@ -28,19 +31,12 @@ class AdminCategoryController extends RootFrontController
      */
     public function getCategoryDetail(Request $request, $id)
     {
-        $category = (new ShopCategory)->where('id', $id)
+        $category = ApiStoreScope::apply((new ShopCategory)->newQuery())->where('id', $id)
                 ->with('descriptions')
                 ->first();
-        if ($category) {
-            $dataReturn = $category;
-        } else {
-            $dataReturn = [
-                'error' => 1,
-                'msg' => 'Not found',
-                'detail' => 'Category not found or no permission!',
-            ];
-
+        if (!$category) {
+            return ApiErrorResponder::notFound();
         }
-        return response()->json($dataReturn, 200);
+        return response()->json($category, 200);
     }
 }

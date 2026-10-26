@@ -2,7 +2,10 @@
 
 namespace GP247\Shop\Api\Admin;
 
+
+use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Core\Api\Support\ApiStoreScope;
 use Illuminate\Http\Request;
 use GP247\Shop\Models\ShopOrder;
 
@@ -16,7 +19,7 @@ class AdminOrderController extends RootFrontController
      */
     public function getOrderList(Request $request)
     {
-        $orders = (new ShopOrder)
+        $orders = ApiStoreScope::apply((new ShopOrder)->newQuery())
                 ->with('details')
                 ->with('orderTotal')
                 ->jsonPaginate();
@@ -30,19 +33,13 @@ class AdminOrderController extends RootFrontController
      */
     public function getOrderDetail(Request $request, $id)
     {
-        $order = (new ShopOrder)->where('id', $id)
+        $order = ApiStoreScope::apply((new ShopOrder)->newQuery())->where('id', $id)
                 ->with('details')
                 ->with('orderTotal')
                 ->first();
-        if ($order) {
-            $dataReturn = $order;
-        } else {
-            $dataReturn = [
-                'error' => 1,
-                'msg' => 'Not found',
-                'detail' => 'Order not found or no permission!',
-            ];
+        if (!$order) {
+            return ApiErrorResponder::notFound();
         }
-        return response()->json($dataReturn, 200);
+        return response()->json($order, 200);
     }
 }

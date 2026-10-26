@@ -1,12 +1,25 @@
 <?php
 namespace GP247\Shop\Api\Front;
 
+
+use GP247\Core\Api\Support\ApiErrorResponder;
+use GP247\Core\Api\Support\ApiFieldAllowlist;
+use GP247\Core\Api\Support\ApiVisibility;
+use GP247\Core\Models\AdminStore;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Shop\Api\Support\ShopApiFields;
 use GP247\Shop\Models\ShopBrand;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopProduct;
-use GP247\Shop\Models\ShopSupplier;
 
+/**
+ * Public catalog REST API (v1). Rows follow storefront visibility of the calling
+ * domain's store; payloads keep the allowlisted fields only.
+ *
+ * @aidlc-unit compat-foundation
+ * @aidlc-story US-CMP-api-public-field-allowlist
+ * @aidlc-adr compat-foundation_rest-api-hardening
+ */
 class FrontShop extends RootFrontController
 {
     /**
@@ -15,11 +28,10 @@ class FrontShop extends RootFrontController
      */
     public function getCategoryList()
     {
-        $itemsList = (new ShopCategory)
+        $itemsList = $this->visibleCategories()
             ->with('descriptions')
-            ->where('status', 1)
             ->jsonPaginate();
-        return response()->json($itemsList, 200);
+        return response()->json(ApiFieldAllowlist::page($itemsList, ShopApiFields::CATEGORY), 200);
     }
 
     /**
@@ -29,16 +41,16 @@ class FrontShop extends RootFrontController
      */
     public function getCategoryDetail($id)
     {
-        $category = (new ShopCategory)
+        $productIds = ApiVisibility::idsOf((new ShopProduct)->buildQuery());
+        $category = $this->visibleCategories()
             ->with('descriptions')
-            ->with('products')
-            ->where('status', 1)
-            ->where('id', $id)
+            ->with(['products' => fn ($query) => $query->whereIn((new ShopProduct)->getTable() . '.id', $productIds)])
+            ->where((new ShopCategory)->getTable() . '.id', $id)
             ->first();
         if ($category) {
-            return response()->json($category, 200);
+            return response()->json(ApiFieldAllowlist::one($category, ShopApiFields::CATEGORY), 200);
         } else {
-            return response()->json([], 404);
+            return ApiErrorResponder::notFound();
         }
     }
 
@@ -48,16 +60,15 @@ class FrontShop extends RootFrontController
      */
     public function getProductList()
     {
-        $products = (new ShopProduct)
+        $products = $this->visibleProducts()
             ->with('descriptions')
             ->with('promotionPrice')
             ->with('attributes')
             ->with('brand')
             ->with('builds')
             ->with('groups')
-            ->where('status', 1)
             ->jsonPaginate();
-        return response()->json($products, 200);
+        return response()->json(ApiFieldAllowlist::page($products, ShopApiFields::PRODUCT), 200);
     }
 
     /**
@@ -67,7 +78,7 @@ class FrontShop extends RootFrontController
      */
     public function getProductDetail($id)
     {
-        $product = (new ShopProduct)
+        $product = $this->visibleProducts()
             ->with('descriptions')
             ->with('images')
             ->with('promotionPrice')
@@ -75,13 +86,12 @@ class FrontShop extends RootFrontController
             ->with('brand')
             ->with('builds')
             ->with('groups')
-            ->where('status', 1)
-            ->where('id', $id)
+            ->where((new ShopProduct)->getTable() . '.id', $id)
             ->first();
         if ($product) {
-            return response()->json($product, 200);
+            return response()->json(ApiFieldAllowlist::one($product, ShopApiFields::PRODUCT), 200);
         } else {
-            return response()->json('Product not found', 404);
+            return ApiErrorResponder::notFound();
         }
     }
 
@@ -90,7 +100,7 @@ class FrontShop extends RootFrontController
         $itemsList = (new ShopBrand)
             ->where('status', 1)
             ->jsonPaginate();
-        return response()->json($itemsList, 200);
+        return response()->json(ApiFieldAllowlist::page($itemsList, ShopApiFields::BRAND), 200);
     }
 
     public function getBrandDetail($id)
@@ -100,10 +110,40 @@ class FrontShop extends RootFrontController
             ->where('id', $id)
             ->first();
         if ($brand) {
-            return response()->json($brand, 200);
+            return response()->json(ApiFieldAllowlist::one($brand, ShopApiFields::BRAND), 200);
         } else {
-            return response()->json('Not found', 404);
+            return ApiErrorResponder::notFound();
         }
     }
 
+    /**
+     * Products the storefront of this domain shows (status, approval, active store,
+     * out-of-stock display rule) — ShopProduct::buildQuery() is the single source.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function visibleProducts()
+    {
+        return ApiVisibility::visible((new ShopProduct)->buildQuery());
+    }
+
+    /**
+     * Active categories of this domain's store, by the same store rule as
+     * ShopCategory's storefront queries. Every level is listed (v1 never limited the
+     * list to root categories), so buildQuery() — root-only by default — is not reused.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function visibleCategories()
+    {
+        $table = (new ShopCategory)->getTable();
+        $query = ShopCategory::query()->select($table . '.*')->where($table . '.status', 1);
+        if (gp247_store_check_multi_store_installed()) {
+            $tableStore = (new AdminStore)->getTable();
+            $query->join($tableStore, $tableStore . '.id', $table . '.store_id')
+                ->where($tableStore . '.status', '1')
+                ->where($table . '.store_id', config('app.storeId'));
+        }
+        return $query;
+    }
 }

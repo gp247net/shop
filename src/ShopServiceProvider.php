@@ -176,6 +176,8 @@ class ShopServiceProvider extends ServiceProvider
         $configFrontMiddleware = config('gp247-config.front.middleware');
         $configFrontMiddleware[] = 'check.currency';
         $configFrontMiddleware[] = 'check.email_verified';
+        // A customer locked after signing in is signed out on any storefront page (US-LW-customer-locked-login-block)
+        $configFrontMiddleware[] = 'customer.locked_logout';
         config(['gp247-config.front.middleware' => $configFrontMiddleware]);
 
         //Exclude route language
@@ -443,6 +445,9 @@ class ShopServiceProvider extends ServiceProvider
         'check.email_verified'     => EmailIsVerifiedMiddleware::class,
         //Customer auth
         'customer.auth' => CustomerAuth::class,
+        'customer.locked_logout' => \GP247\Shop\Middleware\CustomerLockedLogout::class,
+        // Customer API: refuse tokens of customers locked after issue (US-LW-customer-locked-login-block)
+        'api.customer.active' => \GP247\Shop\Api\Middleware\CustomerActive::class,
     ];
 
     /**

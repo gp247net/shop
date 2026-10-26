@@ -65,6 +65,23 @@ class LoginController extends RootFrontController
     }
 
     /**
+     * Credentials used for the login attempt: only active customers (status 1).
+     *
+     * WHY: a locked customer gets the same "credentials do not match" answer as a
+     * wrong password, so the form does not reveal which accounts exist or are locked.
+     *
+     * @param Request $request
+     * @return array
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-customer-locked-login-block
+     */
+    protected function credentials(Request $request)
+    {
+        return array_merge($request->only($this->username(), 'password'), ['status' => 1]);
+    }
+
+    /**
      * Process front form login
      *
      * @param [type] ...$params

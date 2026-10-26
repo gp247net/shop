@@ -2,10 +2,16 @@
 
 namespace GP247\Shop\Api\Front;
 
+use GP247\Core\Api\Support\ApiErrorResponder;
+use GP247\Core\Api\Support\ApiFieldAllowlist;
+use GP247\Core\Api\Support\ApiLoginThrottle;
+use GP247\Core\Api\Support\ApiTokenLifetime;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Shop\Api\Support\ShopApiFields;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use GP247\Shop\Models\ShopCustomer;
 use GP247\Shop\Models\ShopOrder;
 use Illuminate\Support\Facades\Validator;
 use GP247\Shop\Controllers\Auth\AuthTrait;
@@ -17,12 +23,18 @@ class MemberAuthController extends RootFrontController
     /**
      * Login user and create token
      *
+     * Only active customers (status 1) sign in; failed attempts are limited per
+     * (email + IP); the token always expires.
+     *
      * @param  [string] email
      * @param  [string] password
      * @param  [boolean] remember_me
      * @return [string] access_token
      * @return [string] token_type
      * @return [string] expires_at
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-api-login-throttle, US-CMP-api-token-lifetime, US-LW-customer-locked-login-block
      */
     public function login(Request $request)
     {
@@ -31,32 +43,32 @@ class MemberAuthController extends RootFrontController
             'password' => 'required|string',
             'remember_me' => 'boolean'
         ]);
+
+        $email = (string) $request->input('email');
+        $subject = ApiLoginThrottle::subject(ShopCustomer::where('email', $email)->value('id'), $email);
+        if ($blocked = ApiLoginThrottle::attempt($request, 'customer', $subject)) {
+            return $blocked;
+        }
+
         $credentials = request(['email', 'password']);
+        // WHY: a locked customer gets the same answer as a wrong password (no account probing).
+        $credentials['status'] = 1;
 
         if (!$this->guard()->attempt($credentials)) {
-            return response()->json([
-                'error' => 1,
-                'msg' => 'Unauthorized'
-            ], 401);
+            return ApiErrorResponder::respond(401, 'unauthenticated', 'Unauthorized');
         }
+        ApiLoginThrottle::succeeded($request, 'customer', $subject);
 
         $user = $this->guard()->user();
+        $scope = explode(',', config('gp247-config.api.auth.api_scope_user'));
 
-        if ($user->status == 0) {
-            $scope = explode(',', config('gp247-config.api.auth.api_scope_user_guest'));
-        } else {
-            $scope = explode(',', config('gp247-config.api.auth.api_scope_user'));
-        }
-        
-        $tokenResult = $user->createToken('Client:'.$user->email.'- '.now(), $scope);
+        ApiTokenLifetime::purgeExpired($user);
+        $days = $request->remember_me
+            ? config('gp247-config.api.auth.api_remmember')
+            : config('gp247-config.api.auth.api_token_expire_default');
+        $tokenResult = $user->createToken('Client:'.$user->email.'- '.now(), $scope, ApiTokenLifetime::expiresAt($days));
         $token = $tokenResult->plainTextToken;
         $accessToken = $tokenResult->accessToken;
-        if ($request->remember_me) {
-            $accessToken->expires_at = Carbon::now()->addDays(config('gp247-config.api.auth.api_remmember'));
-        } else {
-            $accessToken->expires_at = Carbon::now()->addDays(config('gp247-config.api.auth.api_token_expire_default'));
-        }
-        $accessToken->save();
 
         return response()->json([
             'access_token' => $token,
@@ -78,31 +90,46 @@ class MemberAuthController extends RootFrontController
         return Validator::make($data, $dataMapp['validate'], $dataMapp['messages']);
     }
 
-  
+
     /**
      * Logout user (Revoke the token)
      *
      * @return [string] message
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-api-token-lifetime
      */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json([
+        return ApiTokenLifetime::withLogoutDeprecation($request, response()->json([
             'error' => 0,
             'msg' => 'Successfully logged out'
-        ]);
+        ]));
     }
 
+    /**
+     * Profile of the signed-in customer (allowlisted fields).
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-api-public-field-allowlist
+     */
     public function getInfo(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json(ApiFieldAllowlist::one($request->user(), ShopApiFields::MEMBER_INFO));
     }
-  
+
     protected function guard()
     {
         return Auth::guard('customer');
     }
 
+    /**
+     * Orders of the signed-in customer (allowlisted fields).
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-api-public-field-allowlist
+     */
     public function getOrderList(Request $request)
     {
         $customer = $request->user();
@@ -113,14 +140,17 @@ class MemberAuthController extends RootFrontController
             ->where('customer_id', $customer->id)
             ->orderBy('created_at', 'desc')
             ->jsonPaginate();
-            return response()->json($orders, 200);
+            return response()->json(ApiFieldAllowlist::page($orders, ShopApiFields::MEMBER_ORDER), 200);
         }
-        return response()->json([
-            'error' => 1,
-            'msg' => 'User not found'
-        ], 401);
+        return ApiErrorResponder::unauthenticated();
     }
 
+    /**
+     * One order of the signed-in customer (allowlisted fields).
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-api-public-field-allowlist
+     */
     public function getOrderDetail(Request $request, $id)
     {
         $customer = $request->user();
@@ -131,11 +161,11 @@ class MemberAuthController extends RootFrontController
             ->where('customer_id', $customer->id)
             ->where('id', $id)
             ->first();
-            return response()->json($order, 200);
+            if (!$order) {
+                return ApiErrorResponder::notFound();
+            }
+            return response()->json(ApiFieldAllowlist::one($order, ShopApiFields::MEMBER_ORDER), 200);
         }
-        return response()->json([
-            'error' => 1,
-            'msg' => 'User not found'
-        ], 401);
+        return ApiErrorResponder::unauthenticated();
     }
 }

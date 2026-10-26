@@ -104,4 +104,29 @@ class ResetPasswordController extends RootFrontController
     {
         return Password::broker('customer_password');
     }
+
+    /**
+     * Reset the password; sign the customer in only when the account is active.
+     *
+     * WHY: the trait signs in unconditionally, which let a locked customer (status 0)
+     * back in through "forgot password".
+     *
+     * @param \GP247\Shop\Models\ShopCustomer $user
+     * @param string                          $password
+     * @return void
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-customer-locked-login-block
+     */
+    protected function resetPassword($user, $password)
+    {
+        $this->setUserPassword($user, $password);
+        $user->setRememberToken(\Illuminate\Support\Str::random(60));
+        $user->save();
+        event(new \Illuminate\Auth\Events\PasswordReset($user));
+
+        if ((int) $user->status === 1) {
+            $this->guard()->login($user);
+        }
+    }
 }

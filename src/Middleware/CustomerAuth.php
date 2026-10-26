@@ -18,6 +18,12 @@ class CustomerAuth
     public function handle($request, Closure $next)
     {
         $redirectTo = gp247_route_front('customer.login');
+        // A customer locked (status 0) after signing in loses the session at the next
+        // request (US-LW-customer-locked-login-block).
+        $customer = Auth::guard('customer')->user();
+        if ($customer && (int) $customer->status !== 1) {
+            Auth::guard('customer')->logout();
+        }
         if (Auth::guard('customer')->guest() && !$this->shouldPassThrough($request)) {
             return redirect()->guest($redirectTo);
         }

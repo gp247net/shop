@@ -2,7 +2,10 @@
 
 namespace GP247\Shop\Api\Admin;
 
+
+use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Core\Api\Support\ApiStoreScope;
 use Illuminate\Http\Request;
 use GP247\Shop\Models\ShopCustomer;
 use GP247\Shop\Controllers\Auth\AuthTrait;
@@ -18,7 +21,7 @@ class AdminCustomerController extends RootFrontController
      */
     public function getCustomerList(Request $request)
     {
-        $customers = (new ShopCustomer)
+        $customers = ApiStoreScope::apply((new ShopCustomer)->newQuery())
                 ->jsonPaginate();
         return response()->json($customers, 200);
     }
@@ -30,18 +33,11 @@ class AdminCustomerController extends RootFrontController
      */
     public function getCustomerDetail(Request $request, $id)
     {
-        $customer = (new ShopCustomer)->where('id', $id)
+        $customer = ApiStoreScope::apply((new ShopCustomer)->newQuery())->where('id', $id)
                 ->first();
-        if ($customer) {
-            $dataReturn = $customer;
-        } else {
-            $dataReturn = [
-                'error' => 1,
-                'msg' => 'Not found',
-                'detail' => 'Customer not found or no permission!',
-            ];
-
+        if (!$customer) {
+            return ApiErrorResponder::notFound();
         }
-        return response()->json($dataReturn, 200);
+        return response()->json($customer, 200);
     }
 }

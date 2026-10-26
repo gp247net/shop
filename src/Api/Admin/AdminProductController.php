@@ -2,7 +2,10 @@
 
 namespace GP247\Shop\Api\Admin;
 
+
+use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Core\Api\Support\ApiStoreScope;
 use Illuminate\Http\Request;
 use GP247\Shop\Models\ShopProduct;
 
@@ -15,7 +18,7 @@ class AdminProductController extends RootFrontController
      */
     public function getProductList(Request $request)
     {
-        $products = (new ShopProduct)
+        $products = ApiStoreScope::apply((new ShopProduct)->newQuery())
                 ->with('descriptions')
                 ->with('images')
                 ->with('promotionPrice')
@@ -33,7 +36,7 @@ class AdminProductController extends RootFrontController
      */
     public function getProductDetail(Request $request, $id)
     {
-        $product = (new ShopProduct)->where('id', $id)
+        $product = ApiStoreScope::apply((new ShopProduct)->newQuery())->where('id', $id)
                 ->with('descriptions')
                 ->with('images')
                 ->with('promotionPrice')
@@ -41,16 +44,9 @@ class AdminProductController extends RootFrontController
                 ->with('builds')
                 ->with('groups')
                 ->first();
-        if ($product) {
-            $dataReturn = $product;
-        } else {
-            $dataReturn = [
-                'error' => 1,
-                'msg' => 'Not found',
-                'detail' => 'Product not found or no permission!',
-            ];
-
+        if (!$product) {
+            return ApiErrorResponder::notFound();
         }
-        return response()->json($dataReturn, 200);
+        return response()->json($product, 200);
     }
 }

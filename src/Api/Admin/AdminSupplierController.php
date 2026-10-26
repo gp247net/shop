@@ -2,7 +2,10 @@
 
 namespace GP247\Shop\Api\Admin;
 
+
+use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Core\Api\Support\ApiStoreScope;
 use Illuminate\Http\Request;
 use GP247\Shop\Models\ShopSupplier;
 
@@ -15,7 +18,7 @@ class AdminSupplierController extends RootFrontController
      */
     public function getSupplierList(Request $request)
     {
-        $suppliers = (new ShopSupplier)
+        $suppliers = ApiStoreScope::apply((new ShopSupplier)->newQuery())
                 ->jsonPaginate();
         return response()->json($suppliers, 200);
     }
@@ -27,18 +30,11 @@ class AdminSupplierController extends RootFrontController
      */
     public function getSupplierDetail(Request $request, $id)
     {
-        $supplier = (new ShopSupplier)->where('id', $id)
+        $supplier = ApiStoreScope::apply((new ShopSupplier)->newQuery())->where('id', $id)
                 ->first();
-        if ($supplier) {
-            $dataReturn = $supplier;
-        } else {
-            $dataReturn = [
-                'error' => 1,
-                'msg' => 'Not found',
-                'detail' => 'Supplier not found or no permission!',
-            ];
-
+        if (!$supplier) {
+            return ApiErrorResponder::notFound();
         }
-        return response()->json($dataReturn, 200);
+        return response()->json($supplier, 200);
     }
 }
