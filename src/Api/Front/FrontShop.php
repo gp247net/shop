@@ -5,7 +5,7 @@ namespace GP247\Shop\Api\Front;
 use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Core\Api\Support\ApiFieldAllowlist;
 use GP247\Core\Api\Support\ApiVisibility;
-use GP247\Core\Models\AdminStore;
+use GP247\Shop\Api\Support\ShopApiVisibility;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Api\Support\ShopApiFields;
 use GP247\Shop\Models\ShopBrand;
@@ -117,33 +117,22 @@ class FrontShop extends RootFrontController
     }
 
     /**
-     * Products the storefront of this domain shows (status, approval, active store,
-     * out-of-stock display rule) — ShopProduct::buildQuery() is the single source.
+     * Products the storefront of this domain shows (shared with v2).
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     private function visibleProducts()
     {
-        return ApiVisibility::visible((new ShopProduct)->buildQuery());
+        return ShopApiVisibility::products();
     }
 
     /**
-     * Active categories of this domain's store, by the same store rule as
-     * ShopCategory's storefront queries. Every level is listed (v1 never limited the
-     * list to root categories), so buildQuery() — root-only by default — is not reused.
+     * Active categories of this domain's store, every level (shared with v2).
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     private function visibleCategories()
     {
-        $table = (new ShopCategory)->getTable();
-        $query = ShopCategory::query()->select($table . '.*')->where($table . '.status', 1);
-        if (gp247_store_check_multi_store_installed()) {
-            $tableStore = (new AdminStore)->getTable();
-            $query->join($tableStore, $tableStore . '.id', $table . '.store_id')
-                ->where($tableStore . '.status', '1')
-                ->where($table . '.store_id', config('app.storeId'));
-        }
-        return $query;
+        return ShopApiVisibility::categories();
     }
 }

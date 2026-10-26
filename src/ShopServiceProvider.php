@@ -140,6 +140,12 @@ class ShopServiceProvider extends ServiceProvider
             // middleware group on purpose (ADR shop-shipping_webhook-routing).
             $this->loadRoutesFrom(__DIR__.'/Routes/Webhook/shipping.php');
 
+            // REST API (v1 + v2) through the core seam, only once shop tables exist
+            // (US-CMP-api-package-route-registration).
+            foreach (array_merge(glob(__DIR__.'/Routes/Api/*.php'), glob(__DIR__.'/Routes/Api/v2/*.php')) as $apiRouteFile) {
+                \GP247\Core\Api\Support\ApiRouteRegistrar::register($apiRouteFile, '00_00_00_create_tables_shop');
+            }
+
             //Add module to homepage admin
             gp247_add_module('homepage', 'gp247-shop-admin::component.order_month');
             gp247_add_module('homepage', 'gp247-shop-admin::component.order_year');

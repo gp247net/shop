@@ -9,10 +9,6 @@ Route::group([
 
     // Locked customers (status 0) cannot sign in any more, so the legacy
     // "user-guest" scope is no longer issued nor accepted (US-LW-customer-locked-login-block).
-    $listAbility = [
-        config('gp247-config.api.auth.api_scope_user'),
-    ];
-
     $memberAuthController = gp247_namespace(MemberAuthController::class);
     //Login
     Route::post('login', $memberAuthController.'@login');
@@ -20,7 +16,7 @@ Route::group([
     Route::group([
         'middleware' => [
             'auth:customer-api',
-            'ability:'.implode(',', $listAbility),
+            \GP247\Core\Api\Support\ApiAbilities::customer(),
             'api.customer.active',
         ]
     ], function () use($memberAuthController){

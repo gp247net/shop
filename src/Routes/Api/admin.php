@@ -8,18 +8,13 @@ use GP247\Shop\Api\Admin\AdminProductController;
 use GP247\Shop\Api\Admin\AdminSupplierController;
 use Illuminate\Support\Facades\Route;
 
-$listAbility = [
-    config('gp247-config.api.auth.api_scope_admin'),
-    config('gp247-config.api.auth.api_scope_admin_supper')
-];
-
 
 // Each endpoint declares the admin screen whose RBAC grant opens it
 // (api.admin:<admin route name>, US-RBAC-api-route-permission).
 Route::group([
     'middleware' => [
         'auth:admin-api',
-        'ability:'.implode(',', $listAbility)
+        \GP247\Core\Api\Support\ApiAbilities::admin(),
     ],
     'prefix' => GP247_API_CORE_PREFIX,
 ], function (){

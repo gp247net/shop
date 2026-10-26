@@ -64,7 +64,7 @@ class MemberAuthController extends RootFrontController
 
         ApiTokenLifetime::purgeExpired($user);
         $days = $request->remember_me
-            ? config('gp247-config.api.auth.api_remmember')
+            ? config('gp247-config.api.auth.api_remember')
             : config('gp247-config.api.auth.api_token_expire_default');
         $tokenResult = $user->createToken('Client:'.$user->email.'- '.now(), $scope, ApiTokenLifetime::expiresAt($days));
         $token = $tokenResult->plainTextToken;
