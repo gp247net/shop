@@ -190,6 +190,29 @@ class ShopCartController extends RootFrontController
 
 
     /**
+     * Tell whether any cart line carries a quantity the cart quantity rule refuses.
+     *
+     * @param iterable $lines Cart lines (CartItem, or plain arrays from a JSON session).
+     * @return bool True when at least one line has an invalid quantity.
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-cart-qty-positive
+     * @aidlc-adr storefront_cart-quantity-positive-invariant
+     */
+    private function hasInvalidCartQuantity(iterable $lines): bool
+    {
+        foreach ($lines as $line) {
+            $line = \GP247\Shop\Services\CartItem::hydrate($line);
+            if (!\GP247\Shop\Services\CartItem::isValidQuantity($line->qty)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
      * Process front checkout screen
      *
      * Step 03.1
@@ -226,6 +249,11 @@ class ShopCartController extends RootFrontController
         //If cart info empty
         if (!$dataCheckout) {
             return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.cart_empty')]);
+        }
+        // Lines are checked before the totals are: totals computed from a negative
+        // line still "agree" with each other (US-LW-cart-qty-positive).
+        if ($this->hasInvalidCartQuantity($dataCheckout)) {
+            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.have_error')]);
         }
         //Set session dataCheckout
         session(['dataCheckout' => $dataCheckout]);
@@ -662,6 +690,13 @@ class ShopCartController extends RootFrontController
             $address_process = session('address_process') ?? '';
             $storeCheckout   = session('storeCheckout') ?? '';
             $dataCheckout    = session('dataCheckout') ?? '';
+        }
+
+        // WHY again at submit: a dataCheckout staged before the positive-quantity rule
+        // shipped can outlive the deploy, and the total-freshness check below cannot
+        // see a bad line because both totals derive from it (US-LW-cart-qty-positive).
+        if ($this->hasInvalidCartQuantity($dataCheckout)) {
+            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.have_error')]);
         }
 
         // Recompute the totals fresh at submit and compare with what the confirm step

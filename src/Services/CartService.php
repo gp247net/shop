@@ -434,6 +434,25 @@ class CartService
     }
 
     /**
+     * Report a cart line dropped while restoring a stored cart because its quantity
+     * breaks the cart quantity rule (likely written before that rule existed, or
+     * tampered with).
+     *
+     * @param mixed $identifier Customer id the stored cart belongs to.
+     * @param mixed $productId
+     * @param mixed $qty
+     * @return void
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-LW-cart-qty-positive
+     */
+    private function reportDroppedLine($identifier, $productId, $qty): void
+    {
+        gp247_report('[cart] dropped a line with an invalid quantity while restoring the cart of customer '
+            . $identifier . ': product ' . $productId . ', qty ' . json_encode($qty));
+    }
+
+    /**
      * Sync cart data after user login
      * 
      * @param int $userId User ID after login
@@ -467,9 +486,16 @@ class CartService
             // Merge products from both carts
             $mergedContent = new Collection();
 
+            // WHY skip instead of setQuantity() throwing: a cart stored before the
+            // positive-quantity rule may hold a line it now refuses, and that must
+            // not break the customer's login (RISK-SEC-cart-negative-quantity).
             // Add items from database cart
             foreach ($dbContent as $item) {
                 if (in_array($item['id'], $validIds)) {
+                    if (!CartItem::isValidQuantity($item['qty'] ?? null)) {
+                        $this->reportDroppedLine($userId, $item['id'], $item['qty'] ?? null);
+                        continue;
+                    }
                     $cartItem = CartItem::fromArray($item);
                     $cartItem->setQuantity($item['qty']);
                     $mergedContent->put($cartItem->rowId, $cartItem);
@@ -478,14 +504,19 @@ class CartService
 
             // Add or update items from session cart
             foreach ($sessionContent as $item) {
-                if (in_array($item->id, $validIds)) {
-                    if ($mergedContent->has($item->rowId)) {
-                        // If item exists in both carts, add quantities
-                        $existing = $mergedContent->get($item->rowId);
-                        $existing->setQuantity($existing->qty + $item->qty);
-                    } else {
-                        $mergedContent->put($item->rowId, $item);
-                    }
+                if (!in_array($item->id, $validIds)) {
+                    continue;
+                }
+                if (!CartItem::isValidQuantity($item->qty)) {
+                    $this->reportDroppedLine($userId, $item->id, $item->qty);
+                    continue;
+                }
+                if ($mergedContent->has($item->rowId)) {
+                    // If item exists in both carts, add quantities
+                    $existing = $mergedContent->get($item->rowId);
+                    $existing->setQuantity($existing->qty + $item->qty);
+                } else {
+                    $mergedContent->put($item->rowId, $item);
                 }
             }
 

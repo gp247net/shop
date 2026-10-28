@@ -85,24 +85,77 @@ class CartItem
     }
 
     /**
+     * Tell whether a value is an acceptable quantity for a storefront cart line.
+     *
+     * The single source of the cart quantity rule: numeric, strictly positive, and
+     * a whole number unless the site enabled product_qty_decimal (ADR-016). Callers
+     * that need to check a quantity use this instead of restating the rule.
+     *
+     * @param mixed $qty Candidate quantity (client input or a stored line value).
+     * @return bool True when the quantity may be stored on a cart line.
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-LW-cart-qty-positive
+     * @aidlc-adr storefront_cart-quantity-positive-invariant
+     */
+    public static function isValidQuantity($qty): bool
+    {
+        return self::isPositiveNumber($qty) && self::hasAllowedPrecision($qty);
+    }
+
+    /**
      * Set the quantity for this cart item.
      *
      * @param int|float $qty
+     * @return void
+     * @throws \InvalidArgumentException When $qty is not a positive number, or is
+     *         fractional while product_qty_decimal is disabled (ADR-016).
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-LW-cart-qty-positive
+     * @aidlc-adr storefront_cart-quantity-positive-invariant
      */
     public function setQuantity($qty)
     {
-        if (empty($qty) || ! is_numeric($qty)) {
+        // WHY: a negative qty used to pass (only 0 was refused), letting a crafted
+        // Livewire call drive a line — and the order total — below zero
+        // (RISK-SEC-cart-negative-quantity).
+        if (!self::isPositiveNumber($qty)) {
             throw new \InvalidArgumentException('Please supply a valid quantity.');
         }
 
-        // WHY: reject a fractional qty when the site has not opted into decimal
-        // quantities (product_qty_decimal, modification 20260705T093328, ADR-016) —
-        // previously this silently accepted any numeric value.
-        if (function_exists('gp247_qty_decimal_enabled') && !gp247_qty_decimal_enabled() && (float) $qty != floor((float) $qty)) {
+        if (!self::hasAllowedPrecision($qty)) {
             throw new \InvalidArgumentException('Please supply a whole-number quantity.');
         }
 
         $this->qty = $qty;
+    }
+
+    /**
+     * Tell whether a value is a finite number greater than zero.
+     *
+     * @param mixed $qty
+     * @return bool
+     */
+    private static function isPositiveNumber($qty): bool
+    {
+        // WHY is_finite: "1e400" is a numeric string that casts to INF.
+        return is_numeric($qty) && is_finite((float) $qty) && (float) $qty > 0;
+    }
+
+    /**
+     * Tell whether a numeric quantity respects the product_qty_decimal setting.
+     *
+     * @param int|float|string $qty A value that already passed isPositiveNumber().
+     * @return bool False for a fractional value when decimal quantities are disabled.
+     */
+    private static function hasAllowedPrecision($qty): bool
+    {
+        if (function_exists('gp247_qty_decimal_enabled') && !gp247_qty_decimal_enabled()) {
+            return (float) $qty == floor((float) $qty);
+        }
+
+        return true;
     }
 
 

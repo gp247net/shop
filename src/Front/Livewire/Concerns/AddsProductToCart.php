@@ -3,6 +3,7 @@
 namespace GP247\Shop\Front\Livewire\Concerns;
 
 use GP247\Shop\Models\ShopProduct;
+use GP247\Shop\Services\CartItem;
 use GP247\Shop\Services\CartService;
 
 /**
@@ -26,16 +27,24 @@ trait AddsProductToCart
      *
      * @param string $productId ShopProduct id (UUID — see GP247\Core\Models\UuidTrait).
      * @param string $instance 'default'|'wishlist'|'compare'
-     * @param int $qty
+     * @param int|float $qty Client-supplied quantity; refused unless CartItem::isValidQuantity().
      * @param string|null $storeId Explicit store context; resolved when null.
      * @return array{status: string, message: ?string, url: ?string, count: ?int}
      *         status is one of: 'added', 'redirect', 'error'.
      *
      * @aidlc-unit storefront
      * @aidlc-story US-LW-004
+     * @aidlc-story US-LW-cart-qty-positive
      */
-    protected function attemptAddToCart(string $productId, string $instance = 'default', int $qty = 1, ?string $storeId = null): array
+    protected function attemptAddToCart(string $productId, string $instance = 'default', int|float $qty = 1, ?string $storeId = null): array
     {
+        // WHY here as well as in CartItem: $qty comes straight from a public Livewire
+        // action, so refuse it before any lookup and answer with a translated message
+        // instead of the exception text (RISK-SEC-cart-negative-quantity).
+        if (!CartItem::isValidQuantity($qty)) {
+            return $this->errorResult(gp247_language_render('cart.have_error'));
+        }
+
         $resolvedStoreId = $storeId ?? $this->resolveCartStoreId($productId);
 
         $product = (new ShopProduct())->getDetail($productId, null, $resolvedStoreId);
