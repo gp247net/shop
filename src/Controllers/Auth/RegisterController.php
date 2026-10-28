@@ -3,6 +3,7 @@
 namespace GP247\Shop\Controllers\Auth;
 
 
+use GP247\Shop\Services\CustomerAccountService;
 use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Models\ShopCustomer;
@@ -61,14 +62,8 @@ class RegisterController extends RootFrontController
      */
     protected function validator(array $data)
     {
-        $dataMapping = $this->mappingValidator($data);
-
-        //Process captcha
-        if (gp247_captcha_method() && in_array('register', gp247_captcha_page())) {
-            $data['captcha_field'] = $data[gp247_captcha_method()->getField()] ?? '';
-            $dataMapping['validate']['captcha_field'] = ['required', 'string', new \GP247\Core\Rules\CaptchaRule];
-        }
-        return Validator::make($data, $dataMapping['validate'], $dataMapping['messages']);
+        // WHY: one rule set for the form and API v2 register (US-CMP-api-customer-register).
+        return app(CustomerAccountService::class)->registerValidator($data);
     }
 
     /**
@@ -79,12 +74,8 @@ class RegisterController extends RootFrontController
      */
     protected function create(array $data)
     {
-        $data['country'] = strtoupper($data['country'] ?? '');
-        $dataMap = $this->mappingValidator($data)['dataInsert'];
-
-        $user = ShopCustomer::createCustomer($dataMap);
-
-        return $user;
+        // Also sends the welcome / verification mail (gp247_customer_created_by_client).
+        return app(CustomerAccountService::class)->register($data);
     }
     
     public function showRegistrationForm()
@@ -165,9 +156,6 @@ class RegisterController extends RootFrontController
         $user = $this->create($data);
 
         if ($user) {
-            
-            gp247_customer_created_by_client($user);
-
             //Login
             $this->guard()->login($user);
             

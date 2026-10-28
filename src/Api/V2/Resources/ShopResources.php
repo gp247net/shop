@@ -10,7 +10,7 @@ use GP247\Core\Api\V2\ApiQuery;
  * not reach the API until it is added here.
  *
  * @aidlc-unit compat-foundation
- * @aidlc-story US-CMP-api-v2-contract
+ * @aidlc-story US-CMP-api-v2-contract, US-CMP-api-customer-profile, US-CMP-api-customer-address
  * @aidlc-adr compat-foundation_rest-api-hardening
  */
 final class ShopResources
@@ -80,6 +80,44 @@ final class ShopResources
             $data += ['store_id' => $c->store_id, 'email_verified_at' => $c->email_verified_at];
         }
         return $data;
+    }
+
+    /**
+     * Profile of the signed-in customer: the customer shape plus e-mail verification
+     * state and the default address (US-CMP-api-customer-profile).
+     *
+     * @param \GP247\Shop\Models\ShopCustomer $c
+     * @return array<string, mixed>
+     */
+    public static function profile($c): array
+    {
+        $default = $c->getAddressDefault();
+
+        return self::customer($c) + [
+            'email_verified'              => $c->isVerified(),
+            'email_verification_required' => (bool) $c->hasVerifiedEmail(),
+            'default_address_id'          => $c->address_id,
+            'default_address'             => $default ? self::address($default, (string) $c->address_id) : null,
+        ];
+    }
+
+    /**
+     * One address of the address book.
+     *
+     * @param \GP247\Shop\Models\ShopCustomerAddress $a
+     * @param string                                  $defaultId Id of the customer's default address.
+     * @return array<string, mixed>
+     */
+    public static function address($a, string $defaultId = ''): array
+    {
+        return [
+            'id' => $a->id, 'first_name' => $a->first_name, 'last_name' => $a->last_name,
+            'first_name_kana' => $a->first_name_kana, 'last_name_kana' => $a->last_name_kana,
+            'phone' => $a->phone, 'country' => $a->country, 'postcode' => $a->postcode, 'city' => $a->city,
+            'district' => $a->district, 'ward' => $a->ward, 'address1' => $a->address1, 'address2' => $a->address2,
+            'address3' => $a->address3, 'is_default' => $defaultId !== '' && (string) $a->id === $defaultId,
+            'created_at' => self::date($a->created_at), 'updated_at' => self::date($a->updated_at),
+        ];
     }
 
     /**

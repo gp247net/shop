@@ -6,8 +6,10 @@ use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Core\Api\Support\ApiFieldAllowlist;
 use GP247\Core\Api\Support\ApiLoginThrottle;
 use GP247\Core\Api\Support\ApiTokenLifetime;
+use GP247\Core\Api\Support\LoginChallenges;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Api\Support\ShopApiFields;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -24,7 +26,8 @@ class MemberAuthController extends RootFrontController
      * Login user and create token
      *
      * Only active customers (status 1) sign in; failed attempts are limited per
-     * (email + IP); the token always expires.
+     * (email + IP); the token always expires. A sign-in challenge registered by a
+     * plugin cannot be completed on v1, so it is refused with `challenge_required`.
      *
      * @param  [string] email
      * @param  [string] password
@@ -34,39 +37,22 @@ class MemberAuthController extends RootFrontController
      * @return [string] expires_at
      *
      * @aidlc-unit compat-foundation
-     * @aidlc-story US-CMP-api-login-throttle, US-CMP-api-token-lifetime, US-LW-customer-locked-login-block
+     * @aidlc-story US-CMP-api-login-throttle, US-CMP-api-token-lifetime, US-LW-customer-locked-login-block, US-CMP-api-login-challenge-seam
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-            'remember_me' => 'boolean'
-        ]);
-
-        $email = (string) $request->input('email');
-        $subject = ApiLoginThrottle::subject(ShopCustomer::where('email', $email)->value('id'), $email);
-        if ($blocked = ApiLoginThrottle::attempt($request, 'customer', $subject)) {
-            return $blocked;
+        $user = $this->authenticate($request);
+        if ($user instanceof JsonResponse) {
+            return $user;
         }
-
-        $credentials = request(['email', 'password']);
-        // WHY: a locked customer gets the same answer as a wrong password (no account probing).
-        $credentials['status'] = 1;
-
-        if (!$this->guard()->attempt($credentials)) {
-            return ApiErrorResponder::respond(401, 'unauthenticated', 'Unauthorized');
+        if ($refused = LoginChallenges::refuseForV1($user, 'customer', $request)) {
+            return $refused;
         }
-        ApiLoginThrottle::succeeded($request, 'customer', $subject);
+        ApiLoginThrottle::succeeded($request, 'customer', $this->throttleSubject($request));
 
-        $user = $this->guard()->user();
-        $scope = explode(',', config('gp247-config.api.auth.api_scope_user'));
-
+        $opts = $this->tokenOptions($user, $request);
         ApiTokenLifetime::purgeExpired($user);
-        $days = $request->remember_me
-            ? config('gp247-config.api.auth.api_remember')
-            : config('gp247-config.api.auth.api_token_expire_default');
-        $tokenResult = $user->createToken('Client:'.$user->email.'- '.now(), $scope, ApiTokenLifetime::expiresAt($days));
+        $tokenResult = $user->createToken($opts['name'], $opts['abilities'], ApiTokenLifetime::expiresAt($opts['days']));
         $token = $tokenResult->plainTextToken;
         $accessToken = $tokenResult->accessToken;
 
@@ -80,6 +66,67 @@ class MemberAuthController extends RootFrontController
         ]);
     }
 
+    /**
+     * Validate the credentials of an active customer, under the login throttle.
+     *
+     * @param Request $request
+     * @return ShopCustomer|JsonResponse The customer, or the 401/429 response.
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-api-login-throttle, US-LW-customer-locked-login-block
+     */
+    protected function authenticate(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+            'remember_me' => 'boolean'
+        ]);
+
+        if ($blocked = ApiLoginThrottle::attempt($request, 'customer', $this->throttleSubject($request))) {
+            return $blocked;
+        }
+
+        $credentials = request(['email', 'password']);
+        // WHY: a locked customer gets the same answer as a wrong password (no account probing).
+        $credentials['status'] = 1;
+
+        if (!$this->guard()->attempt($credentials)) {
+            return ApiErrorResponder::respond(401, 'unauthenticated', 'Unauthorized');
+        }
+        return $this->guard()->user();
+    }
+
+    /**
+     * Login throttle subject of the typed e-mail.
+     *
+     * @param Request $request
+     * @return string
+     */
+    protected function throttleSubject(Request $request): string
+    {
+        $email = (string) $request->input('email');
+        return ApiLoginThrottle::subject(ShopCustomer::where('email', $email)->value('id'), $email);
+    }
+
+    /**
+     * Abilities, name and lifetimes of the token issued to $user.
+     *
+     * @param ShopCustomer $user
+     * @param Request      $request
+     * @return array{abilities: string[], name: string, days: int, refresh_days: int}
+     */
+    protected function tokenOptions(ShopCustomer $user, Request $request): array
+    {
+        return [
+            'abilities'    => explode(',', (string) config('gp247-config.api.auth.api_scope_user')),
+            'name'         => 'Client:' . $user->email . '- ' . now(),
+            'days'         => (int) ($request->remember_me
+                ? config('gp247-config.api.auth.api_remember')
+                : config('gp247-config.api.auth.api_token_expire_default')),
+            'refresh_days' => (int) config('gp247-config.api.auth.api_refresh_days', 30),
+        ];
+    }
 
     /**
      * Validate data input

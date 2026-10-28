@@ -2,51 +2,154 @@
 
 namespace GP247\Shop\Api\V2;
 
+use GP247\Core\Api\Support\ApiErrorResponder;
+use GP247\Core\Api\Support\ApiLoginThrottle;
+use GP247\Core\Api\Support\ApiRefreshTokens;
+use GP247\Core\Api\Support\ApiSessions;
+use GP247\Core\Api\Support\LoginChallenges;
 use GP247\Core\Api\V2\ApiQuery;
 use GP247\Shop\Api\Front\MemberAuthController;
 use GP247\Shop\Api\V2\Resources\ShopResources;
 use GP247\Shop\Models\ShopOrder;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Customer account of REST API v2 (api/v2/front): login/logout/profile and the
- * customer's own orders. Login rules (throttle, locked accounts, token lifetime) are
- * the v1 ones; only the envelope and shapes differ.
+ * Customer sign-in and sessions of REST API v2 (api/v2/front): login (optionally with a
+ * rotating refresh token), plugin sign-in challenge, refresh, logout of the whole session,
+ * "my sessions", and the customer's own orders. Credential rules (throttle, locked
+ * accounts, token lifetime) are the v1 ones; only the envelope and sessions differ.
  *
  * @aidlc-unit compat-foundation
- * @aidlc-story US-CMP-api-v2-contract
- * @aidlc-adr compat-foundation_rest-api-hardening
+ * @aidlc-story US-CMP-api-v2-contract, US-CMP-api-refresh-token-rotation, US-CMP-api-session-management, US-CMP-api-login-challenge-seam
+ * @aidlc-adr compat-foundation_api-token-rotation
  */
 class MemberController extends MemberAuthController
 {
+    private const AUDIENCE = 'customer';
+
     /**
+     * Sign in; `with_refresh: true` adds a refresh token and a short-lived access token.
+     *
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function login(Request $request)
     {
-        $response = parent::login($request);
+        $request->validate(['with_refresh' => 'boolean', 'device_name' => 'nullable|string|max:100']);
+        $user = $this->authenticate($request);
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
 
-        return $response->getStatusCode() === 200 ? response()->json(['data' => $response->getData(true)]) : $response;
+        $opts = $this->sessionOptions($user, $request);
+        if ($challenge = LoginChallenges::gate($user, self::AUDIENCE, $request, $opts)) {
+            return $challenge;
+        }
+        ApiLoginThrottle::succeeded($request, self::AUDIENCE, $this->throttleSubject($request));
+
+        return response()->json(['data' => ApiSessions::open($user, self::AUDIENCE, $request, $opts)]);
     }
 
     /**
-     * Revoke the current token (POST only in v2).
+     * Token options of a v2 sign-in of $user (also used right after register).
+     *
+     * @param \GP247\Shop\Models\ShopCustomer $user
+     * @param Request                         $request
+     * @return array
+     */
+    public function sessionOptions($user, Request $request): array
+    {
+        return $this->tokenOptions($user, $request) + [
+            'with_refresh' => $request->boolean('with_refresh'),
+            'device_name'  => $request->input('device_name'),
+        ];
+    }
+
+    /**
+     * Finish a sign-in that required a plugin challenge.
      *
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
+     */
+    public function challenge(Request $request)
+    {
+        $result = LoginChallenges::complete($request, self::AUDIENCE);
+        if ($result instanceof JsonResponse) {
+            return $result;
+        }
+        [$user, $opts] = $result;
+
+        return response()->json(['data' => ApiSessions::open($user, self::AUDIENCE, $request, $opts)]);
+    }
+
+    /**
+     * Exchange a refresh token for a new access + refresh pair.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function refresh(Request $request)
+    {
+        $result = ApiRefreshTokens::rotate($request, self::AUDIENCE);
+
+        return $result instanceof JsonResponse ? $result : response()->json(['data' => $result]);
+    }
+
+    /**
+     * Revoke the current session (access and refresh token); POST only in v2.
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+        $session = ApiSessions::forToken($token);
+        if ($session) {
+            ApiSessions::revoke($session, 'logout');
+        } else {
+            $token->delete();
+        }
+
+        return response()->json(['data' => ['revoked' => true]]);
+    }
+
+    /**
+     * Live API sessions of the signed-in customer.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function sessions(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json(['data' => ApiSessions::listFor($user, (int) $user->currentAccessToken()->id)]);
+    }
+
+    /**
+     * Revoke one of the signed-in customer's sessions.
+     *
+     * @param Request $request
+     * @param string  $id
+     * @return JsonResponse
+     */
+    public function revokeSession(Request $request, $id)
+    {
+        $session = ApiSessions::findFor($request->user(), (string) $id);
+        if (!$session) {
+            return ApiErrorResponder::notFound();
+        }
+        ApiSessions::revoke($session, 'user');
 
         return response()->json(['data' => ['revoked' => true]]);
     }
 
     /**
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function profile(Request $request)
     {
@@ -55,7 +158,7 @@ class MemberController extends MemberAuthController
 
     /**
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function orderList(Request $request)
     {
@@ -69,7 +172,7 @@ class MemberController extends MemberAuthController
     /**
      * @param Request $request
      * @param string  $id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function orderDetail(Request $request, $id)
     {

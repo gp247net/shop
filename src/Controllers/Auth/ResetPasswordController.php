@@ -116,14 +116,12 @@ class ResetPasswordController extends RootFrontController
      * @return void
      *
      * @aidlc-unit storefront
-     * @aidlc-story US-LW-customer-locked-login-block
+     * @aidlc-story US-LW-customer-locked-login-block, US-LW-password-change-revokes-api-sessions
      */
     protected function resetPassword($user, $password)
     {
-        $this->setUserPassword($user, $password);
-        $user->setRememberToken(\Illuminate\Support\Str::random(60));
-        $user->save();
-        event(new \Illuminate\Auth\Events\PasswordReset($user));
+        // Also revokes every API token of the customer (US-LW-password-change-revokes-api-sessions).
+        app(\GP247\Shop\Services\CustomerAccountService::class)->resetPassword($user, $password);
 
         if ((int) $user->status === 1) {
             $this->guard()->login($user);

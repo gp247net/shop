@@ -52,8 +52,13 @@ Route::group(
             ->name('customer.verify');
         $router->post('/email/verify', $customerController.'@resendVerification')
             ->name('customer.verify_resend');
-
-        $router->get('/email/verify/{id}/{token}', $customerController.'@verificationProcessData')
-        ->name('customer.verify_process');
     }
 );
+
+// WHY outside the `customer` group: the signed link must work without a web session,
+// for customers who registered from an app (US-LW-email-verify-signed-link). The
+// controller checks the signature, the id and the e-mail hash.
+Route::group(['prefix' => $prefixCustomer], function ($router) use ($customerController) {
+    $router->get('/email/verify/{id}/{token}', $customerController.'@verificationProcessData')
+        ->name('customer.verify_process');
+});

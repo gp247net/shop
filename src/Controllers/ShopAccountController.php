@@ -2,6 +2,7 @@
 namespace GP247\Shop\Controllers;
 
 
+use GP247\Shop\Services\CustomerAccountService;
 use GP247\Shop\Support\ShopLayoutPage;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Core\Models\AdminCountry;
@@ -129,8 +130,8 @@ class ShopAccountController extends RootFrontController
         if ($v->fails()) {
             return redirect()->back()->withErrors($v->errors());
         }
-        $dataUser->password = bcrypt($password);
-        $dataUser->save();
+        // Also signs the customer out of every API client (US-LW-password-change-revokes-api-sessions).
+        app(CustomerAccountService::class)->changePassword($dataUser, (string) $password_old, (string) $password);
 
         return redirect(gp247_route_front('customer.index'))
             ->with(['success' => gp247_language_render('customer.update_success')]);
@@ -205,8 +206,8 @@ class ShopAccountController extends RootFrontController
      */
     protected function validator(array $data)
     {
-        $dataMapp = $this->mappingValidatorEdit($data);
-        return Validator::make($data, $dataMapp['validate'], $dataMapp['messages']);
+        // WHY: one rule set for the form and API v2 member/profile (US-CMP-api-customer-profile).
+        return app(CustomerAccountService::class)->profileValidator(customer()->user(), $data);
     }
 
     /**
@@ -214,10 +215,7 @@ class ShopAccountController extends RootFrontController
      */
     protected function updateCustomer(array $data, string $cId)
     {
-        $dataMapp = $this->mappingValidatorEdit($data);
-        $user = ShopCustomer::updateInfo($dataMapp['dataUpdate'], $cId);
-
-        return $user;
+        return app(CustomerAccountService::class)->updateProfile(ShopCustomer::find($cId), $data);
     }
 
     /**
@@ -362,25 +360,16 @@ class ShopAccountController extends RootFrontController
             ->where('id', $id)
             ->first();
         
-        $dataMapp = gp247_customer_address_mapping($data);
-        $dataUpdate = $dataMapp['dataAddress'];
-        $validate = $dataMapp['validate'];
-        $messages = $dataMapp['messages'];
-
-        $v = Validator::make(
-            $dataUpdate,
-            $validate,
-            $messages
-        );
+        $service = app(CustomerAccountService::class);
+        $v = $service->addressValidator($data);
         if ($v->fails()) {
             return redirect()->back()->withErrors($v->errors());
         }
-
-        $address->update(gp247_clean($dataUpdate));
-
-        if (!empty($data['default'])) {
-            (new ShopCustomer)->find($customer->id)->update(['address_id' => $id]);
+        if (!$address) {
+            return $this->pageNotFound();
         }
+        $service->updateAddress($customer, $address, $data);
+
         return redirect(gp247_route_front('customer.address_list'))
             ->with(['success' => gp247_language_render('customer.update_success')]);
     }
@@ -412,10 +401,11 @@ class ShopAccountController extends RootFrontController
     public function deleteAddress()
     {
         $customer = customer()->user();
-        $id = request('id');
-        (new ShopCustomerAddress)->where('customer_id', $customer->id)
-            ->where('id', $id)
-            ->delete();
+        $service = app(CustomerAccountService::class);
+        $address = $service->findAddress($customer, (string) request('id'));
+        if ($address) {
+            $service->deleteAddress($customer, $address);
+        }
         return json_encode(['error' => 0, 'msg' => gp247_language_render('customer.delete_address_success')]);
     }
 
@@ -461,44 +451,38 @@ class ShopAccountController extends RootFrontController
     }
 
     /**
-     * Process Verification
+     * Verify the e-mail of customer {id} from the signed link sent by mail. Works with or
+     * without a web session: the URL signature, the id and the hash of the current
+     * e-mail prove the link; a session of another customer is refused. Never signs in.
      *
-     * @param [type] $id
-     * @param [type] $token
-     * @return void
+     * @param Request     $request
+     * @param string|null $id
+     * @param string|null $token sha1 of the e-mail the link was sent to.
+     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-email-verify-signed-link
      */
     public function verificationProcessData(Request $request, $id = null, $token = null)
     {
-        $arrMsg = [
-            'error' => 0,
-            'msg' => '',
-            'detail' => '',
-        ];
-        $customer = customer()->user();
-        if (!$customer) {
-            $arrMsg = [
-                'error' => 1,
-                'msg' => gp247_language_render('customer.verify_email.link_invalid'),
-            ];
-        } elseif ($customer->id != $id) {
-            $arrMsg = [
-                'error' => 1,
-                'msg' => gp247_language_render('customer.verify_email.link_invalid'),
-            ];
-        } elseif (sha1($customer->email) != $token) {
-            $arrMsg = [
-                'error' => 1,
-                'msg' => gp247_language_render('customer.verify_email.link_invalid'),
-            ];
-        }
         if (! $request->hasValidSignature()) {
             abort(401);
         }
-        if ($arrMsg['error']) {
-            return redirect(route('front.home'))->with(['error' => $arrMsg['msg']]);
-        } else {
-            $customer->update(['email_verified_at' => \Carbon\Carbon::now()]);
-            return redirect(gp247_route_front('customer.index'))->with(['message' => gp247_language_render('customer.verify_email.verify_success')]);
+        $current = customer()->user();
+        $customer = $id !== null ? ShopCustomer::find($id) : null;
+        $valid = $customer
+            && !empty($customer->email)
+            && hash_equals(sha1($customer->email), (string) $token)
+            && (!$current || (string) $current->id === (string) $customer->id);
+        if (!$valid) {
+            return redirect(gp247_route_front('front.home'))
+                ->with(['error' => gp247_language_render('customer.verify_email.link_invalid')]);
         }
+
+        if (!$customer->isVerified()) {
+            $customer->forceFill(['email_verified_at' => \Carbon\Carbon::now()])->save();
+        }
+        $target = $current ? gp247_route_front('customer.index') : gp247_route_front('customer.login');
+        return redirect($target)->with(['message' => gp247_language_render('customer.verify_email.verify_success')]);
     }
 }
