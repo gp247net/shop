@@ -9,6 +9,8 @@ use GP247\Core\Api\Support\ApiSessions;
 use GP247\Core\Api\Support\LoginChallenges;
 use GP247\Core\Api\V2\ApiQuery;
 use GP247\Shop\Api\Front\MemberAuthController;
+use GP247\Shop\Api\Middleware\CheckoutSessionBridge;
+use GP247\Shop\Api\Support\Commerce\ApiCartRepository;
 use GP247\Shop\Api\V2\Resources\ShopResources;
 use GP247\Shop\Models\ShopOrder;
 use Illuminate\Database\Eloquent\Builder;
@@ -49,7 +51,7 @@ class MemberController extends MemberAuthController
         }
         ApiLoginThrottle::succeeded($request, self::AUDIENCE, $this->throttleSubject($request));
 
-        return response()->json(['data' => ApiSessions::open($user, self::AUDIENCE, $request, $opts)]);
+        return response()->json(['data' => $this->withGuestCartMerged(ApiSessions::open($user, self::AUDIENCE, $request, $opts), $user, $request)]);
     }
 
     /**
@@ -81,7 +83,29 @@ class MemberController extends MemberAuthController
         }
         [$user, $opts] = $result;
 
-        return response()->json(['data' => ApiSessions::open($user, self::AUDIENCE, $request, $opts)]);
+        return response()->json(['data' => $this->withGuestCartMerged(ApiSessions::open($user, self::AUDIENCE, $request, $opts), $user, $request)]);
+    }
+
+    /**
+     * Merge the guest cart the app sent (`X-Cart-Token`) into the account cart of a customer
+     * who just signed in or registered, and report it as `cart_merge` (US-api-commerce-cart-merge-on-login).
+     *
+     * @param array                           $data     Sign-in answer.
+     * @param \GP247\Shop\Models\ShopCustomer $customer
+     * @param Request                         $request
+     * @return array
+     *
+     * @aidlc-unit api-commerce
+     * @aidlc-story US-api-commerce-cart-merge-on-login
+     */
+    protected function withGuestCartMerged(array $data, $customer, Request $request): array
+    {
+        $cartToken = (string) $request->header(CheckoutSessionBridge::CART_TOKEN_HEADER, '');
+        if ($cartToken !== '' && ($merge = (new ApiCartRepository())->mergeGuestInto($customer, $cartToken)) !== null) {
+            $data['cart_merge'] = $merge;
+        }
+
+        return $data;
     }
 
     /**

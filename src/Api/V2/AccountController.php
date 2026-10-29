@@ -47,7 +47,7 @@ class AccountController extends MemberController
 
         $data = ['customer' => ShopResources::profile($customer->fresh())]
             + ApiSessions::open($customer, 'customer', $request, $opts);
-        return response()->json(['data' => $data], 201);
+        return response()->json(['data' => $this->withGuestCartMerged($data, $customer, $request)], 201);
     }
 
     /**

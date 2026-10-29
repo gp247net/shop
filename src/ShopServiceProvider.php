@@ -140,6 +140,8 @@ class ShopServiceProvider extends ServiceProvider
             // middleware group on purpose (ADR shop-shipping_webhook-routing).
             $this->loadRoutesFrom(__DIR__.'/Routes/Webhook/shipping.php');
 
+            $this->registerApiCommerceRateLimiters();
+
             // REST API (v1 + v2) through the core seam, only once shop tables exist
             // (US-CMP-api-package-route-registration).
             foreach (array_merge(glob(__DIR__.'/Routes/Api/*.php'), glob(__DIR__.'/Routes/Api/v2/*.php')) as $apiRouteFile) {
@@ -458,6 +460,8 @@ class ShopServiceProvider extends ServiceProvider
         'customer.locked_logout' => \GP247\Shop\Middleware\CustomerLockedLogout::class,
         // Customer API: refuse tokens of customers locked after issue (US-LW-customer-locked-login-block)
         'api.customer.active' => \GP247\Shop\Api\Middleware\CustomerActive::class,
+        // Cart / checkout API: the owner's cart in a session that lives only for the request (api-commerce)
+        'api.commerce.session' => \GP247\Shop\Api\Middleware\CheckoutSessionBridge::class,
     ];
 
     /**
@@ -470,6 +474,29 @@ class ShopServiceProvider extends ServiceProvider
         return [
             'customer' => config('gp247-config.shop.middleware'),
         ];
+    }
+
+    /**
+     * Rate limits of the cart / checkout API, on top of the shared `gp247-api` limit.
+     * WHY keyed by credential: a shopper behind a shared IP (office, carrier NAT) must not
+     * throttle the others; the credential is hashed so it never lands in the cache store.
+     *
+     * @return void
+     *
+     * @aidlc-unit api-commerce
+     * @aidlc-story US-api-commerce-cart-items
+     */
+    protected function registerApiCommerceRateLimiters(): void
+    {
+        \Illuminate\Support\Facades\RateLimiter::for('gp247-api-cart', function (\Illuminate\Http\Request $request) {
+            $perMinute = max(1, (int) config('gp247-config.api.throttle.cart', 60));
+            $bearer = (string) $request->bearerToken();
+            $cartToken = (string) $request->header(\GP247\Shop\Api\Middleware\CheckoutSessionBridge::CART_TOKEN_HEADER, '');
+            $who = $bearer !== '' ? 'b:' . hash('sha256', $bearer)
+                : ($cartToken !== '' ? 'c:' . hash('sha256', $cartToken) : 'ip:' . $request->ip());
+
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute($perMinute)->by('cart|' . $who);
+        });
     }
 
     /**
