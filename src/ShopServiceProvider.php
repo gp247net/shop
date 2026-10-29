@@ -175,6 +175,10 @@ class ShopServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(__DIR__.'/Config/config.php', 'gp247-config');
+        // Cart storage of CartService; bindIf so a site or plugin can bind its own store first.
+        $this->app->bindIf(\GP247\Shop\Services\Cart\CartStore::class, \GP247\Shop\Services\Cart\SessionCartStore::class);
+        // Checkout state of the web (session keys read by plugins); bindIf so it can be replaced.
+        $this->app->bindIf(\GP247\Shop\Services\Checkout\CheckoutState::class, \GP247\Shop\Services\Checkout\SessionCheckoutState::class);
         if (file_exists(__DIR__.'/Library/Const.php')) {
             require_once(__DIR__.'/Library/Const.php');
         }

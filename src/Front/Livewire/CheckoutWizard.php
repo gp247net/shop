@@ -6,8 +6,9 @@ use GP247\Core\Models\AdminCountry;
 use GP247\Front\Livewire\BaseFrontComponent;
 use GP247\Shop\Front\Contracts\CheckoutTotalMethod;
 use GP247\Shop\Models\ShopAttributeGroup;
-use GP247\Shop\Models\ShopOrderTotal;
 use GP247\Shop\Services\CartItem;
+use GP247\Shop\Services\Checkout\CheckoutService;
+use GP247\Shop\Services\Checkout\CheckoutState;
 use GP247\Shop\Shipping\Data\RateRequest;
 use GP247\Shop\Shipping\Data\RateSnapshot;
 use GP247\Shop\Shipping\RateRequestFactory;
@@ -134,39 +135,10 @@ class CheckoutWizard extends BaseFrontComponent
             return;
         }
 
-        $address = $customer->getAddressDefault();
-        if ($address) {
-            $this->first_name      = (string) ($address->first_name      ?? '');
-            $this->last_name       = (string) ($address->last_name       ?? '');
-            $this->first_name_kana = (string) ($address->first_name_kana ?? '');
-            $this->last_name_kana  = (string) ($address->last_name_kana  ?? '');
-            $this->email           = (string) ($customer->email          ?? '');
-            $this->phone           = (string) ($address->phone           ?? '');
-            $this->city            = (string) ($address->city            ?? '');
-            $this->district        = (string) ($address->district        ?? '');
-            $this->ward            = (string) ($address->ward            ?? '');
-            $this->address1        = (string) ($address->address1        ?? '');
-            $this->address2        = (string) ($address->address2        ?? '');
-            $this->address3        = (string) ($address->address3        ?? '');
-            $this->postcode        = (string) ($address->postcode        ?? '');
-            $this->country         = (string) ($address->country         ?? '');
-            $this->company         = (string) ($customer->company        ?? '');
-        } else {
-            $this->first_name      = (string) ($customer->first_name      ?? '');
-            $this->last_name       = (string) ($customer->last_name       ?? '');
-            $this->first_name_kana = (string) ($customer->first_name_kana ?? '');
-            $this->last_name_kana  = (string) ($customer->last_name_kana  ?? '');
-            $this->email           = (string) ($customer->email           ?? '');
-            $this->phone           = (string) ($customer->phone           ?? '');
-            $this->city            = (string) ($customer->city            ?? '');
-            $this->district        = (string) ($customer->district        ?? '');
-            $this->ward            = (string) ($customer->ward            ?? '');
-            $this->address1        = (string) ($customer->address1        ?? '');
-            $this->address2        = (string) ($customer->address2        ?? '');
-            $this->address3        = (string) ($customer->address3        ?? '');
-            $this->postcode        = (string) ($customer->postcode        ?? '');
-            $this->country         = (string) ($customer->country         ?? '');
-            $this->company         = (string) ($customer->company         ?? '');
+        $address = $this->checkoutService()->defaultAddress($customer);
+        foreach (['first_name', 'last_name', 'first_name_kana', 'last_name_kana', 'email', 'phone', 'city', 'district',
+            'ward', 'address1', 'address2', 'address3', 'postcode', 'country', 'company'] as $field) {
+            $this->{$field} = (string) ($address[$field] ?? '');
         }
     }
 
@@ -239,7 +211,7 @@ class CheckoutWizard extends BaseFrontComponent
             }
         }
         // WHY: processDataTotal() reads session('shippingMethod') — must be set before confirm render.
-        session(['shippingMethod' => $this->pluginKeyOf($this->shippingMethod)]);
+        $this->checkoutState()->setShippingMethod($this->pluginKeyOf($this->shippingMethod));
     }
 
     /**
@@ -294,7 +266,7 @@ class CheckoutWizard extends BaseFrontComponent
     {
         return RateRequestFactory::fromCheckout(
             $this->addressBlock(),
-            (array) (session('dataCheckout') ?? []),
+            (array) ($this->checkoutState()->lines() ?? []),
             ShippingCheckout::storeId(),
             $this->paymentMethod,
         );
@@ -335,6 +307,35 @@ class CheckoutWizard extends BaseFrontComponent
     }
 
     /**
+     * Checkout state of this request (the session on the web).
+     *
+     * WHY a method, not a property: Livewire would try to serialise a public property
+     * into the component snapshot.
+     *
+     * @return CheckoutState
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-006
+     */
+    private function checkoutState(): CheckoutState
+    {
+        return app(CheckoutState::class);
+    }
+
+    /**
+     * Checkout rules working on this request's checkout state (method, not property: see checkoutState()).
+     *
+     * @return CheckoutService
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-006
+     */
+    private function checkoutService(): CheckoutService
+    {
+        return app(CheckoutService::class);
+    }
+
+    /**
      * Restore a checkout already committed to session and land on the confirm step.
      *
      * WHY the fields are copied back: the confirm step prints the address from THIS
@@ -351,9 +352,9 @@ class CheckoutWizard extends BaseFrontComponent
      */
     private function resumeCommittedCheckout(): bool
     {
-        $address = session('shippingAddress');
+        $address = $this->checkoutState()->shippingAddress();
 
-        if (session('step', '') !== 'checkout.confirm' || !is_array($address) || $address === []) {
+        if ($this->checkoutState()->step() !== 'checkout.confirm' || !is_array($address) || $address === []) {
             return false;
         }
 
@@ -366,14 +367,14 @@ class CheckoutWizard extends BaseFrontComponent
             $this->{$field} = (string) ($address[$field] ?? '');
         }
 
-        $this->shippingMethod  = (string) (session('shippingMethod') ?? '');
+        $this->shippingMethod  = (string) ($this->checkoutState()->shippingMethod() ?? '');
         $chosen = ShippingCheckout::snapshot();
         if ($chosen !== null && $chosen->pluginKey === $this->shippingMethod) {
             $this->shippingMethod = $chosen->rateId;
             $this->shippingRates = [$chosen->rateId => $chosen->toArray()];
         }
-        $this->paymentMethod   = (string) (session('paymentMethod') ?? '');
-        $this->address_process = (string) (session('address_process') ?? '');
+        $this->paymentMethod   = (string) ($this->checkoutState()->paymentMethod() ?? '');
+        $this->address_process = (string) ($this->checkoutState()->addressProcess() ?? '');
         $this->step = 'confirm';
 
         return true;
@@ -448,7 +449,7 @@ class CheckoutWizard extends BaseFrontComponent
             $this->commitToSession();
         } else {
             // Persist early so processDataTotal() can read it on confirm.
-            session(['shippingMethod' => $this->pluginKeyOf($this->shippingMethod)]);
+            $this->checkoutState()->setShippingMethod($this->pluginKeyOf($this->shippingMethod));
         }
         $this->step = $next;
     }
@@ -486,28 +487,27 @@ class CheckoutWizard extends BaseFrontComponent
     {
         $c = fn(string $v): string => (string) gp247_clean(data: $v, hight: true);
 
-        session([
-            'shippingMethod'  => $c($this->pluginKeyOf($this->shippingMethod)),
-            'paymentMethod'   => $c($this->paymentMethod),
-            'address_process' => $c($this->address_process),
-            'shippingAddress' => [
-                'first_name'      => $c($this->first_name),
-                'last_name'       => $c($this->last_name),
-                'first_name_kana' => $c($this->first_name_kana),
-                'last_name_kana'  => $c($this->last_name_kana),
-                'email'           => $c($this->email),
-                'phone'           => $c($this->phone),
-                'city'            => $c($this->city),
-                'district'        => $c($this->district),
-                'ward'            => $c($this->ward),
-                'address1'        => $c($this->address1),
-                'address2'        => $c($this->address2),
-                'address3'        => $c($this->address3),
-                'postcode'        => $c($this->postcode),
-                'country'         => $c($this->country),
-                'company'         => $c($this->company),
-                'comment'         => $c($this->comment),
-            ],
+        $state = $this->checkoutState();
+        $state->setShippingMethod($c($this->pluginKeyOf($this->shippingMethod)));
+        $state->setPaymentMethod($c($this->paymentMethod));
+        $state->setAddressProcess($c($this->address_process));
+        $state->setShippingAddress([
+            'first_name'      => $c($this->first_name),
+            'last_name'       => $c($this->last_name),
+            'first_name_kana' => $c($this->first_name_kana),
+            'last_name_kana'  => $c($this->last_name_kana),
+            'email'           => $c($this->email),
+            'phone'           => $c($this->phone),
+            'city'            => $c($this->city),
+            'district'        => $c($this->district),
+            'ward'            => $c($this->ward),
+            'address1'        => $c($this->address1),
+            'address2'        => $c($this->address2),
+            'address3'        => $c($this->address3),
+            'postcode'        => $c($this->postcode),
+            'country'         => $c($this->country),
+            'company'         => $c($this->company),
+            'comment'         => $c($this->comment),
         ]);
 
         // WHY: processDataTotal() depends on session('shippingMethod') being set.
@@ -527,16 +527,10 @@ class CheckoutWizard extends BaseFrontComponent
      */
     private function recomputeTotals(): void
     {
-        $objects = ShopOrderTotal::getObjectOrderTotal();
-        session(['dataTotal' => ShopOrderTotal::processDataTotal($objects)]);
-
-        // Stamp one idempotency token for this checkout session (mirrors the plain
-        // controller confirm step). Both paths guard on absence, so whichever runs
-        // first stamps and the other no-ops; prepareCheckout()/clearSession() rotate
-        // it (US-LW-checkout-idempotency, ADR storefront_checkout-idempotency).
-        if (!session('checkoutToken')) {
-            session(['checkoutToken' => gp247_token(32)]);
-        }
+        // Also stamps the idempotency token of this checkout session (same call as the plain
+        // controller confirm step); prepareCheckout()/clearSession() rotate it
+        // (US-LW-checkout-idempotency, ADR storefront_checkout-idempotency).
+        $this->checkoutService()->recomputeTotals();
     }
 
     /**
@@ -612,18 +606,7 @@ class CheckoutWizard extends BaseFrontComponent
      */
     private function resolveTotalPlugin(string $key): ?CheckoutTotalMethod
     {
-        $key     = (string) gp247_clean(data: $key, hight: true);
-        $modules = $this->activeTotalMethodPlugins();
-        if (!array_key_exists($key, $modules)) {
-            return null;
-        }
-
-        $class = gp247_extension_get_namespace(type: 'Plugins', key: $key) . '\AppConfig';
-        if (!class_exists($class) || !is_subclass_of($class, CheckoutTotalMethod::class)) {
-            return null;
-        }
-
-        return new $class;
+        return $this->checkoutService()->totalPlugin($key);
     }
 
     /**
@@ -703,11 +686,11 @@ class CheckoutWizard extends BaseFrontComponent
             'shippingPlugins' => $this->loadShippingPlugins(),
             'paymentPlugins'  => $this->loadPaymentPlugins(),
             'totalPlugins'    => $this->step === 'confirm' ? $this->loadTotalPlugins() : [],
-            'dataTotal'       => $this->step === 'confirm' ? (session('dataTotal') ?? []) : [],
+            'dataTotal'       => $this->step === 'confirm' ? ($this->checkoutState()->totals() ?? []) : [],
             // WHY: session('dataCheckout') comes back as plain arrays instead of
             // CartItem instances when session.serialization = json; rehydrate so
             // the view can keep using $item->id/$item->options etc.
-            'cartItems'       => $cartItems = collect(session('dataCheckout') ?? [])->map(fn ($item) => CartItem::hydrate($item)),
+            'cartItems'       => $cartItems = collect($this->checkoutState()->lines() ?? [])->map(fn ($item) => CartItem::hydrate($item)),
             // WHY: CartItem has no `price` property and stores options as raw
             // "name__add_price" strings, so the confirm view cannot render a
             // per-line price or a formatted attribute from it directly (bug:

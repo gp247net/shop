@@ -6,6 +6,8 @@ use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use GP247\Shop\Models\ShopCart;
+use GP247\Shop\Services\Cart\CartStore;
+use GP247\Shop\Services\Cart\SessionCartStore;
 use Carbon\Carbon;
 
 class CartService
@@ -20,11 +22,20 @@ class CartService
     private $instance;
 
     /**
+     * Where the cart contents are kept (the session for the web).
+     *
+     * @var CartStore
+     */
+    private $store;
+
+    /**
      * Cart constructor.
      *
+     * @param CartStore|null $store Cart storage; defaults to the bound CartStore (the session).
      */
-    public function __construct()
+    public function __construct(?CartStore $store = null)
     {
+        $this->store = $store ?? (app()->bound(CartStore::class) ? app(CartStore::class) : new SessionCartStore());
         $this->instance(self::DEFAULT_INSTANCE);
     }
 
@@ -72,7 +83,7 @@ class CartService
 
         $content->put($cartItem->rowId, $cartItem);
 
-        session([$this->instance => $content]);
+        $this->store->put($this->instance, $content);
 
         if (customer()->user()) {
             $userId = customer()->user()->id;
@@ -112,7 +123,7 @@ class CartService
         $content = $this->getContent();
         $content->put($cartItem->rowId, $cartItem);
 
-        session([$this->instance => $content]);
+        $this->store->put($this->instance, $content);
 
         if (customer()->user()) {
             $userId = customer()->user()->id;
@@ -136,7 +147,7 @@ class CartService
 
         $content->pull($cartItem->rowId);
 
-        session([$this->instance => $content]);
+        $this->store->put($this->instance, $content);
 
         if (customer()->user()) {
             $userId = customer()->user()->id;
@@ -168,7 +179,7 @@ class CartService
      */
     public function destroy()
     {
-        session()->forget($this->instance);
+        $this->store->forget($this->instance);
         if (customer()->user()) {
             $userId = customer()->user()->id;
             $this->_updateDatabase($userId);
@@ -260,7 +271,7 @@ class CartService
 
         $content->put($cartItem->rowId, $cartItem);
 
-        session([$this->instance => $content]);
+        $this->store->put($this->instance, $content);
     }
 
     /**
@@ -326,8 +337,8 @@ class CartService
      */
     protected function getContent()
     {
-        $content = session()->has($this->instance)
-        ? session()->get($this->instance)
+        $content = $this->store->has($this->instance)
+        ? $this->store->get($this->instance)
         : new Collection;
 
         // WHY: stale/legacy session payloads may hold a plain array instead of
@@ -521,7 +532,7 @@ class CartService
             }
 
             // Update session with merged content
-            session([$this->instance => $mergedContent]);
+            $this->store->put($this->instance, $mergedContent);
             
             // Update database
             $this->_updateDatabase($userId);

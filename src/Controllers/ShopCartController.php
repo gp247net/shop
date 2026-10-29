@@ -9,17 +9,18 @@ use GP247\Core\Models\AdminCountry;
 use GP247\Shop\Models\ShopOrder;
 use GP247\Shop\Models\ShopOrderTotal;
 use GP247\Shop\Models\ShopProduct;
-use GP247\Shop\Models\ShopCustomer;
-use GP247\Shop\Models\ShopCustomerAddress;
 use GP247\Shop\Services\CartService as Cart;
+use GP247\Shop\Services\Checkout\CheckoutContext;
+use GP247\Shop\Services\Checkout\CheckoutService;
+use GP247\Shop\Services\Checkout\PlaceOrderResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ShopCartController extends RootFrontController
 {
-    const ORDER_STATUS_NEW = 1;
-    const PAYMENT_UNPAID   = 1;
-    const SHIPPING_NOTSEND = 1;
+    const ORDER_STATUS_NEW = CheckoutService::ORDER_STATUS_NEW;
+    const PAYMENT_UNPAID   = CheckoutService::PAYMENT_UNPAID;
+    const SHIPPING_NOTSEND = CheckoutService::SHIPPING_NOTSEND;
 
     public function __construct()
     {
@@ -91,7 +92,7 @@ class ShopCartController extends RootFrontController
         // Starting a checkout afresh from the cart drops any previous idempotency
         // token, so a genuinely new order gets a new token (the confirm step stamps
         // it) — US-LW-checkout-idempotency.
-        session()->forget('checkoutToken');
+        $this->checkoutState()->forgetToken();
         // A new checkout starts without a previously quoted shipping rate (US-shop-shipping-rate-snapshot).
         \GP247\Shop\Shipping\ShippingCheckout::forget();
 
@@ -140,20 +141,14 @@ class ShopCartController extends RootFrontController
             // with different attributes are summed under the product id.
             $arrCheckQty[$row->id] = ($arrCheckQty[$row->id] ?? 0) + $qtyUpdate;
         }
-        $arrProductMinimum = ShopProduct::whereIn('id', array_keys($arrCheckQty))->pluck('minimum', 'id')->all();
-        $arrErrorQty = [];
-        foreach ($arrProductMinimum as $pId => $min) {
-            if ($arrCheckQty[$pId] < $min) {
-                $arrErrorQty[$pId] = $min;
-            }
-        }
+        $arrErrorQty = $this->checkoutService()->minimumShortfall($arrCheckQty);
         if (count($arrErrorQty)) {
             return redirect(gp247_route_front('cart'))->with(['arrErrorQty' => $arrErrorQty, 'error'=> gp247_language_render('cart.have_error')]);
         }
         //End check minimum
 
         //Set session
-        session(['storeCheckout' => $storeId]);
+        $this->checkoutState()->setStoreId($storeId);
 
         return redirect(gp247_route_front('checkout'));
     }
@@ -190,29 +185,6 @@ class ShopCartController extends RootFrontController
 
 
     /**
-     * Tell whether any cart line carries a quantity the cart quantity rule refuses.
-     *
-     * @param iterable $lines Cart lines (CartItem, or plain arrays from a JSON session).
-     * @return bool True when at least one line has an invalid quantity.
-     *
-     * @aidlc-unit storefront
-     * @aidlc-story US-LW-cart-qty-positive
-     * @aidlc-adr storefront_cart-quantity-positive-invariant
-     */
-    private function hasInvalidCartQuantity(iterable $lines): bool
-    {
-        foreach ($lines as $line) {
-            $line = \GP247\Shop\Services\CartItem::hydrate($line);
-            if (!\GP247\Shop\Services\CartItem::isValidQuantity($line->qty)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-
-    /**
      * Process front checkout screen
      *
      * Step 03.1
@@ -239,7 +211,7 @@ class ShopCartController extends RootFrontController
      */
     private function _getCheckout()
     {
-        $storeCheckout = session('storeCheckout') ?? '';
+        $storeCheckout = $this->checkoutState()->storeId() ?? '';
         if (!$storeCheckout) {
             return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'storeCheckout'])]);
         }
@@ -252,115 +224,21 @@ class ShopCartController extends RootFrontController
         }
         // Lines are checked before the totals are: totals computed from a negative
         // line still "agree" with each other (US-LW-cart-qty-positive).
-        if ($this->hasInvalidCartQuantity($dataCheckout)) {
+        $service = $this->checkoutService();
+        if ($service->hasInvalidQuantity($dataCheckout)) {
             return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.have_error')]);
         }
         //Set session dataCheckout
-        session(['dataCheckout' => $dataCheckout]);
+        $this->checkoutState()->setLines($dataCheckout);
 
-        //Shipping
-        $moduleShipping = gp247_extension_get_via_code(code: 'shipping');
-        $sourcesShipping = gp247_extension_get_all_local(type: 'Plugins');
-        $shippingMethod = [];
-        foreach ($moduleShipping as $module) {
-            if (array_key_exists($module['key'], $sourcesShipping)) {
-                $moduleClass = gp247_extension_get_namespace(type:'Plugins', key: $module['key']);
-                $moduleClass = $moduleClass . '\AppConfig';
-                if (class_exists($moduleClass)) {
-                    // Check function processData   
-                    if (method_exists($moduleClass, 'getInfo')) {
-                        $shippingMethod[$module['key']] = (new $moduleClass)->getInfo();
-                    }
-                }
-            }
-        }
-
-        //Payment
-        $modulePayment = gp247_extension_get_via_code(code: 'payment');
-        $sourcesPayment = gp247_extension_get_all_local(type: 'Plugins');
-        $paymentMethod = array();
-        foreach ($modulePayment as $module) {
-            if (array_key_exists($module['key'], $sourcesPayment)) {
-                $moduleClass = $sourcesPayment[$module['key']].'\AppConfig';
-                $paymentMethod[$module['key']] = (new $moduleClass)->getInfo();
-            }
-        }
-
+        $shippingMethod = $service->availableShippingMethods();
+        $paymentMethod  = $service->availablePaymentMethods();
         //Total — dual-read Promotion ∪ legacy Total (mod 20260904T225634), shared seam.
-        $moduleTotal = gp247_shop_total_method_modules();
-        $sourcesTotal = gp247_extension_get_all_local(type: 'Plugins');
-        $totalMethod = array();
-        foreach ($moduleTotal as $module) {
-            if (array_key_exists($module['key'], $sourcesTotal)) {
-                $moduleClass = $sourcesTotal[$module['key']].'\AppConfig';
-                $totalMethod[$module['key']] = (new $moduleClass)->getInfo();
-            }
-        }
+        $totalMethod    = $service->availableTotalMethods();
 
         // Shipping address
         $customer = customer()->user();
-        if ($customer) {
-            $address = $customer->getAddressDefault();
-            if ($address) {
-                $addressDefaul = [
-                    'first_name'      => $address->first_name,
-                    'last_name'       => $address->last_name,
-                    'first_name_kana' => $address->first_name_kana,
-                    'last_name_kana'  => $address->last_name_kana,
-                    'email'           => $customer->email,
-                    'city'            => $address->city,
-                    'district'        => $address->district,
-                    'ward'        => $address->ward,
-                    'address1'        => $address->address1,
-                    'address2'        => $address->address2,
-                    'address3'        => $address->address3,
-                    'postcode'        => $address->postcode,
-                    'company'         => $customer->company,
-                    'country'         => $address->country,
-                    'phone'           => $address->phone,
-                    'comment'         => '',
-                ];
-            } else {
-                $addressDefaul = [
-                    'first_name'      => $customer->first_name,
-                    'last_name'       => $customer->last_name,
-                    'first_name_kana' => $customer->first_name_kana,
-                    'last_name_kana'  => $customer->last_name_kana,
-                    'email'           => $customer->email,
-                    'city'            => $customer->city,
-                    'district'        => $customer->district,
-                    'ward'        => $customer->ward,
-                    'address1'        => $customer->address1,
-                    'address2'        => $customer->address2,
-                    'address3'        => $customer->address3,
-                    'postcode'        => $customer->postcode,
-                    'company'         => $customer->company,
-                    'country'         => $customer->country,
-                    'phone'           => $customer->phone,
-                    'comment'         => '',
-                ];
-            }
-        } else {
-            $addressDefaul = [
-                'first_name'      => '',
-                'last_name'       => '',
-                'first_name_kana' => '',
-                'last_name_kana'  => '',
-                'postcode'        => '',
-                'company'         => '',
-                'email'           => '',
-                'city'            => '',
-                'district'        => '',
-                'ward'        => '',
-                'address1'        => '',
-                'address2'        => '',
-                'address3'        => '',
-                'country'         => '',
-                'phone'           => '',
-                'comment'         => '',
-            ];
-        }
-        $shippingAddress = session('shippingAddress') ?? $addressDefaul;
+        $shippingAddress = $this->checkoutState()->shippingAddress() ?? $service->defaultAddress($customer);
         $objects = ShopOrderTotal::getObjectOrderTotal();
 
         //Process captcha
@@ -404,8 +282,8 @@ class ShopCartController extends RootFrontController
      */
     public function processCheckout()
     {
-        $dataCheckout  = session('dataCheckout') ?? '';
-        $storeCheckout = session('storeCheckout') ?? '';
+        $dataCheckout  = $this->checkoutState()->lines() ?? '';
+        $storeCheckout = $this->checkoutState()->storeId() ?? '';
         //If cart info empty
         if (!$dataCheckout || !$storeCheckout) {
             return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.cart_empty')]);
@@ -444,57 +322,40 @@ class ShopCartController extends RootFrontController
 
         //Set session shippingMethod
         if (gp247_config('use_shipping')) {
-            session(['shippingMethod' => request('shippingMethod')]);
+            $this->checkoutState()->setShippingMethod(request('shippingMethod'));
         }
 
         //Set session paymentMethod
         if (gp247_config('use_payment')) {
-            session(['paymentMethod' => request('paymentMethod')]);
+            $this->checkoutState()->setPaymentMethod(request('paymentMethod'));
         }
 
         //Set session address process
-        session(['address_process' => request('address_process')]);
+        $this->checkoutState()->setAddressProcess(request('address_process'));
         
-        //Set session shippingAddressshippingAddress
-        session(
-            [
-                'shippingAddress' => [
-                    'first_name'      => request('first_name'),
-                    'last_name'       => request('last_name'),
-                    'first_name_kana' => request('first_name_kana'),
-                    'last_name_kana'  => request('last_name_kana'),
-                    'email'           => request('email'),
-                    'country'         => request('country'),
-                    'city'            => request('city'),
-                    'district'        => request('district'),
-                    'ward'            => request('ward'),
-                    'address1'        => request('address1'),
-                    'address2'        => request('address2'),
-                    'address3'        => request('address3'),
-                    'phone'           => request('phone'),
-                    'postcode'        => request('postcode'),
-                    'company'         => request('company'),
-                    'comment'         => request('comment'),
-                ],
-            ]
-        );
+        //Set session shippingAddress
+        $this->checkoutState()->setShippingAddress([
+            'first_name'      => request('first_name'),
+            'last_name'       => request('last_name'),
+            'first_name_kana' => request('first_name_kana'),
+            'last_name_kana'  => request('last_name_kana'),
+            'email'           => request('email'),
+            'country'         => request('country'),
+            'city'            => request('city'),
+            'district'        => request('district'),
+            'ward'            => request('ward'),
+            'address1'        => request('address1'),
+            'address2'        => request('address2'),
+            'address3'        => request('address3'),
+            'phone'           => request('phone'),
+            'postcode'        => request('postcode'),
+            'company'         => request('company'),
+            'comment'         => request('comment'),
+        ]);
 
         //Check minimum
-        $arrCheckQty = [];
-        $cart = $dataCheckout;
-        foreach ($cart as $key => $row) {
-            // WHY: read straight from session('dataCheckout'), which comes back as a
-            // plain array (not a CartItem) when session.serialization = json.
-            $row = \GP247\Shop\Services\CartItem::hydrate($row);
-            $arrCheckQty[$row->id] = ($arrCheckQty[$row->id] ?? 0) + $row->qty;
-        }
-        $arrProductMinimum = ShopProduct::whereIn('id', array_keys($arrCheckQty))->pluck('minimum', 'id')->all();
-        $arrErrorQty = [];
-        foreach ($arrProductMinimum as $pId => $min) {
-            if ($arrCheckQty[$pId] < $min) {
-                $arrErrorQty[$pId] = $min;
-            }
-        }
+        $service = $this->checkoutService();
+        $arrErrorQty = $service->minimumShortfall($service->qtyByProduct($dataCheckout));
         if (count($arrErrorQty)) {
             return redirect(gp247_route_front('cart'))->with(['arrErrorQty' => $arrErrorQty, 'error'=> gp247_language_render('cart.have_error')]);
         }
@@ -533,25 +394,25 @@ class ShopCartController extends RootFrontController
     {
         //Check shipping address
         if (
-            !session('shippingAddress')
+            !$this->checkoutState()->shippingAddress()
         ) {
             return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'shippingAddress'])]);
         }
-        $shippingAddress = session('shippingAddress');
+        $shippingAddress = $this->checkoutState()->shippingAddress();
 
 
         //Shipping method
         $shippingMethodData  =  null;
         if (gp247_config('use_shipping')) {
-            if (!session('shippingMethod')) {
+            if (!$this->checkoutState()->shippingMethod()) {
                 return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'shippingMethod'])]);
             }
 
-            if (!gp247_config(session('shippingMethod'))) {
+            if (!gp247_config($this->checkoutState()->shippingMethod())) {
                 return redirect(gp247_route_front('cart'))->with(['error' => 'Plugin shipping invalid!']);
             }
 
-            $shippingMethod = session('shippingMethod');
+            $shippingMethod = $this->checkoutState()->shippingMethod();
             $classShippingMethod = gp247_extension_get_namespace(type: 'Plugins', key: $shippingMethod);
             $classShippingMethod = $classShippingMethod . '\AppConfig';
             if (class_exists($classShippingMethod)) {
@@ -562,15 +423,15 @@ class ShopCartController extends RootFrontController
         //Payment method
         $paymentMethodData = null;
         if (gp247_config('use_payment')) {
-            if (!session('paymentMethod')) {
+            if (!$this->checkoutState()->paymentMethod()) {
                 return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'paymentMethod'])]);
             }
             
-            if (!gp247_config(session('paymentMethod'))) {
+            if (!gp247_config($this->checkoutState()->paymentMethod())) {
                 return redirect(gp247_route_front('cart'))->with(['error' => 'Plugin payment invalid!']);
             }
             
-            $paymentMethod = session('paymentMethod');
+            $paymentMethod = $this->checkoutState()->paymentMethod();
             $classPaymentMethod = gp247_extension_get_namespace(type: 'Plugins', key: $paymentMethod);
             $classPaymentMethod = $classPaymentMethod . '\AppConfig';
             if (class_exists($classPaymentMethod)) {
@@ -580,24 +441,15 @@ class ShopCartController extends RootFrontController
 
         
         //Screen confirm only active if submit from screen checkout
-        if (session('step', '') != 'checkout.confirm') {
+        if ($this->checkoutState()->step() != 'checkout.confirm') {
             return redirect(gp247_route_front('checkout'));
         }
 
-        $objects = ShopOrderTotal::getObjectOrderTotal();
-        $dataTotal = ShopOrderTotal::processDataTotal($objects);
-
-        //Set session dataTotal
-        session(['dataTotal' => $dataTotal]);
-
-        // Stamp one idempotency token per checkout session. addOrder() maps it to at
-        // most one order (unique index on shop_order.checkout_token), so a Back /
-        // refresh / double-click cannot create a second order. Rotated whenever the
+        // Totals kept for addOrder() + one idempotency token per checkout session, so a
+        // Back / refresh / double-click cannot create a second order. Rotated whenever the
         // cart or checkout is redone (see prepareCheckout / clearSession)
         // (US-LW-checkout-idempotency, ADR storefront_checkout-idempotency).
-        if (!session('checkoutToken')) {
-            session(['checkoutToken' => gp247_token(32)]);
-        }
+        $dataTotal = $this->checkoutService()->recomputeTotals();
 
         $subPath = 'screen.shop_checkout_confirm';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
@@ -616,7 +468,7 @@ class ShopCartController extends RootFrontController
         // CheckoutWizard::mount() resumes on confirm with their answers intact.
         // reflash() carries the 'price changed, please review' notice across.
         if (!view()->exists($view)) {
-            session(['step' => 'checkout.confirm']);
+            $this->checkoutState()->markConfirmStep();
             session()->reflash();
 
             return redirect(gp247_route_front('checkout'));
@@ -627,7 +479,7 @@ class ShopCartController extends RootFrontController
             $view,
             [
                 'title'              => gp247_language_render('checkout.page_title'),
-                'cartItem'           => session('dataCheckout'),
+                'cartItem'           => $this->checkoutState()->lines(),
                 'dataTotal'          => $dataTotal,
                 'paymentMethodData'  => $paymentMethodData,
                 'shippingMethodData' => $shippingMethodData,
@@ -650,264 +502,12 @@ class ShopCartController extends RootFrontController
      */
     public function addOrder(Request $request)
     {
-        $agent = new \Jenssegers\Agent\Agent();
-        $customer = customer()->user();
-        $uID = $customer->id ?? 0;
-
-        //if cart empty
-        if (count(session('dataCheckout', collect([]))) == 0) {
-            return redirect(gp247_route_front('front.home'))->with(['error' => gp247_language_render('cart.item_empty', ['item' => 'dataCheckout'])]);
-        }
-        //Not allow for guest
-        if (!gp247_config('shop_allow_guest') && !$customer) {
-            return redirect(gp247_route_front('customer.login'));
-        } //
-
-        // Idempotency guard (US-LW-checkout-idempotency, ADR storefront_checkout-idempotency):
-        // the confirm step stamped a token; without it this POST did not come through the
-        // proper flow, so send the customer back to the cart (this also replaces the old,
-        // missing session('step') check). If the token already maps to an order — a Back /
-        // refresh / double-click, especially after a gateway redirect left the session
-        // intact — replay that order's success page instead of creating a second order.
-        $checkoutToken = session('checkoutToken');
-        if (empty($checkoutToken)) {
-            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'checkout'])]);
-        }
-        $existingOrder = ShopOrder::where('checkout_token', $checkoutToken)->first();
-        if ($existingOrder) {
-            session(['orderID' => $existingOrder->id]);
-            return redirect(gp247_route_front('order.success'))->with(['orderID' => $existingOrder->id]);
+        $result = $this->checkoutService()->placeOrder(CheckoutContext::fromRequest($request));
+        if (!$result->isPlaced()) {
+            return $this->placeOrderRedirect($result);
         }
 
-        $data = request()->all();
-        if (!$data) {
-            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_empty', ['item' => 'data'])]);
-        } else {
-            $dataTotal       = session('dataTotal') ?? [];
-            $shippingAddress = session('shippingAddress') ?? [];
-            $paymentMethod   = session('paymentMethod') ?? '';
-            $shippingMethod  = session('shippingMethod') ?? '';
-            $address_process = session('address_process') ?? '';
-            $storeCheckout   = session('storeCheckout') ?? '';
-            $dataCheckout    = session('dataCheckout') ?? '';
-        }
-
-        // WHY again at submit: a dataCheckout staged before the positive-quantity rule
-        // shipped can outlive the deploy, and the total-freshness check below cannot
-        // see a bad line because both totals derive from it (US-LW-cart-qty-positive).
-        if ($this->hasInvalidCartQuantity($dataCheckout)) {
-            return redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.have_error')]);
-        }
-
-        // Recompute the totals fresh at submit and compare with what the confirm step
-        // showed. The lines below are re-priced live from the DB, so if a price /
-        // promotion / tax changed between confirm and submit the header would otherwise
-        // be filed from a stale snapshot and the customer charged a figure they never
-        // saw (RISK-BIZ-price-change-mid-checkout, US-LW-checkout-total-freshness). On a
-        // mismatch beyond a rounding tolerance, send them back to re-confirm the new
-        // price rather than proceed.
-        // A carrier of the shipping layer that cannot price this parcel refuses the order
-        // instead of billing nothing (US-shop-shipping-rate-snapshot, review 2026-10-17).
-        if (gp247_config('use_shipping') && \GP247\Shop\Shipping\ShippingCheckout::isUnquotable((string) $shippingMethod)) {
-            return redirect(gp247_route_front('checkout'))
-                ->with(['error' => gp247_language_render('cart.shipping_rate_none')]);
-        }
-
-        $freshDataTotal = ShopOrderTotal::processDataTotal(ShopOrderTotal::getObjectOrderTotal());
-        $displayedTotal = (new ShopOrderTotal)->sumValueTotal('total', $dataTotal);
-        $freshTotal     = (new ShopOrderTotal)->sumValueTotal('total', $freshDataTotal);
-        if (abs((float) $freshTotal - (float) $displayedTotal) > 0.01) {
-            session(['dataTotal' => $freshDataTotal, 'step' => 'checkout.confirm']);
-            return redirect(gp247_route_front('checkout.confirm'))
-                ->with(['warning' => gp247_language_render('cart.price_changed_review')]);
-        }
-        // Use the freshly computed figures for the order (they matched the display).
-        $dataTotal = $freshDataTotal;
-        session(['dataTotal' => $dataTotal]);
-
-        //Process total
-        $subtotal = (new ShopOrderTotal)->sumValueTotal('subtotal', $dataTotal); //sum total
-        $tax      = (new ShopOrderTotal)->sumValueTotal('tax', $dataTotal); //sum tax
-        $shipping = (new ShopOrderTotal)->sumValueTotal('shipping', $dataTotal); //sum shipping
-        // WHY the sums are stored as-is: since modification 20260829T094327 every
-        // total row carries a NON-NEGATIVE magnitude and the sign lives in the
-        // formula (ShopOrderTotal::SIGN_MAP). `discount` therefore lands in
-        // shop_order.discount as a positive number — the column is "how much was
-        // discounted", not "a signed adjustment" (ADR shop-admin_money-sign-convention D1).
-        $discount = (new ShopOrderTotal)->sumValueTotal('discount', $dataTotal); //sum discount
-        $otherFee = (new ShopOrderTotal)->sumValueTotal('other_fee', $dataTotal); //sum other_fee
-        // Legacy safety: a `received` row is no longer emitted (D3); this sum is 0 on
-        // every new checkout and is kept only so a stale session still resolves.
-        $received = (new ShopOrderTotal)->sumValueTotal('received', $dataTotal); //sum received
-        $total    = (new ShopOrderTotal)->sumValueTotal('total', $dataTotal);
-        //end total
-
-        $dataOrder['store_id']        = $storeCheckout;
-        $dataOrder['customer_id']     = $uID;
-        $dataOrder['subtotal']        = $subtotal;
-        $dataOrder['shipping']        = $shipping;
-        $dataOrder['discount']        = $discount;
-        $dataOrder['other_fee']        = $otherFee;
-        $dataOrder['received']        = $received;
-        $dataOrder['tax']             = $tax;
-        $dataOrder['payment_status']  = self::PAYMENT_UNPAID;
-        $dataOrder['shipping_status'] = self::SHIPPING_NOTSEND;
-        $dataOrder['status']          = self::ORDER_STATUS_NEW;
-        $dataOrder['currency']        = gp247_currency_code();
-        $dataOrder['exchange_rate']   = gp247_currency_rate();
-        $dataOrder['total']           = $total;
-        // WHY minus, not plus: `received` is a payment held OUTSIDE the totals ledger,
-        // stored as a non-negative magnitude like every other money column
-        // (ADR shop-admin_money-sign-convention D1/D3). It is 0 at checkout — the
-        // storefront never captures money here — but the formula must still read the
-        // way every other writer reads it.
-        $dataOrder['balance']         = $total - $received;
-        $dataOrder['email']           = $shippingAddress['email'];
-        $dataOrder['first_name']      = $shippingAddress['first_name'];
-        $dataOrder['payment_method']  = $paymentMethod;
-        $dataOrder['shipping_method'] = $shippingMethod;
-        $dataOrder['user_agent']      = $request->header('User-Agent');
-        $dataOrder['device_type']      = $agent->deviceType();
-        $dataOrder['ip']              = $request->ip();
-        $dataOrder['created_at']      = gp247_time_now();
-        // Idempotency token: unique index makes this the DB-level guarantee that one
-        // checkout session yields one order (US-LW-checkout-idempotency).
-        $dataOrder['checkout_token']  = $checkoutToken;
-
-        if (!empty($shippingAddress['last_name'])) {
-            $dataOrder['last_name']       = $shippingAddress['last_name'];
-        }
-        if (!empty($shippingAddress['first_name_kana'])) {
-            $dataOrder['first_name_kana']       = $shippingAddress['first_name_kana'];
-        }
-        if (!empty($shippingAddress['last_name_kana'])) {
-            $dataOrder['last_name_kana']       = $shippingAddress['last_name_kana'];
-        }
-        if (!empty($shippingAddress['city'])) {
-            $dataOrder['city']       = $shippingAddress['city'];
-        }
-        if (!empty($shippingAddress['district'])) {
-            $dataOrder['district']       = $shippingAddress['district'];
-        }
-        if (!empty($shippingAddress['ward'])) {
-            $dataOrder['ward']       = $shippingAddress['ward'];
-        }
-        if (!empty($shippingAddress['address1'])) {
-            $dataOrder['address1']       = $shippingAddress['address1'];
-        }
-        if (!empty($shippingAddress['address2'])) {
-            $dataOrder['address2']       = $shippingAddress['address2'];
-        }
-        if (!empty($shippingAddress['address3'])) {
-            $dataOrder['address3']       = $shippingAddress['address3'];
-        }
-        if (!empty($shippingAddress['country'])) {
-            $dataOrder['country']       = $shippingAddress['country'];
-        }
-        if (!empty($shippingAddress['phone'])) {
-            $dataOrder['phone']       = $shippingAddress['phone'];
-        }
-        if (!empty($shippingAddress['postcode'])) {
-            $dataOrder['postcode']       = $shippingAddress['postcode'];
-        }
-        if (!empty($shippingAddress['company'])) {
-            $dataOrder['company']       = $shippingAddress['company'];
-        }
-        if (!empty($shippingAddress['comment'])) {
-            $dataOrder['comment']       = $shippingAddress['comment'];
-        }
-
-        $arrCartDetail = [];
-        foreach ($dataCheckout as $cartItem) {
-            // WHY: read straight from session('dataCheckout'), which comes back as a
-            // plain array (not a CartItem) when session.serialization = json.
-            $cartItem = \GP247\Shop\Services\CartItem::hydrate($cartItem);
-            $product = (new ShopProduct)->getDetail(key: $cartItem->id, type: 'id', storeId: $cartItem->storeId);
-            if (!$product) {
-                continue;
-            }
-            // WHY: the order line stores the EFFECTIVE unit price — final price plus
-            // canonical attribute surcharges — converted to the order currency in one
-            // pass (same rounding path as ShopCurrency::sumCartCheckout), so that
-            // sum(total_price) equals shop_order.subtotal to the cent and downstream
-            // consumers never re-derive money from the attribute JSON (which stays
-            // descriptive only). Contract: domain model shop_order-line-item /
-            // NFR-MAINT-order-line-truth.
-            // @aidlc-unit storefront
-            // @aidlc-story US-LW-order-line-effective-price
-            // @aidlc-adr storefront_order-line-effective-price
-            $effectivePrice = gp247_currency_value(
-                $product->getFinalPrice() + gp247_cart_options_price($cartItem->options)
-            );
-            $arrDetail['product_id']  = $cartItem->id;
-            $arrDetail['name']        = $cartItem->name;
-            $arrDetail['price']       = $effectivePrice;
-            $arrDetail['qty']         = $cartItem->qty;
-            $arrDetail['store_id']    = $cartItem->storeId;
-            $arrDetail['attribute']   = ($cartItem->options) ? $cartItem->options : null;
-            $arrDetail['total_price'] = $effectivePrice * $cartItem->qty;
-            $arrCartDetail[]          = $arrDetail;
-        }
-        //Create new order
-        $newOrder = (new ShopOrder)->createOrder($dataOrder, $dataTotal, $arrCartDetail);
-
-        if ($newOrder['error'] == 1) {
-            gp247_report($newOrder['msg']);
-            return redirect(gp247_route_front('cart'))->with(['error' => $newOrder['msg']]);
-        }
-
-        // Concurrent race resolved by the unique index: createOrder replayed the order
-        // that won. Do NOT re-run the payment plugin (no re-charge) — go straight to
-        // the success page of the existing order (US-LW-checkout-idempotency).
-        if (!empty($newOrder['replayed'])) {
-            session(['orderID' => $newOrder['orderID']]);
-            return redirect(gp247_route_front('order.success'))->with(['orderID' => $newOrder['orderID']]);
-        }
-
-        // Store the rate the shopper chose on the order (shipping_service + JSON snapshot).
-        // WHY after createOrder(): it html-escapes every string column, which would break JSON
-        // (US-shop-shipping-rate-snapshot, ADR shop-shipping_rate-snapshot-and-currency).
-        $chosenRate = \GP247\Shop\Shipping\ShippingCheckout::snapshot();
-        if ($chosenRate !== null && $chosenRate->pluginKey === $shippingMethod) {
-            ShopOrder::where('id', $newOrder['orderID'])->update([
-                'shipping_service' => $chosenRate->serviceCode !== '' ? $chosenRate->serviceCode : null,
-                'shipping_rate'    => json_encode($chosenRate->toArray(), JSON_UNESCAPED_UNICODE),
-            ]);
-        }
-
-        //Set session info order
-        session(['dataOrder' => $dataOrder]);
-        session(['arrCartDetail' => $arrCartDetail]);
-
-        //Set session orderID
-        session(['orderID' => $newOrder['orderID']]);
-
-        //Create new address
-        if ($address_process == 'new') {
-            $addressNew = [
-                'first_name'      => $shippingAddress['first_name'] ?? '',
-                'last_name'       => $shippingAddress['last_name'] ?? '',
-                'first_name_kana' => $shippingAddress['first_name_kana'] ?? '',
-                'last_name_kana'  => $shippingAddress['last_name_kana'] ?? '',
-                'postcode'        => $shippingAddress['postcode'] ?? '',
-                'city'            => $shippingAddress['city'] ?? '',
-                'district'        => $shippingAddress['district'] ?? '',
-                'ward'        => $shippingAddress['ward'] ?? '',
-                'address1'        => $shippingAddress['address1'] ?? '',
-                'address2'        => $shippingAddress['address2'] ?? '',
-                'address3'        => $shippingAddress['address3'] ?? '',
-                'country'         => $shippingAddress['country'] ?? '',
-                'phone'           => $shippingAddress['phone'] ?? '',
-            ];
-
-            //Process escape
-            $addressNew = gp247_clean($addressNew);
-
-            ShopCustomer::find($uID)->addresses()->save(new ShopCustomerAddress($addressNew));
-            session()->forget('address_process'); //destroy address_process
-        }
-
-        $paymentMethod = gp247_extension_get_namespace(type: 'Plugins', key: session('paymentMethod'));
+        $paymentMethod = gp247_extension_get_namespace(type: 'Plugins', key: $this->checkoutState()->paymentMethod());
         $paymentMethod = $paymentMethod . '\Controllers\FrontController';
         //Check class exist
         if (class_exists($paymentMethod) && method_exists($paymentMethod, 'processOrder')) {
@@ -915,6 +515,32 @@ class ShopCartController extends RootFrontController
         }else{
             return $this->completeOrder();
         }
+    }
+
+    /**
+     * Redirect of a submit that placed no new order: the order already placed for this
+     * checkout (replay — no second order, no second charge), or the page and message of
+     * the refusal.
+     *
+     * @param PlaceOrderResult $result
+     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-checkout-idempotency
+     */
+    private function placeOrderRedirect(PlaceOrderResult $result)
+    {
+        return match ($result->status) {
+            PlaceOrderResult::REPLAYED            => redirect(gp247_route_front('order.success'))->with(['orderID' => $result->orderId]),
+            PlaceOrderResult::CART_EMPTY          => redirect(gp247_route_front('front.home'))->with(['error' => gp247_language_render('cart.item_empty', ['item' => 'dataCheckout'])]),
+            PlaceOrderResult::LOGIN_REQUIRED      => redirect(gp247_route_front('customer.login')),
+            PlaceOrderResult::TOKEN_MISSING       => redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_notfound', ['item' => 'checkout'])]),
+            PlaceOrderResult::INPUT_EMPTY         => redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.item_empty', ['item' => 'data'])]),
+            PlaceOrderResult::INVALID_QUANTITY    => redirect(gp247_route_front('cart'))->with(['error' => gp247_language_render('cart.have_error')]),
+            PlaceOrderResult::SHIPPING_UNQUOTABLE => redirect(gp247_route_front('checkout'))->with(['error' => gp247_language_render('cart.shipping_rate_none')]),
+            PlaceOrderResult::PRICE_CHANGED       => redirect(gp247_route_front('checkout.confirm'))->with(['warning' => gp247_language_render('cart.price_changed_review')]),
+            default                               => redirect(gp247_route_front('cart'))->with(['error' => $result->message]),
+        };
     }
 
     /**
@@ -1239,51 +865,10 @@ class ShopCartController extends RootFrontController
      */
     public function completeOrder()
     {
-        //Clear cart store
-        $this->clearCartStore();
-
-        $orderID = session('orderID') ?? 0;
-        $paymentMethod  = session('paymentMethod');
-        $shippingMethod = session('shippingMethod');
-        $totalMethod    = session('totalMethod', []);
-
-        if ($orderID == 0) {
+        $orderID = $this->checkoutService()->complete();
+        if ($orderID === null) {
             return redirect(gp247_route_front('front.home', ['error' => 'Error Order ID!']));
         }
-
-        $classPaymentConfig = gp247_extension_get_namespace(type: 'Plugins', key: $paymentMethod);
-        $classPaymentConfig = $classPaymentConfig . '\AppConfig';
-        if (class_exists($classPaymentConfig)) {
-            if (method_exists($classPaymentConfig, 'endApp')) {
-                (new $classPaymentConfig)->endApp();
-            }
-        }
-
-        $classShippingConfig = gp247_extension_get_namespace(type: 'Plugins', key: $shippingMethod);
-        $classShippingConfig = $classShippingConfig . '\AppConfig';
-        if (class_exists($classShippingConfig)) {
-            if (method_exists($classShippingConfig, 'endApp')) {
-                (new $classShippingConfig)->endApp();
-            }
-        }
-
-        if ($totalMethod && is_array($totalMethod)) {
-            foreach ($totalMethod as $keyMethod => $valueMethod) {
-                $classTotalConfig = gp247_extension_get_namespace(type: 'Plugins', key: $keyMethod);
-                $classTotalConfig = $classTotalConfig . '\AppConfig';
-                if (class_exists($classTotalConfig)) {
-                    if (method_exists($classTotalConfig, 'endApp')) {
-                        (new $classTotalConfig)->endApp(['orderID' => $orderID, 'code' => $valueMethod]);
-                    }
-                }
-            }
-        }
-        
-        // Process event success
-        gp247_event_order_success($order = ShopOrder::find($orderID));
-
-        // Process after order compled: send mail, data response ...
-        $this->processAfterOrderSuccess($orderID);
 
         return redirect(gp247_route_front('order.success'))->with(['orderID' => $orderID]);
     }
@@ -1305,16 +890,7 @@ class ShopCartController extends RootFrontController
      */
     public function cancelOrder()
     {
-        $orderID = session('orderID', null);
-        $order = $orderID ? \GP247\Shop\Models\ShopOrder::find($orderID) : null;
-        if ($order) {
-            $order->changeStatus(\GP247\Shop\Models\ShopOrderStatus::CANCELED, [
-                'content' => 'Payment cancelled',
-                'customer_id' => $order->customer_id ?: 0,
-            ]);
-        }
-        //Clear session
-        $this->clearSession();
+        $this->checkoutService()->cancel();
         return redirect(gp247_route_front('front.home'))->with('error', 'Payment cancelled');
     }
 
@@ -1345,10 +921,10 @@ class ShopCartController extends RootFrontController
      */
     private function _orderSuccess()
     {
-        if (!session('orderID')) {
+        if (!$this->checkoutState()->orderId()) {
             return redirect(gp247_route_front('front.home'));
         }
-        $orderInfo = ShopOrder::with('details')->find(session('orderID'))->toArray();
+        $orderInfo = ShopOrder::with('details')->find($this->checkoutState()->orderId())->toArray();
         $subPath = 'screen.shop_order_success';
         $view = gp247_shop_process_view($this->GP247TemplatePath,$subPath);
         gp247_check_view($view);
@@ -1366,19 +942,23 @@ class ShopCartController extends RootFrontController
     }
 
     /**
-     * Remove cart store ordered
+     * Checkout state of this request (the session on the web).
+     *
+     * @return \GP247\Shop\Services\Checkout\CheckoutState
      */
-    private function clearCartStore()
+    private function checkoutState(): \GP247\Shop\Services\Checkout\CheckoutState
     {
-        $dataCheckout = session('dataCheckout') ?? '';
-        if ($dataCheckout) {
-            foreach ($dataCheckout as $key => $row) {
-                // WHY: read straight from session('dataCheckout'), which comes back as a
-                // plain array (not a CartItem) when session.serialization = json.
-                $row = \GP247\Shop\Services\CartItem::hydrate($row);
-                (new Cart)->remove($row->rowId);
-            }
-        }
+        return app(\GP247\Shop\Services\Checkout\CheckoutState::class);
+    }
+
+    /**
+     * Checkout rules working on this request's checkout state.
+     *
+     * @return CheckoutService
+     */
+    private function checkoutService(): CheckoutService
+    {
+        return app(CheckoutService::class);
     }
 
     /**
@@ -1386,30 +966,9 @@ class ShopCartController extends RootFrontController
      */
     private function clearSession()
     {
-        session()->forget('paymentMethod'); //destroy paymentMethod
-        session()->forget('shippingMethod'); //destroy shippingMethod
-        \GP247\Shop\Shipping\ShippingCheckout::forget(); //destroy shipping rate snapshot + quotes
-        session()->forget('totalMethod'); //destroy totalMethod
-        session()->forget('otherMethod'); //destroy otherMethod
-        session()->forget('dataTotal'); //destroy dataTotal
-        session()->forget('dataCheckout'); //destroy dataCheckout
-        session()->forget('storeCheckout'); //destroy storeCheckout
-        session()->forget('dataOrder'); //destroy dataOrder
-        session()->forget('arrCartDetail'); //destroy arrCartDetail
-        session()->forget('orderID'); //destroy orderID
-        session()->forget('checkoutToken'); //rotate idempotency token — a new checkout gets a fresh one
-    }
-
-    /**
-     * [processAfterOrderSuccess description]
-     *
-     * @param   string  $orderID  [$orderID description]
-     *
-     */
-    private function processAfterOrderSuccess (string $orderID)
-    {
-        //Clear session
-        $this->clearSession();
-        gp247_order_process_after_success($orderID);
+        // Methods, totals, lines, store, order data, the idempotency token (rotated — a new
+        // checkout gets a fresh one) and the shipping rate snapshot + quotes; the address,
+        // step and address_process stay.
+        $this->checkoutService()->clear();
     }
 }
