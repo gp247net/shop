@@ -508,8 +508,10 @@ class ShopProduct extends Model
                 || $this->date_available === null 
                 || gp247_time_now() >= $this->date_available)
             && (
-                gp247_config('product_buy_out_of_stock', config('app.storeId')) 
-                || $this->stock 
+                gp247_config('product_buy_out_of_stock', config('app.storeId'))
+                // WHY a number: the decimal stock column reads back as "0.00", which is
+                // truthy — an out-of-stock product looked on sale (US-CMP-stock-zero-not-for-sale).
+                || (float) $this->stock > 0
                 || empty(gp247_config('product_stock', config('app.storeId'))))
             && $this->kind != GP247_PRODUCT_GROUP
         ) {
