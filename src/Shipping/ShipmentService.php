@@ -36,6 +36,9 @@ use Illuminate\Support\Facades\DB;
  */
 class ShipmentService
 {
+    /** plugin_key of a shipment recorded by hand (tracking reported from outside, no carrier call). */
+    public const MANUAL = 'manual';
+
     /**
      * @param ShippingProviderRegistry $registry Provider resolution.
      */
@@ -372,13 +375,47 @@ class ShipmentService
         if ((int) $order->shipping_status === $target) {
             return false;
         }
-        $order->forceFill(['shipping_status' => $target])->save();
-        $this->history($order, gp247_language_render('admin.shipment.history_status', [
-            'tracking' => e((string) $shipment->tracking_number),
-            'status' => gp247_language_render($shipment->shipmentStatus()->labelKey()),
-        ]) . ' [' . e($shipment->plugin_key . ':' . $shipment->provider_status) . ']', $adminId);
+        $refused = $order->changeShippingStatus($target, [
+            'content' => gp247_language_render('admin.shipment.history_status', [
+                'tracking' => e((string) $shipment->tracking_number),
+                'status' => gp247_language_render($shipment->shipmentStatus()->labelKey()),
+            ]) . ' [' . e($shipment->plugin_key . ':' . $shipment->provider_status) . ']',
+            'admin_id' => $adminId !== '' ? $adminId : '0',
+        ]);
 
-        return true;
+        return $refused === null;
+    }
+
+    /**
+     * Keep a tracking code reported from outside (admin API, a warehouse tool) as the
+     * order's manual shipment — no carrier is called. One manual shipment per order: a new
+     * code updates it.
+     *
+     * @param ShopOrder   $order
+     * @param string      $trackingNumber
+     * @param string|null $trackingUrl
+     * @param string      $adminId Admin id for the history line ('0' = system).
+     * @return ShopShipment
+     *
+     * @aidlc-unit api-admin-write
+     * @aidlc-story US-api-admin-write-order-shipping
+     */
+    public function recordManual(ShopOrder $order, string $trackingNumber, ?string $trackingUrl = null, string $adminId = '0'): ShopShipment
+    {
+        $shipment = ShopShipment::where('order_id', $order->id)->where('plugin_key', self::MANUAL)
+            ->whereNull('cancelled_at')->orderByDesc('created_at')->first();
+        $values = ['tracking_number' => $trackingNumber, 'tracking_url' => $trackingUrl];
+        if ($shipment === null) {
+            $shipment = ShopShipment::create($values + [
+                'order_id' => $order->id, 'store_id' => (string) $order->store_id, 'plugin_key' => self::MANUAL,
+                'status' => ShipmentStatus::PENDING->value, 'currency' => $order->currency,
+            ]);
+        } else {
+            $shipment->update($values);
+        }
+        $this->history($order, 'Tracking: ' . e($trackingNumber), $adminId);
+
+        return $shipment;
     }
 
     /**

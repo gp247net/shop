@@ -527,8 +527,12 @@ class OrderManager extends ResourcePanel
             return;
         }
 
-        if ($column === 'status') {
-            $blockReason = $order->changeStatus($value, ['admin_id' => $this->adminId()]);
+        if ($column === 'status' || $column === 'shipping_status') {
+            // WHY the seams: the admin API and carrier sync change these columns too and
+            // must leave the same history (US-api-admin-write-order-shipping).
+            $blockReason = $column === 'status'
+                ? $order->changeStatus($value, ['admin_id' => $this->adminId()])
+                : $order->changeShippingStatus($value, ['admin_id' => $this->adminId()]);
             if ($blockReason !== null) {
                 $this->notify('error', gp247_language_render($blockReason));
 

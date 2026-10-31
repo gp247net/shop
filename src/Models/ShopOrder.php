@@ -844,6 +844,68 @@ class ShopOrder extends Model
     }
 
     /**
+     * The one place an order's shipping status changes (admin screen, carrier sync, admin
+     * API): the value must be a shipping status of the site; the change is written to the
+     * order history.
+     *
+     * @param int   $newStatus Target ShopShippingStatus id.
+     * @param array $history   Optional: content, admin_id, customer_id.
+     * @return string|null Null on success (or nothing to change); an i18n key when refused.
+     *
+     * @aidlc-unit api-admin-write
+     * @aidlc-story US-api-admin-write-order-shipping
+     */
+    public function changeShippingStatus(int $newStatus, array $history = []): ?string
+    {
+        $old = (int) $this->shipping_status;
+        if ($old === $newStatus) {
+            return null;
+        }
+        if (!array_key_exists($newStatus, ShopShippingStatus::getIdAll())) {
+            return 'admin.order.shipping_status_invalid';
+        }
+
+        $this->update(['shipping_status' => $newStatus]);
+
+        $content = trim((string) ($history['content'] ?? ''));
+        if ($content === '') {
+            $content = 'Change <b>shipping_status</b> from \'' . $old . '\' to \'' . $newStatus . '\'';
+        }
+        $this->addOrderHistory([
+            'order_id' => $this->id,
+            'content' => $content,
+            'admin_id' => $history['admin_id'] ?? 0,
+            'customer_id' => $history['customer_id'] ?? 0,
+            'order_status_id' => (int) $this->status,
+        ]);
+
+        return null;
+    }
+
+    /**
+     * Add a free-text note to the order history. The text is escaped here: the history is
+     * rendered as HTML on the admin order screen.
+     *
+     * @param string $text    Plain text of the note.
+     * @param array  $history admin_id / customer_id of the author; `source` label (e.g. "API").
+     * @return void
+     *
+     * @aidlc-unit api-admin-write
+     * @aidlc-story US-api-admin-write-order-note
+     */
+    public function addNote(string $text, array $history = []): void
+    {
+        $source = trim((string) ($history['source'] ?? ''));
+        $this->addOrderHistory([
+            'order_id' => $this->id,
+            'content' => ($source !== '' ? '[' . e($source) . '] ' : '') . nl2br(e($text)),
+            'admin_id' => $history['admin_id'] ?? 0,
+            'customer_id' => $history['customer_id'] ?? 0,
+            'order_status_id' => (int) $this->status,
+        ]);
+    }
+
+    /**
      * Add order detail
      * @param [type] $dataDetail [description]
      */

@@ -24,3 +24,16 @@ Route::group([
         Route::get($resource.'/detail/{id}', $admin.'@'.$resource.'Detail')->middleware('api.admin:'.$detailScreen);
     }
 });
+
+// Admin API writes on orders (US-api-admin-write-order-status / -shipping / -note): permission =
+// a write on the Orders screen, checked like the screen's own actions; per-account write limit;
+// an Idempotency-Key is accepted (a retry answers the first result).
+Route::group([
+    'prefix'     => GP247_API_V2_CORE_PREFIX,
+    'middleware' => ['auth:admin-api', ApiAbilities::admin(), 'api.admin:admin_order.index,write', 'throttle:gp247-api-write', 'api.idempotent:optional'],
+], function () {
+    $orders = gp247_namespace(\GP247\Shop\Api\V2\OrderWriteController::class);
+    Route::post('order/{id}/status', $orders.'@status');
+    Route::post('order/{id}/shipping', $orders.'@shipping');
+    Route::post('order/{id}/notes', $orders.'@notes');
+});
