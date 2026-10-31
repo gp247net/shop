@@ -578,7 +578,11 @@ return new class extends Migration
             }
         );
 
-
+        // Index used by the changed-since mode of the admin API lists (US-api-sync-changed-since-filter);
+        // the upgrade migration 2026_10_31_190000_index_<package>_updated_at adds it on existing sites.
+        foreach (['shop_product', 'shop_category', 'shop_brand', 'shop_supplier', 'shop_customer', 'shop_order'] as $name) {
+            $schema->table(GP247_DB_PREFIX . $name, fn (Blueprint $table) => $table->index('updated_at'));
+        }
     }
 
     /**

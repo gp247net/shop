@@ -38,7 +38,7 @@ class AdminController extends RootFrontController
         $query = ApiStoreScope::apply(ShopProduct::query())->with(array_merge(['descriptions', 'promotionPrice', 'categories:id'], ProductPurchaseData::RELATIONS));
 
         return ApiQuery::page($query, $request, fn ($p) => (new ProductResource($p, $lang, true))->resolve($request),
-            ProductQuery::filters(true), ProductQuery::sorts(), ProductQuery::search());
+            ProductQuery::filters(true), ProductQuery::sorts(), ProductQuery::search(), changedSince: true);
     }
 
     /**
@@ -66,7 +66,7 @@ class AdminController extends RootFrontController
             fn ($c) => ShopResources::category($c, $lang),
             ['parent' => fn (Builder $q, string $v) => $q->where('parent', $v), 'status' => fn (Builder $q, string $v) => $q->where('status', (int) $v)],
             ['sort' => 'sort', 'created_at' => 'created_at'],
-            fn (Builder $q, string $term) => $q->whereHas('descriptions', fn ($d) => $d->where('name', 'like', ApiQuery::like($term))));
+            fn (Builder $q, string $term) => $q->whereHas('descriptions', fn ($d) => $d->where('name', 'like', ApiQuery::like($term))), changedSince: true);
     }
 
     /**
@@ -90,7 +90,7 @@ class AdminController extends RootFrontController
     {
         return ApiQuery::page(ApiStoreScope::apply(ShopBrand::query()), $request, fn ($b) => ShopResources::brand($b),
             ['status' => fn (Builder $q, string $v) => $q->where('status', (int) $v)], ['sort' => 'sort', 'name' => 'name'],
-            fn (Builder $q, string $term) => $q->where('name', 'like', ApiQuery::like($term)));
+            fn (Builder $q, string $term) => $q->where('name', 'like', ApiQuery::like($term)), changedSince: true);
     }
 
     /**
@@ -111,7 +111,7 @@ class AdminController extends RootFrontController
     {
         return ApiQuery::page(ApiStoreScope::apply(ShopSupplier::query()), $request, fn ($s) => ShopResources::supplier($s),
             ['status' => fn (Builder $q, string $v) => $q->where('status', (int) $v)], ['sort' => 'sort', 'name' => 'name'],
-            fn (Builder $q, string $term) => $q->where(fn ($w) => $w->where('name', 'like', ApiQuery::like($term))->orWhere('email', 'like', ApiQuery::like($term))));
+            fn (Builder $q, string $term) => $q->where(fn ($w) => $w->where('name', 'like', ApiQuery::like($term))->orWhere('email', 'like', ApiQuery::like($term))), changedSince: true);
     }
 
     /**
@@ -136,7 +136,7 @@ class AdminController extends RootFrontController
             fn (Builder $q, string $term) => $q->where(fn ($w) => $w->where('email', 'like', ApiQuery::like($term))
                 ->orWhere('phone', 'like', ApiQuery::like($term))
                 ->orWhere('first_name', 'like', ApiQuery::like($term))
-                ->orWhere('last_name', 'like', ApiQuery::like($term))));
+                ->orWhere('last_name', 'like', ApiQuery::like($term))), changedSince: true);
     }
 
     /**
@@ -165,7 +165,7 @@ class AdminController extends RootFrontController
             ['created_at' => 'created_at', 'total' => 'total'],
             fn (Builder $q, string $term) => $q->where(fn ($w) => $w->where('id', $term)
                 ->orWhere('email', 'like', ApiQuery::like($term))
-                ->orWhere('phone', 'like', ApiQuery::like($term))));
+                ->orWhere('phone', 'like', ApiQuery::like($term))), changedSince: true);
     }
 
     /**
