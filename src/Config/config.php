@@ -63,4 +63,12 @@ return [
             'lastview' => env('GP247_CART_EXPIRE_PRODUCT_LASTVIEW', 30), //days
         ],
     ],
+
+    // Payment requests: addresses the pay page may send a payer back to after paying or
+    // cancelling at the gateway (an app's deep link or web page, kept on the request when it
+    // was started from an app). Comma separated, matched on scheme + host (+ port) and path
+    // prefix; empty (default) = the payer stays on the site's own pages.
+    'payment' => [
+        'return_urls' => env('GP247_PAYMENT_RETURN_URLS', ''),
+    ],
 ];

@@ -3,6 +3,7 @@
 namespace GP247\Shop\Controllers;
 
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Shop\Payment\Support\ReturnUrlPolicy;
 
 use GP247\Shop\Payment\Models\PaymentRequest;
 use GP247\Shop\Payment\PaymentCurrency;
@@ -46,6 +47,9 @@ class ShopPaymentRequestController extends RootFrontController
         $paymentRequest = $this->resolve($token);
         if ($paymentRequest === null) {
             return $this->pageNotFound();
+        }
+        if (($back = $this->appReturnUrl($paymentRequest)) !== null) {
+            return redirect()->away($back);
         }
 
         $service = app(PaymentRequestService::class);
@@ -98,6 +102,27 @@ class ShopPaymentRequestController extends RootFrontController
         }
 
         return redirect()->away($result->redirectUrl);
+    }
+
+    /**
+     * Where a payer who started paying from an app goes back to: the app address kept on
+     * the request when the order was placed through the API, checked again against the
+     * site's list now (an address removed from the list is no longer followed).
+     *
+     * WHY on this page: the gateways send the payer here after paying or cancelling, so the
+     * app gets its payer back without any change to the payment plugins.
+     *
+     * @param PaymentRequest $paymentRequest
+     * @return string|null
+     *
+     * @aidlc-unit api-commerce
+     * @aidlc-story US-api-commerce-hosted-payment
+     */
+    private function appReturnUrl(PaymentRequest $paymentRequest): ?string
+    {
+        $url = ((array) ($paymentRequest->metadata ?? []))['return_url'] ?? null;
+
+        return is_string($url) ? ReturnUrlPolicy::allowed($url) : null;
     }
 
     /**

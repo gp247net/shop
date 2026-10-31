@@ -4,6 +4,7 @@ namespace GP247\Shop\Api\V2;
 
 use GP247\Core\Api\V2\ApiQuery;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Shop\Api\Support\Commerce\ProductPurchaseData;
 use GP247\Shop\Api\Support\ShopApiVisibility;
 use GP247\Shop\Api\V2\Resources\ProductResource;
 use GP247\Shop\Api\V2\Resources\ShopResources;
@@ -30,7 +31,7 @@ class CatalogController extends RootFrontController
     public function productList(Request $request)
     {
         $lang = ApiQuery::lang($request);
-        $query = ShopApiVisibility::products()->with(['descriptions', 'promotionPrice', 'categories' => self::visibleCategoryIds()]);
+        $query = ShopApiVisibility::products()->with(array_merge(['descriptions', 'promotionPrice', 'categories' => self::visibleCategoryIds()], ProductPurchaseData::RELATIONS));
 
         return ApiQuery::page($query, $request, fn ($p) => (new ProductResource($p, $lang))->resolve($request),
             ProductQuery::filters(), ProductQuery::sorts(), ProductQuery::search());
@@ -44,7 +45,7 @@ class CatalogController extends RootFrontController
     public function productDetail(Request $request, $id)
     {
         $lang = ApiQuery::lang($request);
-        $product = ShopApiVisibility::products()->with(['descriptions', 'images', 'promotionPrice', 'categories' => self::visibleCategoryIds()])
+        $product = ShopApiVisibility::products()->with(array_merge(['descriptions', 'images', 'promotionPrice', 'categories' => self::visibleCategoryIds()], ProductPurchaseData::RELATIONS))
             ->where((new ShopProduct)->getTable() . '.id', $id)->first();
 
         return ApiQuery::one($product, fn ($p) => (new ProductResource($p, $lang, false, true))->resolve($request));

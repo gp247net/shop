@@ -75,6 +75,14 @@ interface CheckoutState
      */
     public function ensureToken(): string;
 
+    /**
+     * Use this idempotency token (the REST API derives it from the client's Idempotency-Key).
+     *
+     * @param string $token
+     * @return void
+     */
+    public function setToken(string $token): void;
+
     /** @return void */
     public function forgetToken(): void;
 

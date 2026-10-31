@@ -5,6 +5,7 @@ namespace GP247\Shop\Api\V2;
 use GP247\Core\Api\Support\ApiStoreScope;
 use GP247\Core\Api\V2\ApiQuery;
 use GP247\Front\Controllers\RootFrontController;
+use GP247\Shop\Api\Support\Commerce\ProductPurchaseData;
 use GP247\Shop\Api\V2\Resources\ProductResource;
 use GP247\Shop\Api\V2\Resources\ShopResources;
 use GP247\Shop\Models\ShopBrand;
@@ -34,7 +35,7 @@ class AdminController extends RootFrontController
     public function productList(Request $request)
     {
         $lang = ApiQuery::lang($request);
-        $query = ApiStoreScope::apply(ShopProduct::query())->with(['descriptions', 'promotionPrice', 'categories:id']);
+        $query = ApiStoreScope::apply(ShopProduct::query())->with(array_merge(['descriptions', 'promotionPrice', 'categories:id'], ProductPurchaseData::RELATIONS));
 
         return ApiQuery::page($query, $request, fn ($p) => (new ProductResource($p, $lang, true))->resolve($request),
             ProductQuery::filters(true), ProductQuery::sorts(), ProductQuery::search());
@@ -48,7 +49,7 @@ class AdminController extends RootFrontController
     public function productDetail(Request $request, $id)
     {
         $lang = ApiQuery::lang($request);
-        $product = ApiStoreScope::apply(ShopProduct::query())->with(['descriptions', 'images', 'promotionPrice', 'categories:id'])->where('id', $id)->first();
+        $product = ApiStoreScope::apply(ShopProduct::query())->with(array_merge(['descriptions', 'images', 'promotionPrice', 'categories:id'], ProductPurchaseData::RELATIONS))->where('id', $id)->first();
 
         return ApiQuery::one($product, fn ($p) => (new ProductResource($p, $lang, true, true))->resolve($request));
     }

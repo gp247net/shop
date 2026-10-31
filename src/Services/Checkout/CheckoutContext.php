@@ -23,6 +23,7 @@ final class CheckoutContext
      * @param string|null $userAgent  User-Agent header.
      * @param string      $deviceType Device type ('desktop', 'phone', …).
      * @param bool        $hasInput   False when the submit carried no input (the web form always posts _token).
+     * @param string      $channel    Where the order comes from: `web`, `api`, `admin` (stored when the site has the column).
      */
     public function __construct(
         public readonly mixed $customer,
@@ -31,6 +32,7 @@ final class CheckoutContext
         public readonly ?string $userAgent = null,
         public readonly string $deviceType = '',
         public readonly bool $hasInput = true,
+        public readonly string $channel = 'web',
     ) {
     }
 
@@ -51,6 +53,7 @@ final class CheckoutContext
             userAgent: $request->header('User-Agent'),
             deviceType: (string) (new \Jenssegers\Agent\Agent())->deviceType(),
             hasInput: (bool) $request->all(),
+            channel: 'web',
         );
     }
 }

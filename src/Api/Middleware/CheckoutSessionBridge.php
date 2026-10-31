@@ -8,6 +8,9 @@ use GP247\Shop\Api\Support\Commerce\ApiCartRepository;
 use GP247\Shop\Api\Support\Commerce\CartOwner;
 use GP247\Shop\Api\Support\Commerce\GuestCartToken;
 use GP247\Shop\Services\CartService;
+use GP247\Shop\Shipping\RateService;
+use GP247\Shop\Shipping\ShippingCheckout;
+use GP247\Shop\Middleware\CurrencyMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\NullSessionHandler;
 use Illuminate\Session\Store;
@@ -34,8 +37,21 @@ use Symfony\Component\HttpFoundation\Response;
 class CheckoutSessionBridge
 {
     public const CART_TOKEN_HEADER = 'X-Cart-Token';
+    /** Request attribute holding the CartOwner (null for a guest without a cart yet). */
+    public const OWNER_ATTRIBUTE = 'gp247.cart_owner';
     private const DRIVER = 'gp247-api-request';
     private const CART_KEY = 'cart.' . CartService::DEFAULT_INSTANCE;
+    public const CHECKOUT_INSTANCE = 'api_checkout';
+
+    /**
+     * Checkout state kept between API calls: the web session keys the checkout code and
+     * the totals / shipping / promotion plugins read. Lines (`dataCheckout`) are not kept —
+     * they are taken from the cart on every call — nor is anything about a placed order.
+     */
+    public const CHECKOUT_KEYS = [
+        'storeCheckout', 'shippingAddress', 'address_process', 'shippingMethod', 'paymentMethod', 'totalMethod', 'dataTotal',
+        ShippingCheckout::SESSION_RATE, ShippingCheckout::SESSION_REQUEST, RateService::SESSION_QUOTES, RateService::SESSION_DOWN,
+    ];
 
     /**
      * @param ApiCartRepository $carts
@@ -78,14 +94,29 @@ class CheckoutSessionBridge
             }
         }
 
+        $loadedState = $owner ? $this->carts->read($owner, self::CHECKOUT_INSTANCE) : null;
+        $request->attributes->set(self::OWNER_ATTRIBUTE, $owner);
+
         [$session, $restore] = $this->swapIn($request, $customer);
         if ($loaded !== null) {
             $session->put(self::CART_KEY, ApiCartRepository::decode($loaded));
         }
+        foreach (self::decodeState($loadedState) as $key => $value) {
+            $session->put($key, $value);
+        }
+        // WHY: API routes skip the web middleware group, so without this the cart and the
+        // order would be priced with no currency (an order placed with an empty currency).
+        CurrencyMiddleware::apply();
         try {
             $response = $next($request);
+            if (!$customer) {
+                [$owner, $response] = $this->persistGuestCart($owner, $session, $loaded, $response);
+                if ($owner === null) {
+                    return $response;
+                }
+            }
 
-            return $customer ? $response : $this->persistGuestCart($owner, $session, $loaded, $response);
+            return $this->persistCheckoutState($owner, $session, $loadedState, $response);
         } finally {
             $restore();
         }
@@ -98,14 +129,14 @@ class CheckoutSessionBridge
      * @param Store          $session
      * @param string|null    $loaded  Content that was read.
      * @param Response       $response
-     * @return Response
+     * @return array{0: CartOwner|null, 1: Response} The owner (null when nothing was kept) and the response.
      */
-    private function persistGuestCart(?CartOwner $owner, Store $session, ?string $loaded, $response)
+    private function persistGuestCart(?CartOwner $owner, Store $session, ?string $loaded, $response): array
     {
         $lines = collect($session->get(self::CART_KEY, []));
         if ($owner === null) {
             if ($lines->isEmpty()) {
-                return $response;
+                return [null, $response];
             }
             $cartToken = GuestCartToken::issue();
             $owner = CartOwner::guest($cartToken);
@@ -113,15 +144,65 @@ class CheckoutSessionBridge
             $this->carts->write($owner, CartService::DEFAULT_INSTANCE, $lines->toJson(), null);
             $response->headers->set(self::CART_TOKEN_HEADER, $cartToken);
 
-            return $response;
+            return [$owner, $response];
         }
 
         $content = $lines->toJson();
         if ($content !== $loaded && !$this->carts->write($owner, CartService::DEFAULT_INSTANCE, $content, $loaded)) {
-            return ApiErrorResponder::respond(409, 'cart_conflict', 'The cart changed in the meantime; read it again and retry');
+            return [null, $this->conflict()];
+        }
+
+        return [$owner, $response];
+    }
+
+    /**
+     * Write the checkout state (address, chosen methods, quotes, promotions, totals shown)
+     * back when it changed.
+     *
+     * @param CartOwner   $owner
+     * @param Store       $session
+     * @param string|null $loaded  State that was read.
+     * @param Response    $response
+     * @return Response
+     */
+    private function persistCheckoutState(CartOwner $owner, Store $session, ?string $loaded, $response)
+    {
+        $state = [];
+        foreach (self::CHECKOUT_KEYS as $key) {
+            if ($session->get($key) !== null) {
+                $state[$key] = $session->get($key);
+            }
+        }
+        if ($state === [] && $loaded === null) {
+            return $response;
+        }
+        $content = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
+        if ($content !== $loaded && !$this->carts->write($owner, self::CHECKOUT_INSTANCE, $content, $loaded)) {
+            return $this->conflict();
         }
 
         return $response;
+    }
+
+    /**
+     * Checkout state keys from stored JSON (only the known keys).
+     *
+     * @param string|null $content
+     * @return array<string, mixed>
+     */
+    private static function decodeState(?string $content): array
+    {
+        $state = $content === null ? [] : json_decode($content, true);
+
+        return is_array($state) ? array_intersect_key($state, array_flip(self::CHECKOUT_KEYS)) : [];
+    }
+
+    /**
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function conflict()
+    {
+        return ApiErrorResponder::respond(409, 'cart_conflict', 'The cart changed in the meantime; read it again and retry');
     }
 
     /**

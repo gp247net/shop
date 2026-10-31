@@ -18,6 +18,24 @@ class ShopOrder extends Model
 
     public $table = GP247_DB_PREFIX.'shop_order';
     protected $guarded = [];
+
+    /** @var bool|null Memo of supportsChannel() for this process. */
+    private static ?bool $hasChannelColumn = null;
+
+    /**
+     * Whether this site's order table has the `channel` column (added by the API commerce
+     * upgrade migration; absent until gp247:update runs after a composer update).
+     *
+     * @return bool
+     *
+     * @aidlc-unit api-commerce
+     * @aidlc-story US-api-commerce-place-order
+     */
+    public static function supportsChannel(): bool
+    {
+        return self::$hasChannelColumn ??= \Illuminate\Support\Facades\Schema::connection(GP247_DB_CONNECTION)
+            ->hasColumn(GP247_DB_PREFIX . 'shop_order', 'channel');
+    }
     protected $connection = GP247_DB_CONNECTION;
 
     /**

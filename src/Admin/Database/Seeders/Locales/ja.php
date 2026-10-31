@@ -821,6 +821,7 @@ return [
     'admin.layout_block_page.shop_auth' => 'ログイン / 会員登録',
     'admin.layout_block_page.shop_search' => '検索（ショップ）',
     'admin.shipping.warn_shipping_off' => '配送が無効になっています：お客様はご購入手続きで配送方法を選択できません。',
+    'admin.api_connection.switch_checkout' => 'API経由の注文（アプリ / ヘッドレス）',
     'admin.shipping.warn_provider_off' => 'この配送業者はこのストアで有効になっていません。',
     'admin.shipping.ready_shipping_on' => 'ご購入手続きで配送が有効になっています。',
     'admin.shipping.ready_city' => 'お客様の住所入力に都道府県・市区町村の項目があります。',

@@ -141,6 +141,7 @@ class ShopServiceProvider extends ServiceProvider
             $this->loadRoutesFrom(__DIR__.'/Routes/Webhook/shipping.php');
 
             $this->registerApiCommerceRateLimiters();
+            $this->registerApiCommerceSwitch();
 
             // REST API (v1 + v2) through the core seam, only once shop tables exist
             // (US-CMP-api-package-route-registration).
@@ -497,6 +498,41 @@ class ShopServiceProvider extends ServiceProvider
 
             return \Illuminate\Cache\RateLimiting\Limit::perMinute($perMinute)->by('cart|' . $who);
         });
+        // WHY per customer or IP: placing an order creates money and stock movements; a cart
+        // token is free to obtain, so it is not a limit key here.
+        \Illuminate\Support\Facades\RateLimiter::for('gp247-api-checkout-place', function (\Illuminate\Http\Request $request) {
+            $perMinute = max(1, (int) config('gp247-config.api.throttle.checkout_place', 10));
+            $bearer = (string) $request->bearerToken();
+
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute($perMinute)
+                ->by('place|' . ($bearer !== '' ? 'b:' . hash('sha256', $bearer) : 'ip:' . $request->ip()));
+        });
+    }
+
+    /**
+     * Register the "ordering through the API" switch with the core API switches: off unless the
+     * site owner opens it, inside the v2 front group, refusing with its own code.
+     *
+     * @return void
+     *
+     * @aidlc-unit api-commerce
+     * @aidlc-story US-api-commerce-checkout-switch
+     * @aidlc-adr api-commerce_switch-registry
+     */
+    protected function registerApiCommerceSwitch(): void
+    {
+        // WHY a whole-array write: dot-notation would split a key containing dots.
+        $switches = (array) config('gp247-config.api.switches', []);
+        $switches['api_v2_front_checkout'] = [
+            'label'   => 'admin.api_connection.switch_checkout',
+            'parent'  => 'api_v2_front',
+            'prefix'  => trim(GP247_API_V2_FRONT_PREFIX, '/') . '/checkout/place',
+            'default' => false,
+            'status'  => 403,
+            'code'    => 'api_checkout_disabled',
+            'message' => 'Ordering through the API is not open on this site',
+        ];
+        config(['gp247-config.api.switches' => $switches]);
     }
 
     /**

@@ -69,6 +69,11 @@ class ShopInstall extends GP247Command
         \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '2026_10_23_090000_seed_japanese_migration_labels')->delete();
         $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade/2026_10_23_090000_seed_japanese_migration_labels.php']);
 
+        // Cart / checkout through the API: order channel column + "ordering through the API" switch
+        // (off) + its label — the same idempotent add-only upgrade migration as an upgraded site runs.
+        \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '2026_10_30_120000_install_api_commerce')->delete();
+        $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade/2026_10_30_120000_install_api_commerce.php']);
+
         // WHY no vendor:publish here any more (modification 20260913T200309):
         // shop's storefront views are served from this package through the
         // GP247TemplatePath hint paths, so an install no longer copies them into

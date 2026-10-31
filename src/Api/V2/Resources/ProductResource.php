@@ -3,16 +3,19 @@
 namespace GP247\Shop\Api\V2\Resources;
 
 use GP247\Core\Api\V2\ApiQuery;
+use GP247\Shop\Api\Support\Commerce\ProductPurchaseData;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Product in REST API v2. Public view: catalog fields, the description of the
  * requested language and the price the storefront charges (price_final). Admin view
  * adds inventory, cost and moderation fields. New table columns never appear here
- * until listed on purpose.
+ * until listed on purpose. Fields an app needs to sell the product (attributes,
+ * image_sizes, stock_status) are added by api-commerce — added only, never changed.
  *
  * @aidlc-unit compat-foundation
  * @aidlc-story US-CMP-api-v2-contract, US-CMP-api-v2-query-parameters
+ * @aidlc-story US-api-commerce-product-purchase-data
  * @aidlc-adr compat-foundation_rest-api-hardening
  */
 class ProductResource extends JsonResource
@@ -61,6 +64,9 @@ class ProductResource extends JsonResource
             'store_id'       => $p->store_id,
             'created_at'     => optional($p->created_at)->toIso8601String(),
             'updated_at'     => optional($p->updated_at)->toIso8601String(),
+            'image_sizes'    => ProductPurchaseData::imageSizes($p->image),
+            'stock_status'   => ProductPurchaseData::stockStatus($p),
+            'attributes'     => ProductPurchaseData::attributes($p, $this->showsPrice()),
         ]);
 
         if ($this->admin) {

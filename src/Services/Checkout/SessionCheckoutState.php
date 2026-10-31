@@ -165,6 +165,14 @@ class SessionCheckoutState implements CheckoutState
     /**
      * {@inheritDoc}
      */
+    public function setToken(string $token): void
+    {
+        session(['checkoutToken' => $token]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function forgetToken(): void
     {
         session()->forget('checkoutToken');

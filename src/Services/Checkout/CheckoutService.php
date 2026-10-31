@@ -429,6 +429,11 @@ class CheckoutService
             // Unique index: the DB-level guarantee that one checkout yields one order.
             'checkout_token'  => $checkoutToken,
         ];
+        // WHY guarded: a site updated by composer but not yet by gp247:update lacks the column,
+        // and writing it would break every checkout (US-api-commerce-place-order).
+        if (ShopOrder::supportsChannel()) {
+            $dataOrder['channel'] = $context->channel;
+        }
         foreach (['last_name', 'first_name_kana', 'last_name_kana', 'city', 'district', 'ward', 'address1', 'address2',
             'address3', 'country', 'phone', 'postcode', 'company', 'comment'] as $field) {
             if (!empty($shippingAddress[$field])) {

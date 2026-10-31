@@ -1839,6 +1839,9 @@ class DataShopLanguageSeeder extends Seeder
         $this->writeLang([
             ['code' => 'admin.shipping.warn_shipping_off','text' => 'Vận chuyển đang tắt: khách không chọn được cách giao hàng ở trang thanh toán.','position' => 'admin.shipping','location' => 'vi'],
             ['code' => 'admin.shipping.warn_shipping_off','text' => 'Shipping is off: shoppers cannot choose a delivery method at checkout.','position' => 'admin.shipping','location' => 'en'],
+            // "Ordering through the API" switch on the API screen (also shipped to upgraded sites by 2026_10_30_120000_install_api_commerce).
+            ['code' => 'admin.api_connection.switch_checkout','text' => 'Đặt đơn qua API (app / headless)','position' => 'admin.api_connection','location' => 'vi'],
+            ['code' => 'admin.api_connection.switch_checkout','text' => 'Ordering through the API (app / headless)','position' => 'admin.api_connection','location' => 'en'],
             ['code' => 'admin.shipping.warn_provider_off','text' => 'Hãng vận chuyển này chưa được bật cho cửa hàng này.','position' => 'admin.shipping','location' => 'vi'],
             ['code' => 'admin.shipping.warn_provider_off','text' => 'This carrier is not enabled for this store.','position' => 'admin.shipping','location' => 'en'],
             ['code' => 'admin.shipping.ready_shipping_on','text' => 'Vận chuyển đang bật ở trang thanh toán.','position' => 'admin.shipping','location' => 'vi'],
