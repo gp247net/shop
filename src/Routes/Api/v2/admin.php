@@ -37,3 +37,17 @@ Route::group([
     Route::post('order/{id}/shipping', $orders.'@shipping');
     Route::post('order/{id}/notes', $orders.'@notes');
 });
+
+// Admin API writes on products and stock (US-api-admin-write-product-fields / -stock-*): a write
+// on the Products screen. Stock commands require an Idempotency-Key (a retried receipt must not
+// move the stock twice).
+Route::group([
+    'prefix'     => GP247_API_V2_CORE_PREFIX,
+    'middleware' => ['auth:admin-api', ApiAbilities::admin(), 'api.admin:admin_product.index,write', 'throttle:gp247-api-write'],
+], function () {
+    $products = gp247_namespace(\GP247\Shop\Api\V2\ProductWriteController::class);
+    $stock = gp247_namespace(\GP247\Shop\Api\V2\StockController::class);
+    Route::patch('product/{id}', $products.'@update')->middleware('api.idempotent:optional');
+    Route::post('product/{id}/stock', $stock.'@single')->middleware('api.idempotent');
+    Route::post('stock/batch', $stock.'@batch')->middleware('api.idempotent');
+});

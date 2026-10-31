@@ -594,6 +594,47 @@ class ShopProduct extends Model
     }
 
     /**
+     * Receive (+) or issue (-) stock outside a sale — goods movements reported by an ERP
+     * or warehouse tool. Atomic (`stock = stock + delta`, the guard inside the UPDATE) and
+     * never below zero; the sold counter is not touched (this is not a sale).
+     *
+     * @param int|string $productId
+     * @param float      $delta
+     * @return bool False when the product is missing or the result would be negative.
+     *
+     * @aidlc-unit api-admin-write
+     * @aidlc-story US-api-admin-write-stock-delta
+     * @aidlc-adr api-admin-write_stock-commands
+     */
+    public static function adjustStock($productId, float $delta): bool
+    {
+        $q = number_format($delta, 4, '.', '');
+        $query = self::where('id', $productId);
+        if ($delta < 0) {
+            $query->where('stock', '>=', -$delta);
+        }
+
+        return $query->update(['stock' => \DB::raw('stock + ' . $q)]) > 0;
+    }
+
+    /**
+     * Set the stock of a product outright (after a stock count). Atomic single UPDATE;
+     * the sold counter is not touched.
+     *
+     * @param int|string $productId
+     * @param float      $qty Must be zero or more (checked by the caller).
+     * @return bool False when the product is missing.
+     *
+     * @aidlc-unit api-admin-write
+     * @aidlc-story US-api-admin-write-stock-absolute
+     * @aidlc-adr api-admin-write_stock-commands
+     */
+    public static function setStock($productId, float $qty): bool
+    {
+        return self::where('id', $productId)->update(['stock' => $qty]) > 0;
+    }
+
+    /**
      * Apply one atomic stock/sold delta to a single product row.
      *
      * @param int|string $product_id Product row to update.

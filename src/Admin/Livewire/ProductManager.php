@@ -677,17 +677,13 @@ class ProductManager extends ResourcePanel
      */
     public function productFieldEnabled(string $configKey): bool
     {
-        if (!function_exists('gp247_config')) {
-            return true;
-        }
         // WHY $this->formStoreId (mod 20260902T080541): field gating follows the product's
         // OWN store, not the admin session — so a root admin editing a sub-store's product
         // sees that store's field config. Empty store falls back to GLOBAL (unchanged for
         // single-store / stores with no per-store override). ADR admin-shell_lfm-working-dir
-        // extends the working-store principle to config resolution.
-        $value = gp247_config($configKey, $this->formStoreId ?: null);
-
-        return $value !== '0' && $value !== 0;
+        // extends the working-store principle to config resolution. Shared with the admin
+        // API (US-api-admin-write-product-fields).
+        return \GP247\Shop\Services\ProductFieldRules::enabled($configKey, $this->formStoreId ?: null);
     }
 
     /**
