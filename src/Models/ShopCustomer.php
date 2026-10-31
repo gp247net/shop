@@ -93,6 +93,19 @@ class ShopCustomer extends Authenticatable
                 $model->{$model->getKeyName()} = gp247_generate_id('CUS');
             }
         });
+
+        // WHY at the model: a customer password changes on the account page, through
+        // "forgot password" (web + API), on the admin Customers screen and possibly in a
+        // plugin — one hook signs the customer out of every REST API client on all of them
+        // (US-LW-password-change-revokes-api-sessions). The API password change spares its
+        // own session through ApiSessions::keeping(); method_exists keeps this shop working
+        // on a core that predates it (it then revokes everything).
+        static::updated(function ($customer) {
+            if ($customer->wasChanged('password')) {
+                $sessions = \GP247\Core\Api\Support\ApiSessions::class;
+                $sessions::revokeAll($customer, method_exists($sessions, 'keptTokenId') ? $sessions::keptTokenId() : null);
+            }
+        });
     }
 
 

@@ -142,8 +142,9 @@ class CustomerAccountService
             ]);
         }
         $customer->password = bcrypt($new);
-        $customer->save();
-        ApiSessions::revokeAll($customer, $keepTokenId);
+        // WHY keeping(): the ShopCustomer `updated` hook revokes every API credential when
+        // the password changes; the API session changing it must survive.
+        ApiSessions::keeping($keepTokenId, fn () => $customer->save());
     }
 
     /**
@@ -159,9 +160,9 @@ class CustomerAccountService
     {
         $customer->password = Hash::make($new);
         $customer->setRememberToken(Str::random(60));
+        // The ShopCustomer `updated` hook revokes every API credential (password changed).
         $customer->save();
         event(new \Illuminate\Auth\Events\PasswordReset($customer));
-        ApiSessions::revokeAll($customer);
     }
 
     /**
