@@ -121,10 +121,8 @@ class ShopAccountController extends RootFrontController
         ];
         $v = Validator::make(
             $request->all(),
-            [
-                'password_old' => 'required',
-                'password' => gp247_customer_validate_password()['password_confirm'],
-            ],
+            // Same rule as the API (US-LW-password-change-revokes-api-sessions): a new password is required.
+            app(CustomerAccountService::class)->passwordRules(),
             $messages
         );
         if ($v->fails()) {

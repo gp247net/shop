@@ -216,8 +216,13 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
             // skips non-implicit rules (incl. unique) on an empty string. Mirrors
             // the edit path, which already skips empty email. (US-SADM-004)
             'email'      => (isset($dataRaw['email']) && $dataRaw['email'] !== '') ? $dataRaw['email'] : null,
-            'password'   => bcrypt($dataRaw['password']),
         ];
+        // WHY isset: the validator builds its rules through this mapping BEFORE validating, so a
+        // JSON body without the key (API register) must reach the "password required" rule (422)
+        // instead of crashing here (500). Forms always post the key, so their result is unchanged.
+        if (isset($dataRaw['password'])) {
+            $dataInsert['password'] = bcrypt($dataRaw['password']);
+        }
 
         $emailUnique = '|unique:"'.ShopCustomer::class.'",email';
         $validate = [
@@ -479,7 +484,8 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
     function gp247_customer_data_edit_mapping(array $dataRaw)
     {
         $dataUpdate = [
-            'first_name' => $dataRaw['first_name'],
+            // WHY ??: as in the insert mapping — a body without the key must reach the "required" rule.
+            'first_name' => $dataRaw['first_name'] ?? '',
         ];
         if (isset($dataRaw['status'])) {
             $dataUpdate['status']  = $dataRaw['status'];

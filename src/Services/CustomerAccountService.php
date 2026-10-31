@@ -42,9 +42,23 @@ class CustomerAccountService
         $data = $this->withoutProtected($data);
         $mapping = gp247_customer_data_insert_mapping($data);
 
+        // WHY: the mapping's password rule is nullable (an admin may create a customer without
+        // one); a customer signing themselves up must choose one, on the web form and the API alike.
+        $mapping['validate']['password'] = $this->newPasswordRule();
         [$data, $rules] = $this->withCaptcha($data, $mapping['validate'], 'register');
 
         return Validator::make($data, $rules, $mapping['messages']);
+    }
+
+    /**
+     * Rule of a password the customer sets themselves: required, the store's strength
+     * settings, and confirmed by `password_confirmation`.
+     *
+     * @return array<int, mixed>
+     */
+    private function newPasswordRule(): array
+    {
+        return array_merge(gp247_customer_validate_password()['password'], ['confirmed']);
     }
 
     /**
@@ -103,7 +117,9 @@ class CustomerAccountService
     {
         return [
             'password_old' => 'required',
-            'password'     => gp247_customer_validate_password()['password_confirm'],
+            // WHY not the nullable `password_confirm` rule: an empty new password was saved as the
+            // hash of "" and locked the customer out of their own account.
+            'password'     => $this->newPasswordRule(),
         ];
     }
 
