@@ -290,6 +290,20 @@ class ShopServiceProvider extends ServiceProvider
                     'help' => 'admin.order.payment_request_subject_help',
                 ],
             ],
+            // The payment of an order placed through the API: like order.balance, plus the order
+            // status follows the gateway. Made by the API only, so admins do not pick it.
+            \GP247\Shop\Payment\OrderCheckoutPurpose::KEY => [
+                'label' => 'admin.order.payment_request_purpose_balance',
+                'directions' => ['in'],
+                'resolver' => \GP247\Shop\Payment\OrderCheckoutPurpose::class,
+                'available' => [\GP247\Shop\Payment\OrderPurpose::class, 'available'],
+                'pickable' => false,
+                'subject' => [
+                    'types' => [\GP247\Shop\Payment\OrderPurpose::SUBJECT_TYPE => 'admin.order.payment_request_subject_order'],
+                    'label' => 'admin.order.payment_request_subject_order',
+                    'help' => 'admin.order.payment_request_subject_help',
+                ],
+            ],
             \GP247\Shop\Payment\OrderRefundPurpose::KEY => [
                 'label' => 'admin.order.payment_request_purpose_refund',
                 'directions' => ['out'],

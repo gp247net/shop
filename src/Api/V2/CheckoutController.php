@@ -6,6 +6,7 @@ use GP247\Core\Api\Support\ApiErrorResponder;
 use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Api\Middleware\CheckoutSessionBridge;
 use GP247\Shop\Api\Support\Commerce\ApiOrderPayment;
+use GP247\Shop\Api\Support\Commerce\UnpaidApiOrders;
 use GP247\Shop\Api\Support\Commerce\IdempotencyKey;
 use GP247\Shop\Api\Support\Commerce\OrderAccessToken;
 use GP247\Shop\Models\ShopOrder;
@@ -337,8 +338,11 @@ class CheckoutController extends RootFrontController
     private function placed($orderId, Request $request)
     {
         $this->service()->complete();
+        $response = response()->json(['data' => $this->orderPayload(ShopOrder::findOrFail($orderId), $request)], 201);
+        // WHY here: placing is when stock is taken, so it is when stale unpaid holds are let go (no cron).
+        app(UnpaidApiOrders::class)->expireLazily();
 
-        return response()->json(['data' => $this->orderPayload(ShopOrder::findOrFail($orderId), $request)], 201);
+        return $response;
     }
 
     /**

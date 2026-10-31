@@ -133,7 +133,11 @@ class PurposeRegistry
     public function optionsFor(string $direction): array
     {
         $out = [];
-        foreach (array_keys($this->all()) as $key) {
+        foreach ($this->all() as $key => $definition) {
+            // WHY: a purpose a package creates on its own (e.g. order.checkout) is not for admins to pick.
+            if (($definition['pickable'] ?? true) === false) {
+                continue;
+            }
             if ($this->allowsDirection($key, $direction) && $this->isAvailable($key)) {
                 $out[$key] = $this->label($key);
             }

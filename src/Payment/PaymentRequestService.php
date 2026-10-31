@@ -436,6 +436,32 @@ class PaymentRequestService
     }
 
     /**
+     * The store whose domain serves a request of $storeId (its pay page, the gateway's return
+     * page): the store itself when it has a domain of its own, else ROOT — a marketplace
+     * vendor store has no domain and is sold on the ROOT domain. Money, ledgers, reports and
+     * the gateway settings (credentials, statuses) stay with the request's own store, as the
+     * website checkout of that store's orders does.
+     *
+     * @param string $storeId Store of the request.
+     * @return string
+     *
+     * @aidlc-unit api-commerce
+     * @aidlc-story US-payment-request-public-pay-page, US-api-commerce-hosted-payment
+     * @aidlc-adr payment-request_gateway-capability-contract
+     */
+    public static function servingStoreId(string $storeId): string
+    {
+        $root = (string) GP247_STORE_ID_ROOT;
+        if ($storeId === '' || $storeId === $root) {
+            return $root;
+        }
+        $store = \GP247\Core\Models\AdminStore::find($storeId);
+
+        // WHY an unknown store serves itself: nothing then matches it, as before.
+        return $store !== null && trim((string) $store->domain) === '' ? $root : $storeId;
+    }
+
+    /**
      * @param PaymentRequest $request
      * @return string|null Absolute link, or null when no token exists or the pay page is not routed.
      */

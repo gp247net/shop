@@ -7,6 +7,7 @@ use GP247\Shop\Models\ShopPaymentStatus;
 use GP247\Shop\Payment\Contracts\PaymentGateway;
 use GP247\Shop\Payment\Models\PaymentRequest;
 use GP247\Shop\Payment\OrderBalancePurpose;
+use GP247\Shop\Payment\OrderCheckoutPurpose;
 use GP247\Shop\Payment\OrderPurpose;
 use GP247\Shop\Payment\PaymentRequestService;
 use GP247\Shop\Payment\Support\ReturnUrlPolicy;
@@ -14,7 +15,7 @@ use GP247\Shop\Payment\Support\ReturnUrlPolicy;
 /**
  * How an order placed through the API is paid. A method without a gateway is `none`
  * (cash on delivery, bank transfer…). A method whose gateway can collect is `hosted`: the
- * order's balance becomes a payment request (purpose `order.balance`) and the gateway hands
+ * order's balance becomes a payment request (purpose `order.checkout`) and the gateway hands
  * out its hosted page. The money is recorded later by the gateway's own signed webhook /
  * return page — never by anything the app sends.
  *
@@ -108,7 +109,8 @@ class ApiOrderPayment
     {
         $request = PaymentRequest::where('subject_type', OrderPurpose::SUBJECT_TYPE)
             ->where('subject_id', (string) $order->id)
-            ->where('purpose', OrderBalancePurpose::KEY)
+            // WHY both: requests made before order.checkout existed carry order.balance.
+            ->whereIn('purpose', [OrderCheckoutPurpose::KEY, OrderBalancePurpose::KEY])
             ->where('direction', PaymentRequest::DIRECTION_IN)
             ->orderByDesc('id')
             ->first();
@@ -124,7 +126,7 @@ class ApiOrderPayment
 
         return $this->requests->create([
             'direction'    => PaymentRequest::DIRECTION_IN,
-            'purpose'      => OrderBalancePurpose::KEY,
+            'purpose'      => OrderCheckoutPurpose::KEY,
             'amount'       => (float) $order->balance,
             'currency'     => (string) $order->currency,
             'store_id'     => (string) $order->store_id,

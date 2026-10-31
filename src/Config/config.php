@@ -70,5 +70,8 @@ return [
     // prefix; empty (default) = the payer stays on the site's own pages.
     'payment' => [
         'return_urls' => env('GP247_PAYMENT_RETURN_URLS', ''),
+        // Orders placed through the API and still unpaid at the gateway after this many minutes
+        // are cancelled (stock back) when the next API order is placed — no cron. 0 = never.
+        'api_unpaid_order_minutes' => env('GP247_API_UNPAID_ORDER_MINUTES', 1440),
     ],
 ];

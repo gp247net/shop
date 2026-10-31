@@ -43,4 +43,8 @@ Route::group([
     Route::get('orders/{id}/payment', $status . '@guest');
     Route::get('member/orders/{id}/payment', $status . '@member')
         ->middleware(['auth:customer-api', ApiAbilities::customer(), 'api.customer.active']);
+    // Cancel an unpaid order placed through the API (stock back) — same owners as the status.
+    Route::post('orders/{id}/cancel', $status . '@guestCancel');
+    Route::post('member/orders/{id}/cancel', $status . '@memberCancel')
+        ->middleware(['auth:customer-api', ApiAbilities::customer(), 'api.customer.active']);
 });

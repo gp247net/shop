@@ -144,7 +144,8 @@ class ShopPaymentRequestController extends RootFrontController
         if ($paymentRequest === null || $paymentRequest->direction !== PaymentRequest::DIRECTION_IN) {
             return null;
         }
-        if ((string) $paymentRequest->store_id !== (string) $this->storefrontStoreId()) {
+        // WHY the serving store: a marketplace vendor store has no domain and is paid on ROOT's.
+        if (PaymentRequestService::servingStoreId((string) $paymentRequest->store_id) !== (string) $this->storefrontStoreId()) {
             return null;
         }
 
