@@ -142,6 +142,8 @@ class ShopServiceProvider extends ServiceProvider
 
             $this->registerApiCommerceRateLimiters();
             $this->registerApiCommerceSwitch();
+            // Sync event types of orders, stock, products and customers (US-api-admin-write-shop-events).
+            \GP247\Shop\Services\ShopEvents::register();
 
             // REST API (v1 + v2) through the core seam, only once shop tables exist
             // (US-CMP-api-package-route-registration).

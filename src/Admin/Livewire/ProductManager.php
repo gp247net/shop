@@ -11,6 +11,7 @@ use GP247\Shop\Admin\Livewire\Concerns\HasProductImages;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductPricing;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductTags;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductVariants;
+use GP247\Shop\Admin\Livewire\Concerns\SavesDescriptionsAsChange;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Admin\Models\AdminProduct;
 use GP247\Shop\Models\ShopBrand;
@@ -46,6 +47,7 @@ class ProductManager extends ResourcePanel
     use HasProductComposition;
     use HasProductPricing;
     use HasProductTags;
+    use SavesDescriptionsAsChange;
 
     protected ?string $permission = 'admin_product';
 
@@ -504,6 +506,7 @@ class ProductManager extends ResourcePanel
         $connection = defined('GP247_DB_CONNECTION') ? GP247_DB_CONNECTION : null;
         \DB::connection($connection)->transaction(function () use ($data): void {
             $attributes = $this->productAttributes($data);
+            $editing = $this->editingId !== null;
 
             if ($this->editingId !== null) {
                 $product = ShopProduct::findOrFail($this->editingId);
@@ -520,7 +523,10 @@ class ProductManager extends ResourcePanel
             // so ResourcePanel::save() can re-fill the form and keep it on screen.
             $this->editingId = (string) $product->id;
 
-            $this->saveDescriptions($product->id);
+            // New texts are an edit of an existing product for sync clients (US-api-admin-write-shop-events).
+            if ($this->saveDescriptionsMarkingChange($product) && $editing) {
+                \GP247\Shop\Services\ShopEvents::productTouched($product, ['descriptions']);
+            }
 
             if (function_exists('gp247_custom_field_update')) {
                 gp247_custom_field_update($this->customFieldsPayload(), (string) $product->id, $this->customFieldType());

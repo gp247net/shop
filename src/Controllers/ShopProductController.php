@@ -103,11 +103,15 @@ class ShopProductController extends RootFrontController
         $storeId = config('app.storeId');
         $product = (new ShopProduct)->getDetail($alias, $type = 'alias', $storeId);
         if ($product && $product->status && (!gp247_config('product_stock', $storeId) || gp247_config('product_display_out_of_stock', $storeId) || $product->stock > 0)) {
-            //Update last view
+            // WHY one UPDATE without the model: a page view is not a change of the product —
+            // it must not move updated_at (sync clients read "changed since") nor record an
+            // event — and the increment stays exact under concurrent views
+            // (US-api-admin-write-shop-events, api-admin-write logical design E10).
+            ShopProduct::where('id', $product->id)->toBase()->update([
+                'view' => \DB::raw('view + 1'),
+                'date_lastview' => gp247_time_now(),
+            ]);
             $product->view += 1;
-            $product->date_lastview = gp247_time_now();
-            $product->save();
-            //End last viewed
 
             //Product last view
             $productsLastView = \Illuminate\Support\Facades\Cookie::get('productsLastView');

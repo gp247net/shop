@@ -6,6 +6,7 @@ use GP247\Core\AdminShell\Infrastructure\HasMultilingualDescriptions;
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
 use GP247\Core\Models\AdminLanguage;
 use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
+use GP247\Shop\Admin\Livewire\Concerns\SavesDescriptionsAsChange;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopCategoryDescription;
@@ -33,6 +34,7 @@ class CategoryManager extends ResourcePanel
 {
     use HasMultilingualDescriptions;
     use HasValidationLabels;
+    use SavesDescriptionsAsChange;
 
     protected ?string $permission = 'admin_category';
 
@@ -279,7 +281,8 @@ class CategoryManager extends ResourcePanel
         // ResourcePanel::save() can re-fill the form and keep it on screen.
         $this->editingId = (string) $category->id;
 
-        $this->saveDescriptions($category->id);
+        // New texts move updated_at so "changed since" lists show the category (US-api-admin-write-shop-events).
+        $this->saveDescriptionsMarkingChange($category);
 
         // WHY: keep the category title cache coherent with the legacy controller.
         if (function_exists('gp247_cache_clear')) {

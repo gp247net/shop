@@ -531,6 +531,12 @@ class ShopOrder extends Model
                 $model->{$model->getKeyName()} = 'OD-'.gp247_token(8);
             }
         });
+
+        // WHY at the model: orders are created and moved by the storefront, the admin screens,
+        // the API and plugins — one hook records the sync event for all of them
+        // (ADR api-admin-write_model-hook-event-emission).
+        static::created(fn ($order) => \GP247\Shop\Services\ShopEvents::orderCreated($order));
+        static::updated(fn ($order) => \GP247\Shop\Services\ShopEvents::orderUpdated($order));
     }
 
 

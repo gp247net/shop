@@ -105,7 +105,10 @@ class ShopCustomer extends Authenticatable
                 $sessions = \GP247\Core\Api\Support\ApiSessions::class;
                 $sessions::revokeAll($customer, method_exists($sessions, 'keptTokenId') ? $sessions::keptTokenId() : null);
             }
+            \GP247\Shop\Services\ShopEvents::customerUpdated($customer);
         });
+        // Sign-ups on the storefront, the API, the admin screen or a plugin (ADR api-admin-write_model-hook-event-emission).
+        static::created(fn ($customer) => \GP247\Shop\Services\ShopEvents::customerCreated($customer));
     }
 
 

@@ -433,6 +433,11 @@ class ShopProduct extends Model
             }
         });
 
+        // WHY at the model: the product form, the API and plugins (InOut receiving goods,
+        // a vendor area) all save through it — one hook records stock moves, edits and
+        // deletions (ADR api-admin-write_model-hook-event-emission).
+        static::updated(fn ($product) => \GP247\Shop\Services\ShopEvents::productUpdated($product));
+        static::deleted(fn ($product) => \GP247\Shop\Services\ShopEvents::productDeleted($product));
     }
 
     /*
@@ -596,14 +601,15 @@ class ShopProduct extends Model
     /**
      * Receive (+) or issue (-) stock outside a sale — goods movements reported by an ERP
      * or warehouse tool. Atomic (`stock = stock + delta`, the guard inside the UPDATE) and
-     * never below zero; the sold counter is not touched (this is not a sale).
+     * never below zero; the sold counter is not touched (this is not a sale). Records
+     * `stock.changed`.
      *
      * @param int|string $productId
      * @param float      $delta
      * @return bool False when the product is missing or the result would be negative.
      *
      * @aidlc-unit api-admin-write
-     * @aidlc-story US-api-admin-write-stock-delta
+     * @aidlc-story US-api-admin-write-stock-delta, US-api-admin-write-shop-events
      * @aidlc-adr api-admin-write_stock-commands
      */
     public static function adjustStock($productId, float $delta): bool
@@ -614,28 +620,44 @@ class ShopProduct extends Model
             $query->where('stock', '>=', -$delta);
         }
 
-        return $query->update(['stock' => \DB::raw('stock + ' . $q)]) > 0;
+        if ($query->update(['stock' => \DB::raw('stock + ' . $q)]) === 0) {
+            return false;
+        }
+        \GP247\Shop\Services\ShopEvents::stockMoved($productId, $delta);
+
+        return true;
     }
 
     /**
      * Set the stock of a product outright (after a stock count). Atomic single UPDATE;
-     * the sold counter is not touched.
+     * the sold counter is not touched. Records `stock.changed`.
      *
      * @param int|string $productId
      * @param float      $qty Must be zero or more (checked by the caller).
      * @return bool False when the product is missing.
      *
      * @aidlc-unit api-admin-write
-     * @aidlc-story US-api-admin-write-stock-absolute
+     * @aidlc-story US-api-admin-write-stock-absolute, US-api-admin-write-shop-events
      * @aidlc-adr api-admin-write_stock-commands
      */
     public static function setStock($productId, float $qty): bool
     {
-        return self::where('id', $productId)->update(['stock' => $qty]) > 0;
+        // WHY read first only while events are recorded: the event carries the change, and a
+        // site with the log off pays nothing more than the one UPDATE.
+        $before = \GP247\Shop\Services\ShopEvents::active() ? self::where('id', $productId)->value('stock') : null;
+        if (self::where('id', $productId)->update(['stock' => $qty]) === 0) {
+            return false;
+        }
+        if ($before !== null) {
+            \GP247\Shop\Services\ShopEvents::stockMoved($productId, $qty - (float) $before);
+        }
+
+        return true;
     }
 
     /**
-     * Apply one atomic stock/sold delta to a single product row.
+     * Apply one atomic stock/sold delta to a single product row; records `stock.changed`
+     * (US-api-admin-write-shop-events).
      *
      * @param int|string $product_id Product row to update.
      * @param float       $qtyChange  Positive decrements stock; negative returns it.
@@ -660,6 +682,10 @@ class ShopProduct extends Model
             'stock' => \DB::raw('stock - ' . $q),
             'sold' => \DB::raw('sold + ' . $q),
         ]);
+        if ($affected > 0) {
+            // WHY explicit: a query-builder update fires no model event (ADR api-admin-write_model-hook-event-emission).
+            \GP247\Shop\Services\ShopEvents::stockMoved($product_id, -$qtyChange);
+        }
 
         return $affected > 0;
     }

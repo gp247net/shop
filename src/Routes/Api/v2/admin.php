@@ -51,3 +51,12 @@ Route::group([
     Route::post('product/{id}/stock', $stock.'@single')->middleware('api.idempotent');
     Route::post('stock/batch', $stock.'@batch')->middleware('api.idempotent');
 });
+
+// Admin API lock / unlock of a customer (US-api-admin-write-customer-status): a write on the
+// Customers screen; an Idempotency-Key is accepted.
+Route::group([
+    'prefix'     => GP247_API_V2_CORE_PREFIX,
+    'middleware' => ['auth:admin-api', ApiAbilities::admin(), 'api.admin:admin_customer.index,write', 'throttle:gp247-api-write', 'api.idempotent:optional'],
+], function () {
+    Route::patch('customer/{id}', gp247_namespace(\GP247\Shop\Api\V2\CustomerWriteController::class).'@update');
+});
