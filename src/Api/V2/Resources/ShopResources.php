@@ -3,6 +3,7 @@
 namespace GP247\Shop\Api\V2\Resources;
 
 use GP247\Core\Api\V2\ApiQuery;
+use GP247\Core\Api\V2\ApiShapeSelection;
 
 /**
  * Declared v2 shapes of the smaller shop records (category, brand, supplier,
@@ -126,9 +127,13 @@ final class ShopResources
      *
      * @param \GP247\Shop\Models\ShopOrder $o
      * @param bool                         $admin
+     * @param ApiShapeSelection|null       $shape Fields chosen by the request; lines and totals are read
+     *                                            only when chosen (their relations may not be loaded).
      * @return array<string, mixed>
+     *
+     * @aidlc-story US-CMP-api-sparse-fieldsets
      */
-    public static function order($o, bool $admin = false): array
+    public static function order($o, bool $admin = false, ?ApiShapeSelection $shape = null): array
     {
         $data = [
             'id' => $o->id, 'customer_id' => $o->customer_id, 'status' => (int) $o->status,
@@ -143,13 +148,13 @@ final class ShopResources
             'address3' => $o->address3, 'comment' => $o->comment,
             'payment_method' => $o->payment_method, 'shipping_method' => $o->shipping_method,
             'store_id' => $o->store_id,
-            'details' => $o->details->map(fn ($d) => [
+            'details' => fn () => $o->details->map(fn ($d) => [
                 'id' => $d->id, 'product_id' => $d->product_id, 'sku' => $d->sku, 'name' => $d->name,
                 'price' => (float) $d->price, 'qty' => (float) $d->qty, 'discount' => (float) $d->discount,
                 'tax' => (float) $d->tax, 'tax_rate' => (float) $d->tax_rate, 'total_price' => (float) $d->total_price,
                 'attribute' => $d->attribute,
             ])->values(),
-            'totals' => $o->orderTotal->sortBy('sort')->map(fn ($t) => [
+            'totals' => fn () => $o->orderTotal->sortBy('sort')->map(fn ($t) => [
                 'code' => $t->code, 'title' => $t->title, 'value' => (float) $t->value, 'text' => $t->text,
             ])->values(),
             'created_at' => self::date($o->created_at), 'updated_at' => self::date($o->updated_at),
@@ -157,7 +162,7 @@ final class ShopResources
         if ($admin) {
             $data += ['ip' => $o->ip, 'user_agent' => $o->user_agent, 'device_type' => $o->device_type, 'domain' => $o->domain, 'transaction' => $o->transaction];
         }
-        return $data;
+        return ApiShapeSelection::build($shape, $data);
     }
 
     /**

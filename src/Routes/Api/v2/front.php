@@ -12,13 +12,16 @@ use Illuminate\Support\Facades\Route;
 Route::group([
     'prefix' => GP247_API_V2_FRONT_PREFIX,
 ], function () {
-    $catalog = gp247_namespace(CatalogController::class);
-    Route::get('product/list', $catalog.'@productList');
-    Route::get('product/detail/{id}', $catalog.'@productDetail');
-    Route::get('category/list', $catalog.'@categoryList');
-    Route::get('category/detail/{id}', $catalog.'@categoryDetail');
-    Route::get('brand/list', $catalog.'@brandList');
-    Route::get('brand/detail/{id}', $catalog.'@brandDetail');
+    // Public catalog: no one's own data, so browsers / a CDN may keep it (US-CMP-api-public-cache-control).
+    Route::group(['middleware' => ['api.cache.public']], function () {
+        $catalog = gp247_namespace(CatalogController::class);
+        Route::get('product/list', $catalog.'@productList');
+        Route::get('product/detail/{id}', $catalog.'@productDetail');
+        Route::get('category/list', $catalog.'@categoryList');
+        Route::get('category/detail/{id}', $catalog.'@categoryDetail');
+        Route::get('brand/list', $catalog.'@brandList');
+        Route::get('brand/detail/{id}', $catalog.'@brandDetail');
+    });
 
     $member = gp247_namespace(MemberController::class);
     $account = gp247_namespace(AccountController::class);

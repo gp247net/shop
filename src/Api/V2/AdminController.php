@@ -8,6 +8,7 @@ use GP247\Front\Controllers\RootFrontController;
 use GP247\Shop\Api\Support\Commerce\ProductPurchaseData;
 use GP247\Shop\Api\V2\Resources\ProductResource;
 use GP247\Shop\Api\V2\Resources\ShopResources;
+use GP247\Shop\Api\V2\Resources\ShopShapes;
 use GP247\Shop\Models\ShopBrand;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopCustomer;
@@ -24,7 +25,8 @@ use Illuminate\Http\Request;
  *
  * @aidlc-unit compat-foundation
  * @aidlc-story US-CMP-api-v2-contract, US-CMP-api-v2-query-parameters
- * @aidlc-adr compat-foundation_rest-api-hardening
+ * @aidlc-story US-CMP-api-sparse-fieldsets, US-CMP-api-include-relations
+ * @aidlc-adr compat-foundation_rest-api-hardening, compat-foundation_api-http-caching-and-shaping
  */
 class AdminController extends RootFrontController
 {
@@ -35,10 +37,11 @@ class AdminController extends RootFrontController
     public function productList(Request $request)
     {
         $lang = ApiQuery::lang($request);
-        $query = ApiStoreScope::apply(ShopProduct::query())->with(array_merge(['descriptions', 'promotionPrice', 'categories:id'], ProductPurchaseData::RELATIONS));
+        $shape = ShopShapes::product(true, false, $lang)->resolve($request);
+        $query = ApiStoreScope::apply(ShopProduct::query())->with($shape->with(array_merge(['descriptions', 'promotionPrice', 'categories:id'], ProductPurchaseData::RELATIONS)));
 
-        return ApiQuery::page($query, $request, fn ($p) => (new ProductResource($p, $lang, true))->resolve($request),
-            ProductQuery::filters(true), ProductQuery::sorts(), ProductQuery::search(), changedSince: true);
+        return ApiQuery::page($query, $request, fn ($p) => (new ProductResource($p, $lang, true, false, $shape))->resolve($request),
+            ProductQuery::filters(true), ProductQuery::sorts(), ProductQuery::search(), changedSince: true, shape: $shape);
     }
 
     /**
@@ -49,9 +52,10 @@ class AdminController extends RootFrontController
     public function productDetail(Request $request, $id)
     {
         $lang = ApiQuery::lang($request);
-        $product = ApiStoreScope::apply(ShopProduct::query())->with(array_merge(['descriptions', 'images', 'promotionPrice', 'categories:id'], ProductPurchaseData::RELATIONS))->where('id', $id)->first();
+        $shape = ShopShapes::product(true, true, $lang)->resolve($request);
+        $product = ApiStoreScope::apply(ShopProduct::query())->with($shape->with(array_merge(['descriptions', 'images', 'promotionPrice', 'categories:id'], ProductPurchaseData::RELATIONS)))->where('id', $id)->first();
 
-        return ApiQuery::one($product, fn ($p) => (new ProductResource($p, $lang, true, true))->resolve($request));
+        return ApiQuery::one($product, fn ($p) => (new ProductResource($p, $lang, true, true, $shape))->resolve($request), $shape);
     }
 
     /**
@@ -66,7 +70,8 @@ class AdminController extends RootFrontController
             fn ($c) => ShopResources::category($c, $lang),
             ['parent' => fn (Builder $q, string $v) => $q->where('parent', $v), 'status' => fn (Builder $q, string $v) => $q->where('status', (int) $v)],
             ['sort' => 'sort', 'created_at' => 'created_at'],
-            fn (Builder $q, string $term) => $q->whereHas('descriptions', fn ($d) => $d->where('name', 'like', ApiQuery::like($term))), changedSince: true);
+            fn (Builder $q, string $term) => $q->whereHas('descriptions', fn ($d) => $d->where('name', 'like', ApiQuery::like($term))), changedSince: true,
+            shape: ShopShapes::category()->resolve($request));
     }
 
     /**
@@ -78,8 +83,10 @@ class AdminController extends RootFrontController
     {
         $lang = ApiQuery::lang($request);
 
+        $shape = ShopShapes::category()->resolve($request);
+
         return ApiQuery::one(ApiStoreScope::apply(ShopCategory::query())->with('descriptions')->where('id', $id)->first(),
-            fn ($c) => ShopResources::category($c, $lang));
+            fn ($c) => ShopResources::category($c, $lang), $shape);
     }
 
     /**
@@ -90,7 +97,8 @@ class AdminController extends RootFrontController
     {
         return ApiQuery::page(ApiStoreScope::apply(ShopBrand::query()), $request, fn ($b) => ShopResources::brand($b),
             ['status' => fn (Builder $q, string $v) => $q->where('status', (int) $v)], ['sort' => 'sort', 'name' => 'name'],
-            fn (Builder $q, string $term) => $q->where('name', 'like', ApiQuery::like($term)), changedSince: true);
+            fn (Builder $q, string $term) => $q->where('name', 'like', ApiQuery::like($term)), changedSince: true,
+            shape: ShopShapes::brand()->resolve($request));
     }
 
     /**
@@ -100,7 +108,9 @@ class AdminController extends RootFrontController
      */
     public function brandDetail(Request $request, $id)
     {
-        return ApiQuery::one(ApiStoreScope::apply(ShopBrand::query())->where('id', $id)->first(), fn ($b) => ShopResources::brand($b));
+        $shape = ShopShapes::brand()->resolve($request);
+
+        return ApiQuery::one(ApiStoreScope::apply(ShopBrand::query())->where('id', $id)->first(), fn ($b) => ShopResources::brand($b), $shape);
     }
 
     /**
@@ -111,7 +121,8 @@ class AdminController extends RootFrontController
     {
         return ApiQuery::page(ApiStoreScope::apply(ShopSupplier::query()), $request, fn ($s) => ShopResources::supplier($s),
             ['status' => fn (Builder $q, string $v) => $q->where('status', (int) $v)], ['sort' => 'sort', 'name' => 'name'],
-            fn (Builder $q, string $term) => $q->where(fn ($w) => $w->where('name', 'like', ApiQuery::like($term))->orWhere('email', 'like', ApiQuery::like($term))), changedSince: true);
+            fn (Builder $q, string $term) => $q->where(fn ($w) => $w->where('name', 'like', ApiQuery::like($term))->orWhere('email', 'like', ApiQuery::like($term))), changedSince: true,
+            shape: ShopShapes::supplier()->resolve($request));
     }
 
     /**
@@ -121,7 +132,9 @@ class AdminController extends RootFrontController
      */
     public function supplierDetail(Request $request, $id)
     {
-        return ApiQuery::one(ApiStoreScope::apply(ShopSupplier::query())->where('id', $id)->first(), fn ($s) => ShopResources::supplier($s));
+        $shape = ShopShapes::supplier()->resolve($request);
+
+        return ApiQuery::one(ApiStoreScope::apply(ShopSupplier::query())->where('id', $id)->first(), fn ($s) => ShopResources::supplier($s), $shape);
     }
 
     /**
@@ -136,7 +149,8 @@ class AdminController extends RootFrontController
             fn (Builder $q, string $term) => $q->where(fn ($w) => $w->where('email', 'like', ApiQuery::like($term))
                 ->orWhere('phone', 'like', ApiQuery::like($term))
                 ->orWhere('first_name', 'like', ApiQuery::like($term))
-                ->orWhere('last_name', 'like', ApiQuery::like($term))), changedSince: true);
+                ->orWhere('last_name', 'like', ApiQuery::like($term))), changedSince: true,
+            shape: ShopShapes::customer(true)->resolve($request));
     }
 
     /**
@@ -146,7 +160,9 @@ class AdminController extends RootFrontController
      */
     public function customerDetail(Request $request, $id)
     {
-        return ApiQuery::one(ApiStoreScope::apply(ShopCustomer::query())->where('id', $id)->first(), fn ($c) => ShopResources::customer($c, true));
+        $shape = ShopShapes::customer(true)->resolve($request);
+
+        return ApiQuery::one(ApiStoreScope::apply(ShopCustomer::query())->where('id', $id)->first(), fn ($c) => ShopResources::customer($c, true), $shape);
     }
 
     /**
@@ -155,9 +171,10 @@ class AdminController extends RootFrontController
      */
     public function orderList(Request $request)
     {
-        $query = ApiStoreScope::apply(ShopOrder::query())->with(['details', 'orderTotal']);
+        $shape = ShopShapes::order(true)->resolve($request);
+        $query = ApiStoreScope::apply(ShopOrder::query())->with($shape->with(['details', 'orderTotal']));
 
-        return ApiQuery::page($query, $request, fn ($o) => ShopResources::order($o, true),
+        return ApiQuery::page($query, $request, fn ($o) => ShopResources::order($o, true, $shape),
             ['status' => fn (Builder $q, string $v) => $q->where('status', (int) $v),
              'payment_status' => fn (Builder $q, string $v) => $q->where('payment_status', (int) $v),
              'shipping_status' => fn (Builder $q, string $v) => $q->where('shipping_status', (int) $v),
@@ -165,7 +182,7 @@ class AdminController extends RootFrontController
             ['created_at' => 'created_at', 'total' => 'total'],
             fn (Builder $q, string $term) => $q->where(fn ($w) => $w->where('id', $term)
                 ->orWhere('email', 'like', ApiQuery::like($term))
-                ->orWhere('phone', 'like', ApiQuery::like($term))), changedSince: true);
+                ->orWhere('phone', 'like', ApiQuery::like($term))), changedSince: true, shape: $shape);
     }
 
     /**
@@ -175,7 +192,9 @@ class AdminController extends RootFrontController
      */
     public function orderDetail(Request $request, $id)
     {
-        return ApiQuery::one(ApiStoreScope::apply(ShopOrder::query())->with(['details', 'orderTotal'])->where('id', $id)->first(),
-            fn ($o) => ShopResources::order($o, true));
+        $shape = ShopShapes::order(true)->resolve($request);
+
+        return ApiQuery::one(ApiStoreScope::apply(ShopOrder::query())->with($shape->with(['details', 'orderTotal']))->where('id', $id)->first(),
+            fn ($o) => ShopResources::order($o, true, $shape), $shape);
     }
 }

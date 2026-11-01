@@ -12,6 +12,7 @@ use GP247\Shop\Api\Front\MemberAuthController;
 use GP247\Shop\Api\Middleware\CheckoutSessionBridge;
 use GP247\Shop\Api\Support\Commerce\ApiCartRepository;
 use GP247\Shop\Api\V2\Resources\ShopResources;
+use GP247\Shop\Api\V2\Resources\ShopShapes;
 use GP247\Shop\Models\ShopOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -186,11 +187,12 @@ class MemberController extends MemberAuthController
      */
     public function orderList(Request $request)
     {
-        $query = ShopOrder::query()->with(['details', 'orderTotal'])->where('customer_id', $request->user()->id);
+        $shape = ShopShapes::order(false)->resolve($request);
+        $query = ShopOrder::query()->with($shape->with(['details', 'orderTotal']))->where('customer_id', $request->user()->id);
 
-        return ApiQuery::page($query, $request, fn ($o) => ShopResources::order($o),
+        return ApiQuery::page($query, $request, fn ($o) => ShopResources::order($o, false, $shape),
             ['status' => fn (Builder $q, string $v) => $q->where('status', (int) $v)],
-            ['created_at' => 'created_at', 'total' => 'total']);
+            ['created_at' => 'created_at', 'total' => 'total'], null, false, $shape);
     }
 
     /**
@@ -200,9 +202,10 @@ class MemberController extends MemberAuthController
      */
     public function orderDetail(Request $request, $id)
     {
-        $order = ShopOrder::query()->with(['details', 'orderTotal'])
+        $shape = ShopShapes::order(false)->resolve($request);
+        $order = ShopOrder::query()->with($shape->with(['details', 'orderTotal']))
             ->where('customer_id', $request->user()->id)->where('id', $id)->first();
 
-        return ApiQuery::one($order, fn ($o) => ShopResources::order($o));
+        return ApiQuery::one($order, fn ($o) => ShopResources::order($o, false, $shape), $shape);
     }
 }
