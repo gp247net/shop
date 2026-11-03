@@ -1835,7 +1835,7 @@ class DataShopLanguageSeeder extends Seeder
         ]);
 
         // "Check before use" box of shipping / payment plugin settings screens (mod 20261018T185359, 20261018T203509).
-        // Sites installed earlier get them from the matching upgrade migrations; ReadinessLabelSeedTest keeps both in step.
+        // Sites installed earlier get them from the matching upgrade migrations; change a text in both places.
         $this->writeLang([
             ['code' => 'admin.shipping.warn_shipping_off','text' => 'Vận chuyển đang tắt: khách không chọn được cách giao hàng ở trang thanh toán.','position' => 'admin.shipping','location' => 'vi'],
             ['code' => 'admin.shipping.warn_shipping_off','text' => 'Shipping is off: shoppers cannot choose a delivery method at checkout.','position' => 'admin.shipping','location' => 'en'],
