@@ -36,11 +36,8 @@
                         </p>
                     @endif
                 </div>
-                @if ($editingId)
-                    <x-gp247::button size="sm" variant="success" wire:click="cancelEdit" data-testid="payment-request-back">
-                        <i class="fas fa-plus"></i> {{ gp247_language_render('admin.payment_request.new_request') }}
-                    </x-gp247::button>
-                @endif
+                <x-gp247::form-new-button :editing="$editingId" :label="gp247_language_render('admin.payment_request.new_request')"
+                    data-testid="payment-request-back" />
             </x-slot:header>
             <form wire:submit="save" class="space-y-4" data-testid="payment-request-create">
 
@@ -152,10 +149,7 @@
                         wire:model="form.expires_at" :error="$errors->first('form.expires_at')" />
                 </div>
 
-                <div class="flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-700">
-                    <x-gp247::button variant="secondary" wire:click="cancelEdit" data-testid="payment-request-form-reset">
-                        {{ gp247_language_render($editingId ? 'admin.cancel' : 'admin.reset') }}
-                    </x-gp247::button>
+                <div class="flex items-center justify-end border-t border-gray-200 pt-4 dark:border-gray-700">
                     <x-gp247::button type="submit" wire:loading.attr="disabled" data-testid="payment-request-save">
                         <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.update' : 'admin.submit') }}
                     </x-gp247::button>

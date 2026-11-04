@@ -13,13 +13,15 @@
 
     {{-- Left: add / edit form --}}
     <x-gp247::card :title="gp247_language_render($editingId ? 'action.edit' : 'admin.subscribe.add_new_title')">
+        <x-slot:actions>
+            <x-gp247::form-new-button :editing="$editingId" data-testid="admin-subscribe-form-new" />
+        </x-slot:actions>
         <form wire:submit="save" class="space-y-4">
             @include('gp247-admin::partials.store-scope-picker', ['testid' => 'subscribe-store-select'])
             <x-gp247::input type="email" :label="gp247_language_render('admin.subscribe.email')" name="email"
                 wire:model="form.email" :error="$errors->first('form.email')" required />
             <x-gp247::checkbox :label="gp247_language_render('admin.active')" wire:model="form.status" value="1" />
-            <div class="flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-700">
-                <x-gp247::button variant="secondary" wire:click="cancelEdit" data-testid="admin-subscribe-form-cancel">{{ gp247_language_render($editingId ? 'admin.cancel' : 'admin.reset') }}</x-gp247::button>
+            <div class="flex items-center justify-end border-t border-gray-200 pt-4 dark:border-gray-700">
                 <x-gp247::button type="submit" wire:loading.attr="disabled">
                     <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.update' : 'admin.submit') }}
                 </x-gp247::button>

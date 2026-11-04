@@ -12,6 +12,9 @@
 
     {{-- Left: add / edit form --}}
     <x-gp247::card :title="gp247_language_render($editingId ? 'action.edit' : 'admin.supplier.add_new')">
+        <x-slot:actions>
+            <x-gp247::form-new-button :editing="$editingId" data-testid="admin-supplier-form-new" />
+        </x-slot:actions>
         <form wire:submit="save" class="space-y-4">
             @include('gp247-admin::partials.store-scope-picker', ['testid' => 'supplier-store-select'])
             <x-gp247::input :label="gp247_language_render('admin.supplier.name')" name="name"
@@ -30,8 +33,7 @@
                 wire:model="form.address" :error="$errors->first('form.address')" />
             <x-gp247::input type="number" min="0" :label="gp247_language_render('admin.sort')"
                 name="sort" wire:model="form.sort" :error="$errors->first('form.sort')" required />
-            <div class="flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-700">
-                <x-gp247::button variant="secondary" wire:click="cancelEdit" data-testid="admin-supplier-form-cancel">{{ gp247_language_render($editingId ? 'admin.cancel' : 'admin.reset') }}</x-gp247::button>
+            <div class="flex items-center justify-end border-t border-gray-200 pt-4 dark:border-gray-700">
                 <x-gp247::button type="submit" wire:loading.attr="disabled">
                     <i class="fas fa-save"></i> {{ gp247_language_render($editingId ? 'admin.update' : 'admin.submit') }}
                 </x-gp247::button>
