@@ -580,6 +580,23 @@ class ShopServiceProvider extends ServiceProvider
         $registry::declare('config', [
             'shop_currency', 'shop_tax', 'shop_order_status', 'shop_payment_status', 'shop_shipping_status',
         ], ['shop_sessions', 'shop_password_resets']);
+
+        // Rows that come back with a deleted order / product / customer / category when it is
+        // restored from a backup (cores before the restore feature have no relate()).
+        if (!method_exists($registry, 'relate')) {
+            return;
+        }
+        $registry::relate('shop_order', [
+            'shop_order_detail' => 'order_id', 'shop_order_history' => 'order_id', 'shop_order_total' => 'order_id',
+            'shop_order_transaction' => 'order_id', 'shop_shipment' => 'order_id',
+        ]);
+        $registry::relate('shop_product', [
+            'shop_product_description' => 'product_id', 'shop_product_image' => 'product_id', 'shop_product_category' => 'product_id',
+            'shop_product_promotion' => 'product_id', 'shop_product_attribute' => 'product_id', 'shop_product_download' => 'product_id',
+            'shop_product_tag_pivot' => 'product_id', 'shop_product_build' => 'build_id', 'shop_product_group' => 'group_id',
+        ]);
+        $registry::relate('shop_customer', ['shop_customer_address' => 'customer_id']);
+        $registry::relate('shop_category', ['shop_category_description' => 'category_id']);
     }
 
     /**
