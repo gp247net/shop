@@ -107,7 +107,12 @@ class DataShopLanguageSeeder extends Seeder
         $rows = $this->buffer;
         $this->buffer = [];
 
-        return array_merge($rows, LocaleRows::fromFile(__DIR__.'/Locales/ja.php', 'ja', $rows));
+        // Customer block of the Password policy screen: rows (en/vi/ja) shared with the upgrade migration.
+        return array_merge(
+            $rows,
+            LocaleRows::fromFile(__DIR__.'/Locales/ja.php', 'ja', $rows),
+            \GP247\Shop\Support\CustomerPasswordPolicy::languageRows()
+        );
     }
 
     /**

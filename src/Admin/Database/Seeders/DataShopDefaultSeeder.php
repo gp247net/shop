@@ -5,6 +5,7 @@ namespace GP247\Shop\Admin\Database\Seeders;
 use Illuminate\Database\Seeder;
 use GP247\Core\Models\AdminConfig;
 use GP247\Core\Models\AdminStore;
+use GP247\Shop\Support\CustomerPasswordPolicy;
 use GP247\Front\Models\FrontLink;
 use GP247\Front\Models\FrontLayoutBlock;
 
@@ -31,6 +32,12 @@ class DataShopDefaultSeeder extends Seeder
 
         $dataConfig = $this->dataConfigShop($storeId);
         AdminConfig::insertOrIgnore($dataConfig);
+        // Customer password policy (site-wide) on the core Password policy screen; a fresh
+        // install starts at 8–64 (US-admin-shell-password-policy-single-source).
+        AdminConfig::insertOrIgnore(CustomerPasswordPolicy::configRows(
+            CustomerPasswordPolicy::DEFAULT_MIN,
+            CustomerPasswordPolicy::DEFAULT_MAX
+        ));
         
         $links = [
             [

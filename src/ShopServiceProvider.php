@@ -143,6 +143,7 @@ class ShopServiceProvider extends ServiceProvider
             $this->registerApiCommerceRateLimiters();
             $this->registerApiCommerceSwitch();
             $this->registerBackupDataGroups();
+            $this->registerCustomerPasswordPolicy();
             // Sync event types of orders, stock, products and customers (US-api-admin-write-shop-events).
             \GP247\Shop\Services\ShopEvents::register();
 
@@ -524,6 +525,28 @@ class ShopServiceProvider extends ServiceProvider
             return \Illuminate\Cache\RateLimiting\Limit::perMinute($perMinute)
                 ->by('place|' . ($bearer !== '' ? 'b:' . hash('sha256', $bearer) : 'ip:' . $request->ip()));
         });
+    }
+
+    /**
+     * Put the customer account group on the core Password policy screen, so every customer
+     * password path follows the policy set there. Guarded by gp247_shop_installed() — the
+     * DB-level install truth (gp247.md §0) — and by the core seam being present.
+     *
+     * @return void
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-admin-shell-password-policy-audiences
+     * @aidlc-adr admin-shell_password-policy-registry
+     */
+    protected function registerCustomerPasswordPolicy(): void
+    {
+        if (!class_exists(\GP247\Core\Support\Password\PasswordPolicyRegistry::class)) {
+            return;
+        }
+        if (!function_exists('gp247_shop_installed') || !gp247_shop_installed()) {
+            return;
+        }
+        \GP247\Core\Support\Password\PasswordPolicyRegistry::register(\GP247\Shop\Support\CustomerPasswordPolicy::audience());
     }
 
     /**

@@ -51,8 +51,8 @@ class CustomerAccountService
     }
 
     /**
-     * Rule of a password the customer sets themselves: required, the store's strength
-     * settings, and confirmed by `password_confirmation`.
+     * Rule of a password the customer sets themselves: required, the site's customer password
+     * policy, and confirmed by `password_confirmation`.
      *
      * @return array<int, mixed>
      */
@@ -109,7 +109,7 @@ class CustomerAccountService
     }
 
     /**
-     * Rules of a new password (per-store strength settings).
+     * Rules of a new password (customer block of the Password policy screen).
      *
      * @return array<string, mixed>
      */
@@ -141,7 +141,7 @@ class CustomerAccountService
                 'password_old' => gp247_language_render('customer.password_old_notcorrect'),
             ]);
         }
-        $customer->password = bcrypt($new);
+        $customer->password = gp247_password_hash($new);
         // WHY keeping(): the ShopCustomer `updated` hook revokes every API credential when
         // the password changes; the API session changing it must survive.
         ApiSessions::keeping($keepTokenId, fn () => $customer->save());
@@ -158,7 +158,7 @@ class CustomerAccountService
      */
     public function resetPassword(ShopCustomer $customer, string $new): void
     {
-        $customer->password = Hash::make($new);
+        $customer->password = gp247_password_hash($new);
         $customer->setRememberToken(Str::random(60));
         // The ShopCustomer `updated` hook revokes every API credential (password changed).
         $customer->save();

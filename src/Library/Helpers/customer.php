@@ -221,7 +221,7 @@ if (!function_exists('gp247_customer_data_insert_mapping') && !in_array('gp247_c
         // JSON body without the key (API register) must reach the "password required" rule (422)
         // instead of crashing here (500). Forms always post the key, so their result is unchanged.
         if (isset($dataRaw['password'])) {
-            $dataInsert['password'] = bcrypt($dataRaw['password']);
+            $dataInsert['password'] = gp247_password_hash($dataRaw['password']);
         }
 
         $emailUnique = '|unique:"'.ShopCustomer::class.'",email';
@@ -503,7 +503,7 @@ if (!function_exists('gp247_customer_data_edit_mapping') && !in_array('gp247_cus
         $dataUpdate['fields'] = $dataRaw['fields'] ?? [];
 
         if (!empty($dataRaw['password'])) {
-            $dataUpdate['password'] = bcrypt($dataRaw['password']);
+            $dataUpdate['password'] = gp247_password_hash($dataRaw['password']);
         }
         if (gp247_config_admin('customer_email')) {
             $emailUnique = '|unique:"'.ShopCustomer::class.'",email,'.$dataRaw['id'].',id';
@@ -762,32 +762,25 @@ if (!function_exists('gp247_customer_created_by_admin') && !in_array('gp247_cust
 }
 
 /**
- * Process validate password
+ * Rules of a customer password, from the customer block of the core Password policy screen
+ * (one site-wide policy; length and character switches all live in the rule object).
+ * Developers may still replace this helper through gp247_functions_except.
+ *
+ * @return array{password: array<int, mixed>, password_confirm: array<int, mixed>, password_nullable: array<int, mixed>}
+ *
+ * @aidlc-unit storefront
+ * @aidlc-story US-admin-shell-password-policy-single-source
+ * @aidlc-adr admin-shell_password-policy-registry
  */
 if (!function_exists('gp247_customer_validate_password') && !in_array('gp247_customer_validate_password', config('gp247_functions_except', []))) {
     function gp247_customer_validate_password()
     {
-        $passwordValidate = \Illuminate\Validation\Rules\Password::min(gp247_config('customer_password_min', null, 6));
-        if (gp247_config('customer_password_letter')) {
-            // Require at least one letter...
-            $passwordValidate = $passwordValidate->letters();
-        }
-        if (gp247_config('customer_password_mixedcase')) {
-            // Require at least one uppercase and one lowercase letter...
-            $passwordValidate = $passwordValidate->mixedCase();
-        }
-        if (gp247_config('customer_password_number')) {
-            // Require at least one number...
-            $passwordValidate = $passwordValidate->numbers();
-        }
-        if (gp247_config('customer_password_symbol')) {
-            // Require at least one symbol...
-            $passwordValidate = $passwordValidate->symbols();
-        }
+        $passwordValidate = gp247_password_rule(\GP247\Shop\Support\CustomerPasswordPolicy::AUDIENCE);
+
         return [
-            'password'          => ['required','string', $passwordValidate, 'max: '.gp247_config('customer_password_max', null, 16)],
-            'password_confirm'  => ['nullable','string', $passwordValidate, 'max: '.gp247_config('customer_password_max', null, 16), 'confirmed'],
-            'password_nullable' => ['nullable','string', $passwordValidate, 'max: '.gp247_config('customer_password_max', null, 16)],
+            'password'          => ['required', 'string', $passwordValidate],
+            'password_confirm'  => ['nullable', 'string', $passwordValidate, 'confirmed'],
+            'password_nullable' => ['nullable', 'string', $passwordValidate],
         ];
     }
 }

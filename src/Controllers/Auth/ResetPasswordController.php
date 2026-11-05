@@ -106,6 +106,25 @@ class ResetPasswordController extends RootFrontController
     }
 
     /**
+     * Reset rules: the new password follows the customer password policy — the same rule
+     * as sign-up and the API reset (Laravel's default rule would differ from both).
+     *
+     * @return array<string, mixed>
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-admin-shell-password-policy-single-source
+     * @aidlc-adr admin-shell_password-policy-registry
+     */
+    protected function rules()
+    {
+        return [
+            'token'    => 'required',
+            'email'    => 'required|email',
+            'password' => array_merge(gp247_customer_validate_password()['password'], ['confirmed']),
+        ];
+    }
+
+    /**
      * Reset the password; sign the customer in only when the account is active.
      *
      * WHY: the trait signs in unconditionally, which let a locked customer (status 0)
