@@ -15,12 +15,17 @@ if (!function_exists('customer') && !in_array('customer', config('gp247_function
 }
 
 /**
- * Send email reset password
+ * Send email reset password. The link is built against the configured domain of
+ * the store (gp247_mail_link_url), never the Host of the request that asked for it.
+ *
+ * @aidlc-unit storefront
+ * @aidlc-story US-CMP-mail-link-configured-domain
+ * @aidlc-adr compat-foundation_forwarded-header-trust
  */
 if (!function_exists('gp247_customer_sendmail_reset_notification') && !in_array('gp247_customer_sendmail_reset_notification', config('gp247_functions_except', []))) {
     function gp247_customer_sendmail_reset_notification(string $token, string $emailReset)
     {
-            $url = gp247_route_front('customer.password_reset', ['token' => $token]);
+            $url = gp247_mail_link_url(fn () => gp247_route_front('customer.password_reset', ['token' => $token]));
             $dataView = [
                 'title' => gp247_language_render('email.forgot_password.title'),
                 'reason_sendmail' => gp247_language_render('email.forgot_password.reason_sendmail'),
@@ -40,20 +45,25 @@ if (!function_exists('gp247_customer_sendmail_reset_notification') && !in_array(
 
 
 /**
- * Send email verify
+ * Send email verify. The signed link is built against the configured domain of the
+ * store (gp247_mail_link_url), never the Host of the request that asked for it.
+ *
+ * @aidlc-unit storefront
+ * @aidlc-story US-CMP-mail-link-configured-domain, US-LW-email-verify-signed-link
+ * @aidlc-adr compat-foundation_forwarded-header-trust
  */
 if (!function_exists('gp247_customer_sendmail_verify') && !in_array('gp247_customer_sendmail_verify', config('gp247_functions_except', []))) {
     function gp247_customer_sendmail_verify(string $emailVerify, string $userId)
     {
 
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $url = gp247_mail_link_url(fn () => \Illuminate\Support\Facades\URL::temporarySignedRoute(
             'customer.verify_process',
             \Carbon\Carbon::now()->addMinutes(config('auth.verification', 60)),
             [
                 'id' => $userId,
                 'token' => sha1($emailVerify),
             ]
-        );
+        ));
 
         $dataView = [
             'title' => gp247_language_render('email.verification_content.title'),
