@@ -74,6 +74,20 @@ class SubscribeManager extends ResourcePanel
     }
 
     /**
+     * Language keys naming the searched columns (shown in the search box).
+     *
+     * @return array<string, string>
+     *
+     * @aidlc-story US-admin-shell-list-search-scope-hint
+     */
+    protected function searchLabels(): array
+    {
+        return [
+            'email' => 'admin.subscribe.email',
+        ];
+    }
+
+    /**
      * @return array<int, string>
      */
     protected function sortableColumns(): array

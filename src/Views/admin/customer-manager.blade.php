@@ -191,11 +191,10 @@
     {{-- Right: list --}}
     <x-gp247::card :title="gp247_language_render('admin.customer.list')">
         <div class="mb-3">
-            <input type="search" wire:model.live.debounce.300ms="keyword" placeholder="{{ gp247_language_render('search.placeholder') }}"
-                class="{{ $inputCls }}">
+            <x-gp247::search-box :placeholder="$this->searchPlaceholder()" :hint="$this->searchHint()" />
         </div>
 
-        <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.no_records') : null">
+        <x-gp247::table :empty="$rows->isEmpty() ? $this->searchEmptyMessage() : null">
             <x-slot:head>
                 <tr>
                     @if (gp247_config_admin('customer_email'))

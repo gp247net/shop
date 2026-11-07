@@ -327,10 +327,10 @@
 
     {{-- Right: list --}}
     <x-gp247::card :title="gp247_language_render('admin.payment_request.list_title')">
-        <div class="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-4">
-            <input type="search" wire:model.live.debounce.300ms="keyword"
-                placeholder="{{ gp247_language_render('admin.payment_request.search') }}"
-                class="{{ $inputCls }}">
+        {{-- WHY: the search box gets its own row — a quarter-width cell cut its
+             placeholder and folded the hint naming five columns. --}}
+        <x-gp247::search-box :placeholder="$this->searchPlaceholder()" :hint="$this->searchHint()" class="mb-2" />
+        <div class="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
             <select wire:model.live="filterDirection" class="{{ $inputCls }}" data-testid="payment-request-filter-direction">
                 <option value="">{{ gp247_language_render('admin.payment_request.direction') }}</option>
                 <option value="in">{{ gp247_language_render('admin.payment_request.direction_in') }}</option>
@@ -350,7 +350,7 @@
             </select>
         </div>
 
-        <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.no_records') : null">
+        <x-gp247::table :empty="$rows->isEmpty() ? $this->searchEmptyMessage() : null">
             <x-slot:head>
                 <tr>
                     <th class="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" wire:click="setSort('id')">#</th>

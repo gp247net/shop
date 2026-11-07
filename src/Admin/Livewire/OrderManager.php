@@ -147,6 +147,23 @@ class OrderManager extends ResourcePanel
     }
 
     /**
+     * Language keys naming the searched columns (shown in the search box).
+     *
+     * @return array<string, string>
+     *
+     * @aidlc-story US-admin-shell-list-search-scope-hint
+     */
+    protected function searchLabels(): array
+    {
+        return [
+            'id' => 'order.id',
+            'email' => 'customer.email',
+            'first_name' => 'customer.first_name',
+            'last_name' => 'customer.last_name',
+        ];
+    }
+
+    /**
      * @return array<int, string>
      */
     protected function sortableColumns(): array

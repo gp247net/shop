@@ -97,6 +97,24 @@ class PaymentRequestManager extends ResourcePanel
         return ['party_name', 'party_email', 'description', 'id', 'subject_id'];
     }
 
+    /**
+     * Language keys naming the searched columns (shown in the search box).
+     *
+     * @return array<string, string>
+     *
+     * @aidlc-story US-admin-shell-list-search-scope-hint
+     */
+    protected function searchLabels(): array
+    {
+        return [
+            'party_name' => 'admin.payment_request.party_name',
+            'party_email' => 'admin.payment_request.party_email',
+            'description' => 'admin.payment_request.description',
+            'id' => 'admin.search.col_id',
+            'subject_id' => 'admin.payment_request.subject',
+        ];
+    }
+
     protected function sortableColumns(): array
     {
         return ['id', 'amount', 'status', 'expires_at', 'created_at'];

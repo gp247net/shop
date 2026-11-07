@@ -296,15 +296,15 @@
 
     {{-- ===================== RIGHT: LIST ===================== --}}
     <x-gp247::card :title="gp247_language_render('admin.product.list')">
-        <div class="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <input type="search" wire:model.live.debounce.300ms="keyword" placeholder="{{ gp247_language_render('search.placeholder') }}" class="{{ $inputCls }}">
+        <div class="mb-3 grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+            <x-gp247::search-box :placeholder="$this->searchPlaceholder()" :hint="$this->searchHint()" />
             <select wire:model.live="filterCategory" class="{{ $inputCls }}">
                 <option value="">{{ gp247_language_render('product.category') }}</option>
                 @foreach ($this->filterCategoryOptions() as $id => $title)<option value="{{ $id }}">{{ $title }}</option>@endforeach
             </select>
         </div>
 
-        <x-gp247::table :empty="$rows->isEmpty() ? gp247_language_render('admin.no_records') : null">
+        <x-gp247::table :empty="$rows->isEmpty() ? $this->searchEmptyMessage() : null">
             <x-slot:head>
                 <tr>
                     <th class="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" wire:click="setSort('sku')">{{ gp247_language_render('product.sku') }}</th>
