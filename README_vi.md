@@ -71,6 +71,8 @@ GP247/Shop là một trong những gói chính của hệ sinh thái GP247, bi�
 
 ## Cài đặt
 
+> 📘 **Hướng dẫn cài đặt đầy đủ** — chọn bộ cài (S-Cart, GP247 CMS, chỉ core), hosting không có dòng lệnh, thêm front/shop vào site đang có, xử lý sự cố: [Cài đặt GP247 và S-Cart](https://github.com/gp247net/gp247-docs/blob/main/install-upgrade/install_vi.md).
+
 ### Lựa chọn 1: Cài đặt mới với GP247 CMS
 1. Cài đặt gp247/cms (Đã bao gồm Laravel, GP247/Core, GP247/Front)
 

@@ -70,6 +70,8 @@ GP247/Shop is a core package in the GP247 ecosystem that turns your GP247 site i
 
 ## Installation
 
+> 📘 **Full installation guide** — choosing a package set (S-Cart, GP247 CMS, core only), hosting without a command line, adding front/shop to an existing site, troubleshooting: [Installing GP247 and S-Cart](https://github.com/gp247net/gp247-docs/blob/main/install-upgrade/install.md).
+
 ### Option 1: New installation with GP247 CMS
 1. Install gp247/cms (includes Laravel, GP247/Core, GP247/Front)
 

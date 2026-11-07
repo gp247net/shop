@@ -71,6 +71,8 @@ GP247/Shop は GP247 エコシステムの主要パッケージの 1 つで、GP
 
 ## インストール
 
+> 📘 **インストールの詳しいガイド** — インストール構成の選び方（S-Cart、GP247 CMS、core のみ）、コマンドラインのないホスティング、既存サイトへの front/shop 追加、トラブルシューティング：[GP247 と S-Cart のインストール](https://github.com/gp247net/gp247-docs/blob/main/install-upgrade/install_ja.md)。
+
 ### 選択肢 1：GP247 CMS で新規インストール
 1. gp247/cms をインストールします（Laravel、GP247/Core、GP247/Front を含みます）
 
