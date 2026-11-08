@@ -106,6 +106,8 @@ S-Cart already includes all the necessary components. See the full details at th
 
 >`php artisan gp247:install`
 
+When it finishes, the last block of the output prints the admin path, the user name `admin` and a random password. **The password is shown only once** — copy it before you close the Terminal.
+
 3. (Optional) Install sample data
 
 >`php artisan gp247:shop-sample`

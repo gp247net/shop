@@ -111,6 +111,8 @@ S-Cart đã bao gồm đầy đủ các thành phần cần thiết. Bạn có t
 
 >`php artisan gp247:install`
 
+Khi cài xong, khối cuối cùng của lệnh in đường dẫn quản trị, tên đăng nhập `admin` và một mật khẩu ngẫu nhiên. **Mật khẩu chỉ hiện một lần** — chép lại ngay trước khi đóng Terminal.
+
 3. (Tùy chọn) Cài đặt dữ liệu mẫu
 
 >`php artisan gp247:shop-sample`
