@@ -111,7 +111,9 @@ class DataShopLanguageSeeder extends Seeder
         return array_merge(
             $rows,
             LocaleRows::fromFile(__DIR__.'/Locales/ja.php', 'ja', $rows),
-            \GP247\Shop\Support\CustomerPasswordPolicy::languageRows()
+            \GP247\Shop\Support\CustomerPasswordPolicy::languageRows(),
+            // Descriptions of shop's part of the backup groups (en/vi/ja), shared with the upgrade migration.
+            \GP247\Shop\Support\BackupGroupHelp::languageRows()
         );
     }
 

@@ -566,20 +566,22 @@ class ShopServiceProvider extends ServiceProvider
             return;
         }
         $registry = \GP247\Core\Backup\Application\DataGroupRegistry::class;
+        // WHY positional arguments: a core without the description parameter ignores the extra one.
+        $help = \GP247\Shop\Support\BackupGroupHelp::class;
         $registry::declare('catalog', [
             'shop_product', 'shop_product_attribute', 'shop_product_build', 'shop_product_category',
             'shop_product_description', 'shop_product_download', 'shop_product_group', 'shop_product_image',
             'shop_product_promotion', 'shop_product_tag', 'shop_product_tag_pivot', 'shop_category',
             'shop_category_description', 'shop_brand', 'shop_supplier', 'shop_attribute_group',
-        ]);
+        ], [], $help::key('catalog'));
         $registry::declare('orders', [
             'shop_order', 'shop_order_detail', 'shop_order_history', 'shop_order_total', 'shop_order_transaction',
             'shop_shipment', 'shop_shipment_event', 'payment_request', 'payment_movement',
-        ]);
-        $registry::declare('customers', ['shop_customer', 'shop_customer_address', 'shop_shoppingcart']);
+        ], [], $help::key('orders'));
+        $registry::declare('customers', ['shop_customer', 'shop_customer_address', 'shop_shoppingcart'], [], $help::key('customers'));
         $registry::declare('config', [
             'shop_currency', 'shop_tax', 'shop_order_status', 'shop_payment_status', 'shop_shipping_status',
-        ], ['shop_sessions', 'shop_password_resets']);
+        ], ['shop_sessions', 'shop_password_resets'], $help::key('config'));
 
         // Rows that come back with a deleted order / product / customer / category when it is
         // restored from a backup (cores before the restore feature have no relate()).
