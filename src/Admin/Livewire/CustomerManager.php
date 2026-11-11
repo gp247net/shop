@@ -8,6 +8,8 @@ use GP247\Core\Models\AdminCountry;
 use GP247\Shop\Admin\Models\AdminCustomer;
 use GP247\Shop\Models\ShopCustomer;
 use GP247\Shop\Models\ShopCustomerAddress;
+use GP247\Shop\Services\Catalog\CustomerWriter;
+use GP247\Shop\Services\Catalog\WriteContext;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -233,9 +235,9 @@ class CustomerManager extends ResourcePanel
     }
 
     /**
-     * Authorize, validate (via the brownfield mapping helpers) and persist (via
-     * ShopCustomer::createCustomer / updateInfo) — preserving legacy parity — then
-     * navigate back to the base route.
+     * Authorize, then validate and persist through the shared write service (the
+     * brownfield mapping helpers + ShopCustomer::createCustomer / updateInfo, legacy
+     * parity — US-SADM-catalog-write-service), then stay on / navigate back.
      *
      * @return void
      * @throws \GP247\Core\AdminShell\Domain\AuthorizationException When denied.
@@ -245,31 +247,20 @@ class CustomerManager extends ResourcePanel
     {
         $this->authorizeAction($this->editingId !== null ? 'update' : 'store');
 
-        $data = $this->customerData();
-        $mapping = $this->editingId !== null
-            ? gp247_customer_data_edit_mapping($data)
-            : gp247_customer_data_insert_mapping($data);
-
-        $validator = Validator::make($data, $mapping['validate'], $mapping['messages']);
-        if ($validator->fails()) {
-            $this->throwMappedErrors($validator->errors()->messages());
+        $editing = $this->editingId !== null && $this->editingId !== '';
+        // Store is immutable on edit (ADR 1-1): the customer's own store, read from the DB.
+        $store = $editing ? (string) ShopCustomer::whereKey($this->editingId)->value('store_id') : (string) $this->resolveCreateStore();
+        $admin = function_exists('admin') ? admin()->user() : null;
+        try {
+            $customer = (new CustomerWriter)->save(
+                new WriteContext($store !== '' ? $store : (string) $this->storeContext(), WriteContext::ACTOR_ADMIN, $admin !== null ? (string) $admin->id : null),
+                $this->customerData(),
+                $editing ? $this->editingId : null
+            );
+        } catch (ValidationException $e) {
+            $this->throwMappedErrors($e->errors());
         }
-
-        if ($this->editingId !== null) {
-            ShopCustomer::updateInfo($mapping['dataUpdate'], $this->editingId);
-            $savedId = (string) $this->editingId;
-        } else {
-            $insert = $mapping['dataInsert'];
-            // WHY: createCustomer does not set store_id; a new customer is owned by
-            // the store picked on create (root admin) or the current scoped store
-            // (store-admin), server-authoritative via resolveCreateStore().
-            $insert['store_id'] = $this->resolveCreateStore();
-            $customer = ShopCustomer::createCustomer($insert);
-            if (function_exists('gp247_customer_created_by_admin')) {
-                gp247_customer_created_by_admin($customer);
-            }
-            $savedId = (string) $customer->id;
-        }
+        $savedId = (string) $customer->id;
 
         // Opted-in (keepStateOnSave): stay in place — re-fill the form from the
         // saved record and keep the list state — instead of redirecting.
@@ -347,7 +338,7 @@ class CustomerManager extends ResourcePanel
      * @return void
      * @throws ValidationException
      */
-    private function throwMappedErrors(array $messages): void
+    private function throwMappedErrors(array $messages): never
     {
         $mapped = [];
         foreach ($messages as $key => $msgs) {

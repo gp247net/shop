@@ -652,16 +652,21 @@ class ShopServiceProvider extends ServiceProvider
      */
     protected function validationExtend()
     {
+        // Parameters: <product id to ignore>[,<store>]. Without a store the admin session's
+        // store is used (legacy); the shared write service names the store explicitly so a
+        // CLI / background write checks uniqueness in the right store (US-SADM-catalog-write-service).
         Validator::extend('product_sku_unique', function ($attribute, $value, $parameters, $validator) {
             $productId = $parameters[0] ?? '';
+            $storeId = ($parameters[1] ?? '') !== '' ? $parameters[1] : session('adminStoreId');
             return (new AdminProduct)
-                ->checkProductValidationAdmin('sku', $value, $productId, session('adminStoreId'));
+                ->checkProductValidationAdmin('sku', $value, $productId, $storeId);
         });
 
         Validator::extend('product_alias_unique', function ($attribute, $value, $parameters, $validator) {
             $productId = $parameters[0] ?? '';
+            $storeId = ($parameters[1] ?? '') !== '' ? $parameters[1] : session('adminStoreId');
             return (new AdminProduct)
-                ->checkProductValidationAdmin('alias', $value, $productId, session('adminStoreId'));
+                ->checkProductValidationAdmin('alias', $value, $productId, $storeId);
         });
     }
 

@@ -4,7 +4,7 @@ namespace GP247\Shop\Admin\Livewire\Concerns;
 
 /**
  * Product gallery (sub-images) editing for the shop-admin ProductManager
- * (group F, US-SADM-001). Holds the list of sub-image paths and persists them
+ * (group F, US-SADM-001). Holds the list of sub-image paths; ProductWriter (US-SADM-catalog-write-service) persists them
  * delete-then-recreate into ShopProductImage (parity with the legacy product
  * controller). The main image stays a product column (form.image).
  *
@@ -58,23 +58,5 @@ trait HasProductImages
     {
         unset($this->gallery[$index]);
         $this->gallery = array_values($this->gallery);
-    }
-
-    /**
-     * Persist the gallery for a product: delete existing rows then recreate from
-     * the non-empty paths.
-     *
-     * @param \GP247\Shop\Models\ShopProduct $product
-     * @return void
-     */
-    private function persistImages($product): void
-    {
-        $product->images()->delete();
-        foreach ($this->gallery as $image) {
-            $image = trim((string) $image);
-            if ($image !== '') {
-                $product->images()->create(['image' => gp247_clean($image)]);
-            }
-        }
     }
 }

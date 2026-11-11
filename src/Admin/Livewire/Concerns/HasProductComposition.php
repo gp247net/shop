@@ -10,7 +10,7 @@ use GP247\Shop\Models\ShopProductGroup;
  * Product composition editing for the shop-admin ProductManager (group F,
  * US-SADM-001): BUILD (bundle) components with quantities, and GROUP members.
  * Components are picked via a TailAdmin-only product search (no Select2/jQuery,
- * rule ui-tailadmin P2) and persisted delete-then-recreate into ShopProductBuild
+ * rule ui-tailadmin P2) and written (by ProductWriter, US-SADM-catalog-write-service) delete-then-recreate into ShopProductBuild
  * / ShopProductGroup (parity with the legacy product controller).
  *
  * @aidlc-unit shop-admin
@@ -177,37 +177,5 @@ trait HasProductComposition
         }
 
         return [];
-    }
-
-    /**
-     * Persist build/group rows by kind (delete-then-recreate), parity with legacy.
-     *
-     * @param \GP247\Shop\Models\ShopProduct $product
-     * @return void
-     */
-    private function persistComposition($product): void
-    {
-        $product->builds()->delete();
-        $product->groups()->delete();
-
-        $kind = (int) $product->kind;
-        if ($kind === (defined('GP247_PRODUCT_BUILD') ? GP247_PRODUCT_BUILD : 1)) {
-            foreach ($this->buildItems as $item) {
-                $pid = $item['product_id'] ?? '';
-                if ($pid !== '') {
-                    $product->builds()->create(gp247_clean([
-                        'product_id' => $pid,
-                        'quantity' => (float) ($item['quantity'] ?? 1),
-                    ]));
-                }
-            }
-        } elseif ($kind === (defined('GP247_PRODUCT_GROUP') ? GP247_PRODUCT_GROUP : 2)) {
-            foreach ($this->groupItems as $item) {
-                $pid = $item['product_id'] ?? '';
-                if ($pid !== '') {
-                    $product->groups()->create(gp247_clean(['product_id' => $pid]));
-                }
-            }
-        }
     }
 }

@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Model;
  * "changed since" see it. The texts live in their own table (rewritten on every save),
  * which the record's own model never notices. For managers using HasMultilingualDescriptions.
  *
+ * @deprecated The shop managers now write texts through the catalog write services
+ *             (GP247\Shop\Services\Catalog\*Writer), which mark the change the same way.
+ *             Kept for extensions that still use it; removed in the next major.
+ *
  * @aidlc-unit api-admin-write
  * @aidlc-story US-api-admin-write-shop-events
  */

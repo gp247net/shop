@@ -73,49 +73,6 @@ trait HasProductVariants
     }
 
     /**
-     * Persist variants for a SINGLE product: delete existing then recreate the
-     * rows that have both an attribute group and a name.
-     *
-     * @param \GP247\Shop\Models\ShopProduct $product
-     * @return void
-     */
-    private function persistVariants($product): void
-    {
-        $product->attributes()->delete();
-
-        $single = defined('GP247_PRODUCT_SINGLE') ? GP247_PRODUCT_SINGLE : 0;
-        if ((int) $product->kind !== (int) $single) {
-            return;
-        }
-
-        foreach ($this->variants as $variant) {
-            $groupId = $variant['attribute_group_id'] ?? '';
-            $name = trim((string) ($variant['name'] ?? ''));
-            if ($groupId === '' || $name === '') {
-                continue;
-            }
-            $product->attributes()->create(gp247_clean([
-                'attribute_group_id' => $groupId,
-                'name' => $name,
-                'add_price' => (float) ($variant['add_price'] ?? 0),
-                // Normalize to kebab-case on write via the existing Vietnamese-aware
-                // helper; duplicates are allowed (no unique). Whitelisted explicitly
-                // here so no raw request value reaches the slug column
-                // (NFR-SEC-product-attribute-slug, mod 20260825T135923).
-                // WHY the pre-str_replace: cart options encode a variant as
-                // "name__add_price__slug" and read the slug as explode('__', ...)[2];
-                // gp247_word_format_url does NOT strip "_", so a slug with "__" would
-                // survive and corrupt that split. Fold "_" → "-" first so the helper's
-                // own "[-…]+ → -" collapse guarantees the stored slug can never contain
-                // the "__" separator (gp247_cart_options_canonicalize).
-                'slug' => gp247_word_format_url(str_replace('_', '-', trim((string) ($variant['slug'] ?? '')))),
-                'sort' => (int) ($variant['sort'] ?? 0),
-                'status' => empty($variant['status']) ? 0 : 1,
-            ]));
-        }
-    }
-
-    /**
      * Attribute-group options (id => name) for the variant pickers.
      *
      * @return array<int|string, string>

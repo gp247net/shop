@@ -39,6 +39,9 @@ final class ShopEvents
     /** Order columns whose change is an `order.status_changed`. */
     private const ORDER_STATUS_FIELDS = ['status', 'shipping_status'];
 
+    /** Depth of muted() calls in this process (nested bulk steps). */
+    private static int $muted = 0;
+
     /**
      * Add the shop's types to the registry, keeping the types core and plugins declared.
      *
@@ -56,7 +59,30 @@ final class ShopEvents
      */
     public static function active(): bool
     {
-        return class_exists(ApiEvents::class) && ApiEvents::enabled() && ApiEvents::ready();
+        return self::$muted === 0 && class_exists(ApiEvents::class) && ApiEvents::enabled() && ApiEvents::ready();
+    }
+
+    /**
+     * Run a bulk change the site owner chose to keep out of the sync log (e.g. a data import
+     * before the shop opens): nothing is recorded inside $change, in this process only; recording
+     * resumes when it returns or throws. Nested calls are allowed.
+     *
+     * @template T
+     * @param callable(): T $change
+     * @return T What $change returns.
+     *
+     * @aidlc-unit api-admin-write
+     * @aidlc-story US-api-admin-write-shop-events
+     * @aidlc-adr shop-admin_catalog-write-service
+     */
+    public static function muted(callable $change): mixed
+    {
+        self::$muted++;
+        try {
+            return $change();
+        } finally {
+            self::$muted--;
+        }
     }
 
     /**

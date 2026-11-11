@@ -5,7 +5,8 @@ namespace GP247\Shop\Admin\Livewire;
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
 use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
 use GP247\Shop\Models\ShopBrand;
-use Illuminate\Validation\Rule;
+use GP247\Shop\Services\Catalog\BrandWriter;
+use GP247\Shop\Services\Catalog\WriteContext;
 
 /**
  * Brand manager (shop-admin Unit) — two-panel screen (add/edit form left, list
@@ -148,19 +149,13 @@ class BrandManager extends ResourcePanel
     }
 
     /**
+     * The form rules, owned by the shared write service (US-SADM-catalog-write-service).
+     *
      * @return array<string, mixed>
      */
     protected function rules(): array
     {
-        $table = (new ShopBrand())->getTable();
-
-        return [
-            'form.name' => ['required', 'string', 'max:100'],
-            'form.alias' => ['required', 'string', 'max:100', Rule::unique($table, 'alias')->ignore($this->editingId)],
-            'form.image' => ['required', 'string'],
-            'form.url' => ['nullable', 'url', 'max:255'],
-            'form.sort' => ['required', 'numeric', 'min:0'],
-        ];
+        return (new BrandWriter)->rules($this->editingId);
     }
 
     /**
@@ -170,41 +165,32 @@ class BrandManager extends ResourcePanel
      */
     protected function attributeLabels(): array
     {
-        return [
-            'form.name' => 'admin.brand.name',
-            'form.alias' => 'admin.brand.alias',
-            'form.image' => 'admin.brand.image',
-            'form.url' => 'admin.brand.url',
-            'form.sort' => 'admin.sort',
-        ];
+        return (new BrandWriter)->labelKeys();
     }
 
     /**
-     * @param array<string, mixed> $data
+     * Persist through the shared write service; the form was validated by save() with the
+     * service's own rules.
+     *
+     * @param array<string, mixed> $data Sanitised form.
      * @return void
+     *
+     * @aidlc-story US-SADM-catalog-write-service
+     * @aidlc-adr shop-admin_catalog-write-service
      */
     protected function persist(array $data): void
     {
-        $attributes = [
-            'image' => $data['image'] ?? '',
-            'name' => $data['name'],
-            'alias' => $data['alias'],
-            'url' => $data['url'] ?? '',
-            'sort' => (int) ($data['sort'] ?? 0),
-            'status' => empty($data['status']) ? 0 : 1,
-        ];
-
-        if ($this->editingId !== null) {
-            // Store is immutable on edit — do NOT touch store_id (ADR 1-1).
-            ShopBrand::findOrFail($this->editingId)->update($attributes);
-        } else {
-            // WHY: 1-1 ownership — a new brand is owned by the store picked on create
-            // (root admin) or the current scoped store (store-admin / switcher).
-            $attributes['store_id'] = $this->resolveCreateStore();
-            $created = ShopBrand::create($attributes);
-            // ResourcePanel create contract: expose the new id so save() edits it in place.
-            $this->editingId = (string) $created->id;
-        }
+        $editing = $this->editingId !== null && $this->editingId !== '';
+        // Store is immutable on edit (ADR 1-1): the record's own store, read from the DB.
+        $store = $editing ? (string) ShopBrand::whereKey($this->editingId)->value('store_id') : (string) $this->resolveCreateStore();
+        $record = (new BrandWriter)->save(
+            new WriteContext($store !== '' ? $store : (string) $this->storeContext()),
+            ['form' => $data],
+            $editing ? $this->editingId : null,
+            ['validated' => true, 'clean' => false]
+        );
+        // ResourcePanel create contract: expose the id so save() edits it in place.
+        $this->editingId = (string) $record->id;
     }
 
     /**
@@ -226,10 +212,7 @@ class BrandManager extends ResourcePanel
      */
     public function save(): void
     {
-        if (empty($this->form['alias'])) {
-            $this->form['alias'] = $this->form['name'] ?? '';
-        }
-        $this->form['alias'] = gp247_word_limit(gp247_word_format_url((string) $this->form['alias']), 100);
+        $this->form['alias'] = BrandWriter::alias((string) ($this->form['alias'] ?? ''), (string) ($this->form['name'] ?? ''));
 
         parent::save();
     }

@@ -6,12 +6,12 @@ use GP247\Core\AdminShell\Infrastructure\HasMultilingualDescriptions;
 use GP247\Core\AdminShell\Infrastructure\ResourcePanel;
 use GP247\Core\Models\AdminLanguage;
 use GP247\Core\AdminShell\Infrastructure\HasValidationLabels;
-use GP247\Shop\Admin\Livewire\Concerns\SavesDescriptionsAsChange;
 use GP247\Shop\Admin\Models\AdminCategory;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopCategoryDescription;
+use GP247\Shop\Services\Catalog\CategoryWriter;
+use GP247\Shop\Services\Catalog\WriteContext;
 use Illuminate\Contracts\View\View;
-use Illuminate\Validation\Rule;
 
 /**
  * Category manager (shop-admin Unit) — two-panel screen (add/edit form left, list
@@ -34,7 +34,6 @@ class CategoryManager extends ResourcePanel
 {
     use HasMultilingualDescriptions;
     use HasValidationLabels;
-    use SavesDescriptionsAsChange;
 
     protected ?string $permission = 'admin_category';
 
@@ -211,19 +210,13 @@ class CategoryManager extends ResourcePanel
     }
 
     /**
+     * The category form rules, owned by the shared write service (US-SADM-catalog-write-service).
+     *
      * @return array<string, mixed>
      */
     protected function rules(): array
     {
-        $table = (new ShopCategory())->getTable();
-
-        return [
-            'form.alias' => ['required', 'string', 'max:100', Rule::unique($table, 'alias')->ignore($this->editingId)],
-            'form.sort' => ['nullable', 'numeric', 'min:0'],
-            'desc.*.name' => ['required', 'string', 'max:200'],
-            'desc.*.keyword' => ['nullable', 'string', 'max:200'],
-            'desc.*.description' => ['nullable', 'string', 'max:500'],
-        ];
+        return (new CategoryWriter)->rules($this->editingId);
     }
 
     /**
@@ -234,13 +227,7 @@ class CategoryManager extends ResourcePanel
      */
     protected function attributeLabels(): array
     {
-        return [
-            'form.alias' => 'admin.category.alias',
-            'form.sort' => 'admin.category.sort',
-            'desc.*.name' => 'admin.category.title',
-            'desc.*.keyword' => 'admin.category.keyword',
-            'desc.*.description' => 'admin.category.description',
-        ];
+        return (new CategoryWriter)->labelKeys();
     }
 
     /**
@@ -251,57 +238,41 @@ class CategoryManager extends ResourcePanel
      */
     public function save(): void
     {
-        if (empty($this->form['alias'])) {
-            $firstLang = $this->firstDescriptionLanguage();
-            $this->form['alias'] = $firstLang !== null ? ($this->desc[$firstLang]['name'] ?? '') : '';
-        }
-        $this->form['alias'] = gp247_word_limit(gp247_word_format_url((string) $this->form['alias']), 100);
+        $firstLang = $this->firstDescriptionLanguage();
+        $this->form['alias'] = CategoryWriter::alias(
+            (string) ($this->form['alias'] ?? ''),
+            $firstLang !== null ? (string) ($this->desc[$firstLang]['name'] ?? '') : ''
+        );
 
         parent::save();
     }
 
     /**
-     * @param array<string, mixed> $data
+     * Persist through the shared write service; the form was validated by save() with the
+     * service's own rules. The parent's store is checked only when store scoping is on
+     * (as the screen always did).
+     *
+     * @param array<string, mixed> $data Sanitised form.
      * @return void
+     *
+     * @aidlc-story US-SADM-002, US-SADM-catalog-write-service
+     * @aidlc-adr shop-admin_catalog-write-service
      */
     protected function persist(array $data): void
     {
-        $attributes = [
-            'image' => $data['image'] ?? '',
-            'alias' => $data['alias'],
-            'parent' => empty($data['parent']) ? null : $data['parent'],
-            'top' => empty($data['top']) ? 0 : 1,
-            'status' => empty($data['status']) ? 0 : 1,
-            'sort' => (int) ($data['sort'] ?? 0),
-        ];
-
-        if ($this->editingId !== null) {
-            // Store is immutable on edit — do NOT touch store_id (ADR 1-1).
-            $store = (string) ShopCategory::whereKey($this->editingId)->value('store_id');
-            $this->assertParentSameStore($attributes['parent'] ?? null, $store);
-            $category = ShopCategory::findOrFail($this->editingId);
-            $category->update($attributes);
-        } else {
-            // WHY: 1-1 ownership — a new category is owned by the store picked on create
-            // (root admin) or the current scoped store (store-admin / switcher).
-            // ADR admin-shell_store-scoped-resource-panel.
-            $store = $this->resolveCreateStore();
-            $this->assertParentSameStore($attributes['parent'] ?? null, $store);
-            $attributes['store_id'] = $store;
-            $category = ShopCategory::create($attributes);
-        }
+        $editing = $this->editingId !== null && $this->editingId !== '';
+        // Store is immutable on edit (ADR 1-1): the record's own store, read from the DB.
+        $store = $editing ? (string) ShopCategory::whereKey($this->editingId)->value('store_id') : (string) $this->resolveCreateStore();
+        $category = (new CategoryWriter)->save(
+            new WriteContext($store !== '' ? $store : (string) $this->storeContext()),
+            ['form' => $data, 'descriptions' => $this->desc],
+            $editing ? $this->editingId : null,
+            ['validated' => true, 'clean' => false, 'strict_store' => $this->storeScopeActive()]
+        );
 
         // WHY: keepStateOnSave — expose the persisted id (incl. after create) so
         // ResourcePanel::save() can re-fill the form and keep it on screen.
         $this->editingId = (string) $category->id;
-
-        // New texts move updated_at so "changed since" lists show the category (US-api-admin-write-shop-events).
-        $this->saveDescriptionsMarkingChange($category);
-
-        // WHY: keep the category title cache coherent with the legacy controller.
-        if (function_exists('gp247_cache_clear')) {
-            gp247_cache_clear('cache_category');
-        }
     }
 
     /**
@@ -368,27 +339,6 @@ class CategoryManager extends ResourcePanel
             ->where($descTable . '.lang', gp247_get_locale())
             ->pluck($descTable . '.name', $catTable . '.id')
             ->all();
-    }
-
-    /**
-     * Reject a parent category that belongs to another store (same-store integrity,
-     * server-side — NFR-SEC-store-scoped-related-integrity). No-op when not store-scoped.
-     *
-     * @param int|string|null $parentId
-     * @param int|string      $storeId
-     * @return void
-     */
-    private function assertParentSameStore($parentId, $storeId): void
-    {
-        if (!$this->storeScopeActive() || empty($parentId)) {
-            return;
-        }
-        $ok = ShopCategory::whereKey($parentId)->where('store_id', $storeId)->exists();
-        if (!$ok) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'form.parent' => gp247_language_render('admin.store.related_wrong_store'),
-            ]);
-        }
     }
 
     /**

@@ -11,15 +11,15 @@ use GP247\Shop\Admin\Livewire\Concerns\HasProductImages;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductPricing;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductTags;
 use GP247\Shop\Admin\Livewire\Concerns\HasProductVariants;
-use GP247\Shop\Admin\Livewire\Concerns\SavesDescriptionsAsChange;
 use GP247\Shop\Admin\Models\AdminCategory;
-use GP247\Shop\Admin\Models\AdminProduct;
 use GP247\Shop\Models\ShopBrand;
 use GP247\Shop\Models\ShopCategory;
 use GP247\Shop\Models\ShopProduct;
 use GP247\Shop\Models\ShopProductDescription;
 use GP247\Shop\Models\ShopSupplier;
 use GP247\Shop\Models\ShopTax;
+use GP247\Shop\Services\Catalog\ProductWriter;
+use GP247\Shop\Services\Catalog\WriteContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 
@@ -47,7 +47,6 @@ class ProductManager extends ResourcePanel
     use HasProductComposition;
     use HasProductPricing;
     use HasProductTags;
-    use SavesDescriptionsAsChange;
 
     protected ?string $permission = 'admin_product';
 
@@ -60,30 +59,6 @@ class ProductManager extends ResourcePanel
      * @aidlc-adr ADR-admin-shell-rbac-two-panel-state-preservation
      */
     protected bool $keepStateOnSave = true;
-
-    /** Scalar product columns edited on this screen. */
-    private const STRING_FIELDS = ['sku', 'alias', 'image', 'brand_id', 'supplier_id', 'tax_id', 'product_type', 'weight_class', 'length_class'];
-
-    /** Numeric product columns. */
-    private const NUMERIC_FIELDS = ['price', 'cost', 'stock', 'minimum', 'weight', 'length', 'width', 'height'];
-
-    /**
-     * Numeric fields that represent a product *quantity* (as opposed to money or
-     * physical dimensions) — gated by `product_qty_decimal` (modification
-     * 20260705T093328, ADR-016).
-     */
-    private const QTY_FIELDS = ['stock', 'minimum'];
-
-    /**
-     * Config-gated product fields: `product_config_attribute` key => form field.
-     * Single source of truth for the render/validate/persist parity — a field whose
-     * gate is turned off in Shop Config must be neither rendered, validated, nor
-     * persisted (modification 20260826T093146, ADR shop-admin_product-field-config-scope).
-     */
-    private const GATED_FIELDS = [
-        'product_price' => 'price', 'product_cost' => 'cost', 'product_stock' => 'stock',
-        'product_brand' => 'brand_id', 'product_supplier' => 'supplier_id', 'product_type' => 'product_type',
-    ];
 
     /** @var string Category filter (list). */
     public string $filterCategory = '';
@@ -264,10 +239,10 @@ class ProductManager extends ResourcePanel
             'date_available' => '',
             'category' => [],
         ];
-        foreach (self::STRING_FIELDS as $field) {
+        foreach (ProductWriter::STRING_FIELDS as $field) {
             $defaults[$field] = '';
         }
-        foreach (self::NUMERIC_FIELDS as $field) {
+        foreach (ProductWriter::NUMERIC_FIELDS as $field) {
             $defaults[$field] = 0;
         }
 
@@ -314,10 +289,10 @@ class ProductManager extends ResourcePanel
             'date_available' => $model->date_available ? (string) $model->date_available : '',
             'category' => $model->categories()->pluck('category_id')->map(static fn ($id) => (string) $id)->all(),
         ];
-        foreach (self::STRING_FIELDS as $field) {
+        foreach (ProductWriter::STRING_FIELDS as $field) {
             $form[$field] = (string) ($model->{$field} ?? '');
         }
-        foreach (self::NUMERIC_FIELDS as $field) {
+        foreach (ProductWriter::NUMERIC_FIELDS as $field) {
             $form[$field] = (float) ($model->{$field} ?? 0);
         }
 
@@ -325,163 +300,38 @@ class ProductManager extends ResourcePanel
     }
 
     /**
+     * The product form rules — owned by the shared write service so the screen and every
+     * other writer validate alike (US-SADM-catalog-write-service) — plus the rules of the
+     * screen-only state (custom fields, BUILD/GROUP items).
+     *
      * @return array<string, mixed>
      */
     protected function rules(): array
     {
-        $skuUnique = $this->editingId !== null ? 'product_sku_unique:' . $this->editingId : 'product_sku_unique';
-        $aliasUnique = $this->editingId !== null ? 'product_alias_unique:' . $this->editingId : 'product_alias_unique';
+        $rules = $this->writer()->rules($this->writeContext(), $this->editingId, $this->writeOptions());
 
-        $rules = [
-            'form.sku' => 'required|string|max:50|' . $skuUnique,
-            'form.alias' => 'required|string|max:120|' . $aliasUnique,
-            'form.category' => 'required|array|min:1',
-            'form.sort' => 'nullable|numeric|min:0',
-            'form.minimum' => 'nullable|numeric|min:0',
-            'desc.*.name' => 'required|string|max:200',
-            'desc.*.keyword' => 'nullable|string|max:200',
-            'desc.*.description' => 'nullable|string|max:500',
-        ];
-
-        // WHY: content (rich description) is optional for every product kind — the
-        // gp247_shop_product_description.content column is nullable, and many simple
-        // products need no long description (US-SADM-product-content-optional). Empty
-        // content persists as '' via HasMultilingualDescriptions, valid for a nullable
-        // column. Kept as a typed rule so a non-string payload is still rejected.
-        $rules['desc.*.content'] = 'nullable|string';
-
-        return array_merge($rules, $this->configRules(), $this->customFieldRules(), $this->compositionRules());
+        return array_merge($rules, $this->customFieldRules(), $this->compositionRules());
     }
 
     /**
-     * Config-driven field rules, mirroring AdminProductController::validateAttribute:
-     * numeric fields are always numeric|nullable; a gated field becomes required
-     * when its product_* config (and *_required flag) is on.
-     *
-     * @return array<string, mixed>
-     */
-    private function configRules(): array
-    {
-        $rules = [];
-        foreach (self::NUMERIC_FIELDS as $field) {
-            // WHY: a gated field turned off in Shop Config is out of the form's scope
-            // — not rendered, so it must not be validated either (else a stale DB value
-            // like a negative backorder stock trips min:0 and silently blocks the save).
-            if ($this->gatedFieldDisabled($field)) {
-                continue;
-            }
-            // WHY: stock/minimum are quantities (gated by product_qty_decimal); the
-            // rest are money/dimensions and always stay numeric (ADR-016).
-            $rules['form.' . $field] = in_array($field, self::QTY_FIELDS, true)
-                ? 'nullable|' . gp247_qty_rule('0', '0')
-                : 'nullable|numeric';
-        }
-
-        // A still-enabled gated field becomes required when its *_required flag is on.
-        if (function_exists('gp247_config')) {
-            foreach (self::GATED_FIELDS as $cfg => $field) {
-                // WHY: keep parity with the render/persist gate — a field hidden by
-                // productFieldEnabled() must never get any rule, not even 'required'.
-                // gatedFieldDisabled() already scopes to the product's store, so read the
-                // *_required flag from the same store (mod 20260902T080541) — not the admin
-                // session — so validation matches what the store's form actually shows.
-                if ($this->gatedFieldDisabled($field)) {
-                    continue;
-                }
-                if (gp247_config($cfg . '_required', $this->formStoreId ?: null)) {
-                    $existing = $rules['form.' . $field] ?? 'nullable';
-                    $rules['form.' . $field] = 'required|' . ltrim(str_replace('nullable', '', $existing), '|');
-                }
-            }
-        }
-
-        return $rules;
-    }
-
-    /**
-     * Localized attribute labels for the validator, keyed by the dotted rule path.
-     * Reuses the existing product.* language strings (the same keys the form labels
-     * render) so validation errors read the field's real name — e.g. "Mã SKU" — and
-     * never leak the raw Livewire state path ("form.sku").
-     *
-     * @return array<string, string>
-     *
-     * @aidlc-unit shop-admin
-     * @aidlc-story US-SADM-001
-     */
-    private function attributeLabels(): array
-    {
-        return [
-            'form.sku' => $this->label('product.sku'),
-            'form.alias' => $this->label('product.alias'),
-            'form.category' => $this->label('product.category'),
-            'form.price' => $this->label('product.price'),
-            'form.cost' => $this->label('product.cost'),
-            'form.stock' => $this->label('product.stock'),
-            'form.brand_id' => $this->label('product.brand'),
-            'form.supplier_id' => $this->label('product.supplier'),
-            'form.product_type' => $this->label('product.tag'),
-            'form.sort' => $this->label('product.sort'),
-            'form.minimum' => $this->label('product.minimum'),
-            'desc.*.name' => $this->label('product.name'),
-            'desc.*.keyword' => $this->label('product.keyword'),
-            'desc.*.description' => $this->label('product.description'),
-            'desc.*.content' => $this->label('product.content'),
-        ];
-    }
-
-    /**
-     * Render a product field label as PLAIN TEXT for use as a validator attribute.
-     *
-     * WHY: some language strings embed presentational markup for the form label —
-     * e.g. product.alias carries a trailing "SEO" icon span — which would leak as
-     * raw HTML into the validation message. Strip tags/entities so the message reads
-     * the clean field name only. The keys themselves are unchanged (existing i18n).
-     *
-     * @param string $key Language key (e.g. 'product.alias').
-     * @return string Tag-free, trimmed label.
-     */
-    private function label(string $key): string
-    {
-        $rendered = (string) gp247_language_render($key);
-
-        return trim(strip_tags(html_entity_decode($rendered, ENT_QUOTES)));
-    }
-
-    /**
-     * Friendly attribute names for every rule (Livewire hook). Fixes messages of
-     * rules we do not override in messages() (max/unique/numeric/…) so they show the
-     * localized field name instead of the raw "form.*" path.
+     * Friendly attribute names for every rule (Livewire hook) — the localised field name
+     * instead of the raw "form.*" path.
      *
      * @return array<string, string>
      */
     public function validationAttributes(): array
     {
-        return $this->attributeLabels();
+        return $this->writer()->attributeLabels();
     }
 
     /**
-     * Localized validator messages, built from the shared validation.* language keys
-     * exactly like gp247_customer_data_*_mapping(). Every rule used by rules() is
-     * routed through gp247_language_render so it reads the DB translation (falling
-     * back to the framework message) — otherwise non-required rules would bypass the
-     * DB and always render in English. Rule-specific placeholders (:min/:max) are left
-     * for the framework's replacers to fill after :attribute is substituted here.
+     * Localised validator messages (shared validation.* keys, DB translations).
      *
      * @return array<string, string>
      */
     protected function messages(): array
     {
-        // Rules referenced by rules()/configRules() that carry a user-facing message.
-        $rules = ['required', 'min', 'max', 'numeric', 'array', 'string'];
-        $messages = [];
-        foreach ($this->attributeLabels() as $field => $label) {
-            foreach ($rules as $rule) {
-                $messages[$field . '.' . $rule] = gp247_language_render('validation.' . $rule, ['attribute' => $label]);
-            }
-        }
-
-        return $messages;
+        return $this->writer()->messages();
     }
 
     /**
@@ -492,156 +342,86 @@ class ProductManager extends ResourcePanel
      */
     public function save(): void
     {
-        if (empty($this->form['alias'])) {
-            $firstLang = $this->firstDescriptionLanguage();
-            $this->form['alias'] = $firstLang !== null ? ($this->desc[$firstLang]['name'] ?? '') : '';
-        }
-        $this->form['alias'] = gp247_word_limit(gp247_word_format_url((string) $this->form['alias']), 100);
+        $firstLang = $this->firstDescriptionLanguage();
+        $this->form['alias'] = ProductWriter::alias(
+            (string) ($this->form['alias'] ?? ''),
+            $firstLang !== null ? (string) ($this->desc[$firstLang]['name'] ?? '') : ''
+        );
 
         parent::save();
     }
 
     /**
-     * Persist the product (mirroring AdminProductController): main row →
-     * descriptions (C0) → custom fields (D0) → category pivot. Wrapped in a
-     * transaction; subsequent groups (images/variants/composition/promotion) extend
-     * this.
+     * Persist the product through the shared write service (main row, texts, custom
+     * fields, categories, gallery, variants, composition, promotion, download, tags in one
+     * transaction). The form was validated by save() with the service's own rules.
      *
      * @param array<string, mixed> $data Sanitised form.
      * @return void
+     * @throws ValidationException When a reference belongs to another store.
+     *
+     * @aidlc-story US-SADM-001, US-SADM-catalog-write-service
+     * @aidlc-adr shop-admin_catalog-write-service
      */
     protected function persist(array $data): void
     {
-        // WHY: 1-1 ownership — a product may only reference brand/tax/category rows
-        // owned by its own store. The dropdowns are already store-scoped, but a
-        // crafted Livewire payload could still bind a foreign id, so reject
-        // cross-store references server-side (RISK-TECH-store-same-store-ref).
-        $this->assertSameStoreRefs($data);
+        $product = $this->writer()->save($this->writeContext(), [
+            'form' => $data,
+            'descriptions' => $this->desc,
+            'custom_fields' => $this->customFieldsPayload(),
+            'images' => $this->gallery,
+            'variants' => $this->variants,
+            'composition' => ['build' => $this->buildItems, 'group' => $this->groupItems],
+        ], $this->editingId, array_merge($this->writeOptions(), ['validated' => true, 'clean' => false]));
 
-        $connection = defined('GP247_DB_CONNECTION') ? GP247_DB_CONNECTION : null;
-        \DB::connection($connection)->transaction(function () use ($data): void {
-            $attributes = $this->productAttributes($data);
-            $editing = $this->editingId !== null;
-
-            if ($this->editingId !== null) {
-                $product = ShopProduct::findOrFail($this->editingId);
-                $product->update($attributes);
-            } else {
-                // WHY: 1-1 ownership — a new product is owned by the store picked on
-                // create (root admin) or the current scoped store (store-admin /
-                // switcher). ADR admin-shell_store-scoped-resource-panel.
-                $attributes['store_id'] = $this->resolveCreateStore();
-                $product = AdminProduct::createProductAdmin($attributes);
-            }
-
-            // WHY: keepStateOnSave — expose the persisted id (incl. after create)
-            // so ResourcePanel::save() can re-fill the form and keep it on screen.
-            $this->editingId = (string) $product->id;
-
-            // New texts are an edit of an existing product for sync clients (US-api-admin-write-shop-events).
-            if ($this->saveDescriptionsMarkingChange($product) && $editing) {
-                \GP247\Shop\Services\ShopEvents::productTouched($product, ['descriptions']);
-            }
-
-            if (function_exists('gp247_custom_field_update')) {
-                gp247_custom_field_update($this->customFieldsPayload(), (string) $product->id, $this->customFieldType());
-            }
-
-            $product->categories()->sync(array_filter((array) ($data['category'] ?? [])));
-
-            $this->persistImages($product);
-            $this->persistVariants($product);
-            $this->persistComposition($product);
-            $this->persistPricing($product, $data);
-            $this->persistTags($product, $data);
-        });
+        // WHY: keepStateOnSave — expose the persisted id (incl. after create)
+        // so ResourcePanel::save() can re-fill the form and keep it on screen.
+        $this->editingId = (string) $product->id;
     }
 
     /**
-     * Reject a save that references a brand, tax or category owned by another
-     * store. Empty values pass (they clear the field); only a non-empty id that
-     * resolves to a different store's row is rejected.
-     *
-     * @param array<string, mixed> $data Sanitised form.
-     * @return void
-     * @throws ValidationException When any reference belongs to another store.
-     *
-     * @aidlc-adr multi-store_one-to-one-store-ownership
+     * @return ProductWriter
      */
-    private function assertSameStoreRefs(array $data): void
+    private function writer(): ProductWriter
     {
-        // The store brand/tax/category must belong to — by default the record's own
-        // store (picked on create, immutable on edit); see referenceStoreId().
-        $storeId = $this->referenceStoreId();
-
-        // WHY: brand_id/tax_id use "0" (legacy S-Cart sentinel) or "" to mean "no
-        // reference". Only "" was skipped before, so a product with the default
-        // brand_id="0" was checked as a real brand, failed doesntExist(), and threw
-        // an invisible cross-store error on form.brand_id — blocking the save with
-        // just a red tab dot. Treat "0" as empty so an absent reference passes.
-        $brandId = (string) ($data['brand_id'] ?? '');
-        if ($brandId !== '' && $brandId !== '0' && ShopBrand::where('id', $brandId)->where('store_id', $storeId)->doesntExist()) {
-            throw ValidationException::withMessages([
-                'form.brand_id' => $this->label('product.brand') . ': invalid store reference',
-            ]);
-        }
-
-        $taxId = (string) ($data['tax_id'] ?? '');
-        if ($taxId !== '' && $taxId !== '0' && ShopTax::where('id', $taxId)->where('store_id', $storeId)->doesntExist()) {
-            throw ValidationException::withMessages([
-                'form.tax_id' => $this->label('product.tax') . ': invalid store reference',
-            ]);
-        }
-
-        $categoryIds = array_values(array_filter((array) ($data['category'] ?? [])));
-        if ($categoryIds !== []) {
-            $ownedCount = ShopCategory::whereIn('id', $categoryIds)
-                ->where('store_id', $storeId)
-                ->count();
-            if ($ownedCount !== count($categoryIds)) {
-                throw ValidationException::withMessages([
-                    'form.category' => $this->label('product.category') . ': invalid store reference',
-                ]);
-            }
-        }
+        return new ProductWriter;
     }
 
     /**
-     * Map the sanitised form to the shop_product column set.
+     * Who writes and into which store: the product's own store on edit (read from the DB,
+     * never the client-tamperable form), the server-authoritative create store otherwise.
      *
-     * @param array<string, mixed> $data
+     * @return WriteContext
+     */
+    private function writeContext(): WriteContext
+    {
+        $store = $this->editingId !== null && $this->editingId !== ''
+            ? ShopProduct::whereKey($this->editingId)->value('store_id')
+            : $this->resolveCreateStore();
+        if ($store === null || (string) $store === '') {
+            // Building the rules before a store is picked (root admin): the store-pick rule
+            // of ResourcePanel::save() rejects the save, so any store will do here.
+            $store = $this->storeContext();
+        }
+        $admin = function_exists('admin') ? admin()->user() : null;
+
+        return new WriteContext((string) $store, WriteContext::ACTOR_ADMIN, $admin !== null ? (string) $admin->id : null);
+    }
+
+    /**
+     * Screen-specific write options: the reference store from referenceStoreId() (a
+     * marketplace screen may override it), field gating by the product's own store,
+     * sku / alias uniqueness in the admin session's store (as the screen always checked).
+     *
      * @return array<string, mixed>
      */
-    private function productAttributes(array $data): array
+    private function writeOptions(): array
     {
-        $attributes = [];
-        foreach (self::STRING_FIELDS as $field) {
-            // WHY: a gated field turned off in config is not on the form; leaving it out
-            // of the update set preserves the real DB value instead of overwriting it
-            // with an empty default (lost-update — modification 20260826T093146).
-            if ($this->gatedFieldDisabled($field)) {
-                continue;
-            }
-            $attributes[$field] = (string) ($data[$field] ?? '');
-        }
-        foreach (self::NUMERIC_FIELDS as $field) {
-            // WHY: same scope rule as STRING_FIELDS — e.g. an off product_stock must not
-            // reset the real stock column (which orders may have changed concurrently).
-            if ($this->gatedFieldDisabled($field)) {
-                continue;
-            }
-            $attributes[$field] = (float) ($data[$field] ?? 0);
-        }
-        // WHY: when "Use STRUCTURE TYPE" is disabled, ignore submitted kind and always persist SINGLE.
-        $attributes['kind'] = self::structureTypeEnabled()
-            ? (int) ($data['kind'] ?? 0)
-            : (defined('GP247_PRODUCT_SINGLE') ? GP247_PRODUCT_SINGLE : 0);
-        $attributes['sort'] = (int) ($data['sort'] ?? 0);
-        $attributes['status'] = empty($data['status']) ? 0 : 1;
-        $attributes['approve'] = empty($data['approve']) ? 0 : 1;
-        $attributes['date_available'] = !empty($data['date_available']) ? $data['date_available'] : null;
-
-        return $attributes;
+        return [
+            'reference_store' => $this->referenceStoreId(),
+            'config_store' => $this->formStoreId !== '' ? $this->formStoreId : null,
+            'unique_store' => '',
+        ];
     }
 
     /**
@@ -660,33 +440,13 @@ class ProductManager extends ResourcePanel
     // --- Config helpers -----------------------------------------------------
 
     /**
-     * Return true when the "Use STRUCTURE TYPE" Shop Config is on (or not yet seeded).
-     * Treats null (config absent) as enabled so default behaviour is preserved before
-     * first install/seed; treats '0'/0 as explicitly disabled.
-     *
-     * @return bool
-     *
-     * @aidlc-unit shop-admin
-     * @aidlc-story US-SADM-001
-     */
-    private static function structureTypeEnabled(): bool
-    {
-        if (!function_exists('gp247_config')) {
-            return true;
-        }
-        $value = gp247_config('product_kind');
-        // WHY: null means the key hasn't been seeded yet — treat as enabled (default=1 in seeder).
-        return $value !== '0' && $value !== 0;
-    }
-
-    /**
      * Whether a config-gated product field should be shown in the add/edit form.
      *
      * Mirrors structureTypeEnabled(): a product_config_attribute toggle that is
      * absent (config not yet seeded) is treated as ENABLED so default behaviour is
      * preserved on a fresh install; only an explicit '0'/0 hides the field. This is
      * the single predicate shared by all three gates — render (blade), validate
-     * (configRules()) and persist (productAttributes()) — so a field turned off in
+     * (ProductWriter::rules()) and persist (ProductWriter::save()) — so a field turned off in
      * Shop Config is neither shown, validated, nor written (render/validate/persist
      * parity, US-SADM-product-field-config-scope, ADR shop-admin_product-field-config-scope).
      *
@@ -705,28 +465,6 @@ class ProductManager extends ResourcePanel
         // extends the working-store principle to config resolution. Shared with the admin
         // API (US-api-admin-write-product-fields).
         return \GP247\Shop\Services\ProductFieldRules::enabled($configKey, $this->formStoreId ?: null);
-    }
-
-    /**
-     * Whether a form field is a config-gated field whose gate is currently OFF.
-     *
-     * Resolves the field back to its product_config_attribute key via GATED_FIELDS
-     * and negates productFieldEnabled(); non-gated fields are never "disabled" here.
-     * Used to scope such a field out of both validation and persistence so it matches
-     * the blade render gate (modification 20260826T093146).
-     *
-     * @param string $field shop_product column name (e.g. 'stock', 'brand_id').
-     * @return bool True only when $field is gated AND its gate is turned off.
-     *
-     * @aidlc-unit shop-admin
-     * @aidlc-story US-SADM-product-field-config-scope
-     * @aidlc-adr shop-admin_product-field-config-scope
-     */
-    private function gatedFieldDisabled(string $field): bool
-    {
-        $configKey = array_search($field, self::GATED_FIELDS, true);
-
-        return $configKey !== false && !$this->productFieldEnabled($configKey);
     }
 
     // --- Render -------------------------------------------------------------
@@ -781,30 +519,7 @@ class ProductManager extends ResourcePanel
      */
     protected function referenceStoreId()
     {
-        $owner = $this->currentStore();
-        $resolvers = config('gp247-config.shop.product_reference_store_resolvers', []);
-        if (!is_array($resolvers) || $resolvers === []) {
-            return $owner;
-        }
-
-        foreach ($resolvers as $resolver) {
-            $callback = $resolver['callback'] ?? null;
-            if (!is_callable($callback)) {
-                continue;
-            }
-            try {
-                $reference = $callback((string) $owner);
-            } catch (\Throwable $e) {
-                // A broken extension must not take the product screen down.
-                gp247_report(msg: 'Product reference store resolver failed ('.($resolver['key'] ?? '?').'): '.$e->getMessage(), channel: null);
-                continue;
-            }
-            if ($reference !== null && $reference !== '') {
-                return (string) $reference;
-            }
-        }
-
-        return $owner;
+        return ProductWriter::referenceStoreFor($this->currentStore());
     }
 
     /**
