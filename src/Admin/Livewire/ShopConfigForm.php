@@ -520,7 +520,7 @@ class ShopConfigForm extends GP247AdminComponent
                     $value = json_encode($selected);
                 } else {
                     // WHY: escape at the boundary like the core config update (XSS).
-                    $value = gp247_clean((string) $this->values[$key]);
+                    $value = gp247_text_plain((string) $this->values[$key]);
                 }
 
                 $targetStore = $this->targetStoreForScope($field['scope']);

@@ -150,7 +150,7 @@ class CheckoutWizard extends BaseFrontComponent
      */
     public function selectAddress(string $id): void
     {
-        $cleanId               = (string) gp247_clean(data: $id, hight: true);
+        $cleanId               = (string) gp247_text_plain(data: $id, stripTags: true);
         $this->address_process = $cleanId;
 
         if ($cleanId === '' || $cleanId === 'new') {
@@ -196,7 +196,7 @@ class CheckoutWizard extends BaseFrontComponent
      */
     public function selectShipping(string $key): void
     {
-        $this->shippingMethod = (string) gp247_clean(data: $key, hight: true);
+        $this->shippingMethod = (string) gp247_text_plain(data: $key, stripTags: true);
 
         // The snapshot is re-derived on the server for the address and cart as they are
         // NOW (session-cached quote: no extra carrier call) — never taken from component
@@ -303,7 +303,7 @@ class CheckoutWizard extends BaseFrontComponent
      */
     public function selectPayment(string $key): void
     {
-        $this->paymentMethod = (string) gp247_clean(data: $key, hight: true);
+        $this->paymentMethod = (string) gp247_text_plain(data: $key, stripTags: true);
     }
 
     /**
@@ -485,7 +485,7 @@ class CheckoutWizard extends BaseFrontComponent
      */
     private function commitToSession(): void
     {
-        $c = fn(string $v): string => (string) gp247_clean(data: $v, hight: true);
+        $c = fn(string $v): string => (string) gp247_text_plain(data: $v, stripTags: true);
 
         $state = $this->checkoutState();
         $state->setShippingMethod($c($this->pluginKeyOf($this->shippingMethod)));
@@ -549,7 +549,7 @@ class CheckoutWizard extends BaseFrontComponent
         }
 
         $payload = (array) ($this->totalPayload[$key] ?? []);
-        $payload = (array) gp247_clean(data: $payload);
+        $payload = (array) gp247_text_plain(data: $payload);
 
         $this->totalMessages[$key] = $plugin->checkoutApply($payload);
         $this->recomputeTotals();

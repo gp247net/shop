@@ -90,7 +90,7 @@ class ShopProductTagController extends RootFrontController
                 'keyword'     => $tag->name,
                 'products'    => $products,
                 'tag'         => $tag,
-                'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
+                'filter_sort' => gp247_text_plain(data: request('filter_sort'), stripTags: true),
                 'layout_page' => ShopLayoutPage::ProductList->value,
                 'breadcrumbs' => [
                     ['url' => '', 'title' => $tag->name],

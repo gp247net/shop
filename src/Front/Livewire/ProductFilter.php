@@ -207,7 +207,7 @@ class ProductFilter extends BaseFrontComponent
      */
     public function toggleBrand(string $alias): void
     {
-        $cleanAlias = gp247_clean(data: $alias, hight: true);
+        $cleanAlias = gp247_text_plain(data: $alias, stripTags: true);
         if ($cleanAlias === '') {
             return;
         }
@@ -244,8 +244,8 @@ class ProductFilter extends BaseFrontComponent
         $rate = (float) gp247_currency_rate();
         $rate = $rate > 0 ? $rate : 1.0;
 
-        $min = (int) round(((int) gp247_clean(data: $this->priceMin, hight: true)) / $rate);
-        $max = (int) round(((int) gp247_clean(data: $this->priceMax, hight: true)) / $rate);
+        $min = (int) round(((int) gp247_text_plain(data: $this->priceMin, stripTags: true)) / $rate);
+        $max = (int) round(((int) gp247_text_plain(data: $this->priceMax, stripTags: true)) / $rate);
 
         if ($min <= 0 && $max <= 0) {
             $this->price = '';
@@ -287,19 +287,19 @@ class ProductFilter extends BaseFrontComponent
             ->setPaginate();
 
         // Sort — whitelist enforced
-        $cleanSort = gp247_clean(data: $this->sort, hight: true);
+        $cleanSort = gp247_text_plain(data: $this->sort, stripTags: true);
         if (isset(self::ALLOWED_SORTS[$cleanSort])) {
             $builder->setSort(self::ALLOWED_SORTS[$cleanSort]);
         }
 
         // Price range ("min__max")
-        $cleanPrice = gp247_clean(data: $this->price, hight: true);
+        $cleanPrice = gp247_text_plain(data: $this->price, stripTags: true);
         if ($cleanPrice !== '') {
             $builder->setRangePrice($cleanPrice);
         }
 
         // Brand filter (CSV aliases → resolved IDs)
-        $cleanBrand = gp247_clean(data: $this->brand, hight: true);
+        $cleanBrand = gp247_text_plain(data: $this->brand, stripTags: true);
         if ($cleanBrand !== '') {
             $aliases  = array_filter(explode(',', $cleanBrand), fn(string $a): bool => $a !== '');
             $brandIds = ShopBrand::whereIn('alias', $aliases)->pluck('id')->toArray();
@@ -322,7 +322,7 @@ class ProductFilter extends BaseFrontComponent
         }
 
         // Keyword search
-        $cleanKeyword = gp247_clean(data: $this->keyword, hight: true);
+        $cleanKeyword = gp247_text_plain(data: $this->keyword, stripTags: true);
         if ($cleanKeyword !== '') {
             $builder->setKeyword($cleanKeyword);
         }

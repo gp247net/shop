@@ -659,7 +659,7 @@ class OrderManager extends ResourcePanel
             'form.shipping_method' => 'nullable|string|max:100',
         ]);
 
-        $clean = gp247_clean($this->form);
+        $clean = gp247_text_plain($this->form);
 
         $changes = [];
         foreach (self::HEADER_FIELDS as $field) {

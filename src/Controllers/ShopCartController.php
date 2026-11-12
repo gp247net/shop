@@ -557,7 +557,7 @@ class ShopCartController extends RootFrontController
         request()->validate(['qty' => 'required|' . gp247_qty_rule()]);
 
         $data      = request()->all();
-        $data      = gp247_clean($data);
+        $data      = gp247_text_plain($data);
 
         $productId = $data['product_id'];
         $qty       = $data['qty'] ?? 0;

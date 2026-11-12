@@ -55,7 +55,7 @@ class AdminSubscribe extends FrontSubscribe
      */
     public static function createSubscribeAdmin(array $dataInsert)
     {
-        $dataInsert = gp247_clean($dataInsert);
+        $dataInsert = gp247_text_plain($dataInsert);
         return self::create($dataInsert);
     }
 }

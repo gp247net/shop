@@ -364,10 +364,10 @@ class PaymentRequestManager extends ResourcePanel
             app(PaymentRequestService::class)->recordManual(
                 $request,
                 $this->manual['amount'],
-                gp247_clean((string) ($this->manual['reference'] ?? '')) ?: null,
+                gp247_text_plain((string) ($this->manual['reference'] ?? '')) ?: null,
                 !empty($this->manual['paid_at']) ? $this->manual['paid_at'] : null,
                 $this->currentAdminId(),
-                gp247_clean((string) ($this->manual['note'] ?? '')) ?: null
+                gp247_text_plain((string) ($this->manual['note'] ?? '')) ?: null
             );
         } catch (\DomainException $e) {
             throw ValidationException::withMessages(['manual.amount' => $e->getMessage()]);

@@ -150,7 +150,7 @@ class ShopCategoryController extends RootFrontController
                     'subCategory' => $subCategory,
                     'layout_page' => ShopLayoutPage::ProductList->value,
                     'og_image'    => gp247_file($category->getImage()),
-                    'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
+                    'filter_sort' => gp247_text_plain(data: request('filter_sort'), stripTags: true),
                     'breadcrumbs' => $breadcrumbs,
                 )
             );

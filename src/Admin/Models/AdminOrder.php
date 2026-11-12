@@ -115,7 +115,7 @@ class AdminOrder extends ShopOrder
      */
     public static function insertOrderTotal($dataInsert)
     {
-        $dataInsert = gp247_clean($dataInsert);
+        $dataInsert = gp247_text_plain($dataInsert);
         return ShopOrderTotal::insert($dataInsert);
     }
 

@@ -698,9 +698,9 @@ class ShopOrder extends Model
     public function createOrder($dataOrder, $dataTotal, $arrCartDetail)
     {
         //Process escape
-        $dataOrder     = gp247_clean($dataOrder);
-        $dataTotal     = gp247_clean($dataTotal);
-        $arrCartDetail = gp247_clean($arrCartDetail);
+        $dataOrder     = gp247_text_plain($dataOrder);
+        $dataTotal     = gp247_text_plain($dataTotal);
+        $arrCartDetail = gp247_text_plain($arrCartDetail);
         try {
             DB::connection(GP247_DB_CONNECTION)->beginTransaction();
             $dataOrder['domain'] = url('/');
@@ -717,7 +717,7 @@ class ShopOrder extends Model
 
             //Insert order total
             foreach ($dataTotal as $key => $row) {
-                $row = gp247_clean($row);
+                $row = gp247_text_plain($row);
                 $row['id'] = gp247_generate_id();
                 $row['order_id'] = $orderID;
                 $row['created_at'] = gp247_time_now();

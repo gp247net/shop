@@ -169,7 +169,7 @@ abstract class CatalogWriter
                 $value = array_key_exists($code, $given) && array_key_exists($field, (array) $given[$code])
                     ? (string) $given[$code][$field]
                     : (string) ($before[$code][$field] ?? '');
-                $row[$field] = in_array($field, $richFields, true) ? $value : gp247_clean($value);
+                $row[$field] = in_array($field, $richFields, true) ? $value : gp247_text_plain($value);
             }
             $rows[] = $row;
         }
@@ -238,6 +238,6 @@ abstract class CatalogWriter
     {
         $form = (array) ($payload['form'] ?? []);
 
-        return ($options['clean'] ?? true) ? (array) gp247_clean($form) : $form;
+        return ($options['clean'] ?? true) ? (array) gp247_text_plain($form) : $form;
     }
 }

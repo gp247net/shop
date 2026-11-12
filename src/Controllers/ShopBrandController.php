@@ -113,7 +113,7 @@ class ShopBrandController extends RootFrontController
                     'products'    => $products,
                     'brand'       => $brand,
                     'og_image'    => gp247_file($brand->getImage()),
-                    'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
+                    'filter_sort' => gp247_text_plain(data: request('filter_sort'), stripTags: true),
                     'layout_page' => ShopLayoutPage::ProductList->value,
                     'breadcrumbs' => [
                         ['url'    => gp247_route_front('brand.all'), 'title' => gp247_language_render('front.brands')],

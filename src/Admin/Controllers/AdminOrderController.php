@@ -311,7 +311,7 @@ class AdminOrderController extends RootAdminController
             // modification 20260827T142602).
             'store_id'        => (string) ($data['store_id'] ?? GP247_STORE_ID_ROOT),
         ];
-        $dataCreate = gp247_clean($dataCreate, [], true);
+        $dataCreate = gp247_text_plain($dataCreate, [], true);
         // WHY: create order + line items + totals and decrement stock atomically,
         // parity with the storefront ShopOrder::createOrder (US-SADM-order-stock-parity,
         // ADR shop-admin_order-stock-parity). A partial failure must not leave an

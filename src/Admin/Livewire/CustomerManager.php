@@ -456,7 +456,7 @@ class CustomerManager extends ResourcePanel
             throw ValidationException::withMessages($mapped);
         }
 
-        $payload = gp247_clean($mapping['dataAddress']);
+        $payload = gp247_text_plain($mapping['dataAddress']);
 
         if ($this->editingAddressId !== null) {
             ShopCustomerAddress::where('id', $this->editingAddressId)

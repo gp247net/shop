@@ -65,7 +65,7 @@ class ShopProductController extends RootFrontController
                 'description' => '',
                 'products'    => $products,
                 'layout_page' => ShopLayoutPage::ProductList->value,
-                'filter_sort' => gp247_clean(data: request('filter_sort'), hight: true),
+                'filter_sort' => gp247_text_plain(data: request('filter_sort'), stripTags: true),
                 'breadcrumbs' => [
                     ['url'    => '', 'title' => gp247_language_render('front.all_product')],
                 ],
@@ -184,7 +184,7 @@ class ShopProductController extends RootFrontController
         //Keywork
         if (in_array('keyword', $arrFilter)) {
             $keyword = request('keyword');
-            $keyword = gp247_clean(data: $keyword, hight: true);
+            $keyword = gp247_text_plain(data: $keyword, stripTags: true);
             $dataSearch['keyword'] = $keyword;
         }
 
@@ -192,7 +192,7 @@ class ShopProductController extends RootFrontController
             $sortBy = 'sort';
             $sortOrder = 'desc';
             $filter_sort = request('filter_sort');
-            $filter_sort = gp247_clean(data: $filter_sort, hight: true);
+            $filter_sort = gp247_text_plain(data: $filter_sort, stripTags: true);
             $filterArr = [
                 'price_desc' => ['price', 'desc'],
                 'price_asc' => ['price', 'asc'],
@@ -210,13 +210,13 @@ class ShopProductController extends RootFrontController
 
         if (in_array('price', $arrFilter)) {
             $filter_price = request('price');
-            $filter_price = gp247_clean(data: $filter_price, hight: true);
+            $filter_price = gp247_text_plain(data: $filter_price, stripTags: true);
             $dataSearch['price'] = $filter_price;
         }
 
         if (in_array('brand', $arrFilter)) {
             $filter_brand = request('brand');
-            $filter_brand = gp247_clean(data: $filter_brand, hight: true);
+            $filter_brand = gp247_text_plain(data: $filter_brand, stripTags: true);
             if ($filter_brand) {
                 $arr_brand = explode(',', $filter_brand);
                 $arr_brand_id = ShopBrand::whereIn('alias', $arr_brand)->pluck('id')->toArray();
@@ -226,7 +226,7 @@ class ShopProductController extends RootFrontController
 
         if (in_array('category', $arrFilter)) {
             $filter_category = request('category');
-            $filter_category = gp247_clean(data: $filter_category, hight: true);
+            $filter_category = gp247_text_plain(data: $filter_category, stripTags: true);
             if ($filter_category) { 
                 $arr_category = explode(',', $filter_category);
                 $arr_category_id = ShopCategory::whereIn('alias', $arr_category)->pluck('id')->toArray();

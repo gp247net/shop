@@ -496,7 +496,7 @@ class ProductWriter extends CatalogWriter
             foreach ((array) $payload['images'] as $image) {
                 $image = trim((string) $image);
                 if ($image !== '') {
-                    $product->images()->create(['image' => gp247_clean($image)]);
+                    $product->images()->create(['image' => gp247_text_plain($image)]);
                 }
             }
         }
@@ -515,7 +515,7 @@ class ProductWriter extends CatalogWriter
             if (($form['product_type'] ?? '') === $downloadType && !empty($form['download_path'])) {
                 // WHY: ShopProductDownload declares a composite primaryKey array, so create()
                 // breaks; insert() with an explicit uuid bypasses it (legacy parity).
-                ShopProductDownload::insert(gp247_clean(['id' => gp247_uuid(), 'product_id' => $product->id, 'path' => $form['download_path']]));
+                ShopProductDownload::insert(gp247_text_plain(['id' => gp247_uuid(), 'product_id' => $product->id, 'path' => $form['download_path']]));
             }
         }
         if (($creating || array_key_exists('tags', $given)) && $this->fieldEnabled('product_tags', $configStore)) {
@@ -540,7 +540,7 @@ class ProductWriter extends CatalogWriter
             if ($groupId === '' || $name === '') {
                 continue;
             }
-            $product->attributes()->create(gp247_clean([
+            $product->attributes()->create(gp247_text_plain([
                 'attribute_group_id' => $groupId,
                 'name' => $name,
                 'add_price' => (float) ($variant['add_price'] ?? 0),
@@ -565,13 +565,13 @@ class ProductWriter extends CatalogWriter
         if ($kind === (defined('GP247_PRODUCT_BUILD') ? GP247_PRODUCT_BUILD : 1)) {
             foreach ((array) ($composition['build'] ?? []) as $item) {
                 if (($item['product_id'] ?? '') !== '') {
-                    $product->builds()->create(gp247_clean(['product_id' => $item['product_id'], 'quantity' => (float) ($item['quantity'] ?? 1)]));
+                    $product->builds()->create(gp247_text_plain(['product_id' => $item['product_id'], 'quantity' => (float) ($item['quantity'] ?? 1)]));
                 }
             }
         } elseif ($kind === (defined('GP247_PRODUCT_GROUP') ? GP247_PRODUCT_GROUP : 2)) {
             foreach ((array) ($composition['group'] ?? []) as $item) {
                 if (($item['product_id'] ?? '') !== '') {
-                    $product->groups()->create(gp247_clean(['product_id' => $item['product_id']]));
+                    $product->groups()->create(gp247_text_plain(['product_id' => $item['product_id']]));
                 }
             }
         }
@@ -590,7 +590,7 @@ class ProductWriter extends CatalogWriter
             (int) (defined('GP247_PRODUCT_BUILD') ? GP247_PRODUCT_BUILD : 1),
         ], true);
         if (!empty($form['promotion_use']) && $applies) {
-            $product->promotionPrice()->create(gp247_clean([
+            $product->promotionPrice()->create(gp247_text_plain([
                 'price_promotion' => (float) ($form['price_promotion'] ?? 0),
                 'date_start' => !empty($form['price_promotion_start']) ? $form['price_promotion_start'] : null,
                 'date_end' => !empty($form['price_promotion_end']) ? $form['price_promotion_end'] : null,
@@ -616,7 +616,7 @@ class ProductWriter extends CatalogWriter
                 continue;
             }
             // WHY: firstOrCreate keys on the unique alias so repeated names converge on one row.
-            $tag = ShopProductTag::firstOrCreate(['alias' => $alias], gp247_clean(['name' => $name, 'status' => 1, 'sort' => 0]));
+            $tag = ShopProductTag::firstOrCreate(['alias' => $alias], gp247_text_plain(['name' => $name, 'status' => 1, 'sort' => 0]));
             $ids[$tag->id] = $tag->id;
         }
 

@@ -164,7 +164,7 @@ class CheckoutService
      */
     public function totalPlugin(string $key): ?CheckoutTotalMethod
     {
-        $key = (string) gp247_clean(data: $key, hight: true);
+        $key = (string) gp247_text_plain(data: $key, stripTags: true);
         if (!array_key_exists($key, gp247_shop_total_method_modules())) {
             return null;
         }
@@ -495,7 +495,7 @@ class CheckoutService
             $address[$field] = $shippingAddress[$field] ?? '';
         }
 
-        ShopCustomer::find($customerId)->addresses()->save(new ShopCustomerAddress(gp247_clean($address)));
+        ShopCustomer::find($customerId)->addresses()->save(new ShopCustomerAddress(gp247_text_plain($address)));
     }
 
     /**

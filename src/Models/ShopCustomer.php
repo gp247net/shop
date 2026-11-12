@@ -119,7 +119,7 @@ class ShopCustomer extends Authenticatable
      */
     public static function updateInfo($dataUpdate, $id)
     {
-        $dataClean = gp247_clean($dataUpdate);
+        $dataClean = gp247_text_plain($dataUpdate);
 
         $fields = $dataClean['fields'] ?? [];
         unset($dataClean['fields']);
@@ -141,7 +141,7 @@ class ShopCustomer extends Authenticatable
      */
     public static function createCustomer(array $dataInsert)
     {
-        $dataClean = gp247_clean($dataInsert);
+        $dataClean = gp247_text_plain($dataInsert);
 
         $fields = $dataClean['fields'] ?? [];
         unset($dataClean['fields']);

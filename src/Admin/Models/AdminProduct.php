@@ -149,10 +149,10 @@ class AdminProduct extends ShopProduct
      */
     public function checkProductValidationAdmin($type = null, $fieldValue = null, $pId = null, $storeId = null)
     {
-        $storeId = $storeId ? gp247_clean($storeId) : session('adminStoreId');
-        $type = $type ? gp247_clean($type) : 'sku';
-        $fieldValue = gp247_clean($fieldValue);
-        $pId = gp247_clean($pId);
+        $storeId = $storeId ? gp247_text_plain($storeId) : session('adminStoreId');
+        $type = $type ? gp247_text_plain($type) : 'sku';
+        $fieldValue = gp247_text_plain($fieldValue);
+        $pId = gp247_text_plain($pId);
         // WHY: 1-1 ownership — uniqueness is scoped by the product's own store_id column.
         $check =  $this
         ->where($type, $fieldValue);

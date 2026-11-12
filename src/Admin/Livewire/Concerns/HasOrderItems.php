@@ -402,7 +402,7 @@ trait HasOrderItems
 
         $this->validate($rules);
 
-        $clean = gp247_clean($this->itemForm);
+        $clean = gp247_text_plain($this->itemForm);
         $qty = (float) $clean['qty'];
         $price = (float) ($clean['price'] ?? 0);
         $tax = (float) ($clean['tax'] ?? 0);

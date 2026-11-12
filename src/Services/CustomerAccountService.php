@@ -188,7 +188,7 @@ class CustomerAccountService
     public function addAddress(ShopCustomer $customer, array $data): ShopCustomerAddress
     {
         $address = $customer->addresses()->save(
-            new ShopCustomerAddress(gp247_clean(gp247_customer_address_mapping($data)['dataAddress']))
+            new ShopCustomerAddress(gp247_text_plain(gp247_customer_address_mapping($data)['dataAddress']))
         );
         $this->applyDefault($customer, $address, $data);
 
@@ -205,7 +205,7 @@ class CustomerAccountService
      */
     public function updateAddress(ShopCustomer $customer, ShopCustomerAddress $address, array $data): ShopCustomerAddress
     {
-        $address->update(gp247_clean(gp247_customer_address_mapping($data)['dataAddress']));
+        $address->update(gp247_text_plain(gp247_customer_address_mapping($data)['dataAddress']));
         $this->applyDefault($customer, $address, $data);
 
         return $address->fresh();

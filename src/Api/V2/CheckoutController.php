@@ -81,7 +81,7 @@ class CheckoutController extends RootFrontController
 
         $address = [];
         foreach (self::ADDRESS_FIELDS as $field) {
-            $address[$field] = (string) gp247_clean(data: (string) ($fields[$field] ?? ''), hight: true);
+            $address[$field] = (string) gp247_text_plain(data: (string) ($fields[$field] ?? ''), stripTags: true);
         }
         $state = $this->state();
         if ($state->shippingAddress() !== $address) {
@@ -218,7 +218,7 @@ class CheckoutController extends RootFrontController
         if ($plugin === null) {
             return ApiErrorResponder::notFound();
         }
-        $result = $plugin->checkoutApply((array) gp247_clean(data: (array) $request->input('payload', [])));
+        $result = $plugin->checkoutApply((array) gp247_text_plain(data: (array) $request->input('payload', [])));
         if (!empty($result['error'])) {
             return ApiErrorResponder::respond(422, 'promotion_refused', (string) ($result['msg'] ?? 'Promotion refused'));
         }

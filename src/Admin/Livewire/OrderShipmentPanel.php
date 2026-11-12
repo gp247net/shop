@@ -134,8 +134,8 @@ class OrderShipmentPanel extends GP247AdminComponent
                 . (($field['type'] ?? 'text') === 'checkbox' ? '|boolean' : '|string|max:' . (int) ($field['max'] ?? 255));
         }
         $validated = $this->validate($rules)['form'];
-        $input = array_map(static fn ($v) => is_string($v) ? (string) gp247_clean(data: $v, hight: true) : $v, $validated);
-        $input['extra'] = array_map(static fn ($v) => is_string($v) ? (string) gp247_clean(data: $v, hight: true) : $v, (array) ($validated['extra'] ?? []));
+        $input = array_map(static fn ($v) => is_string($v) ? (string) gp247_text_plain(data: $v, stripTags: true) : $v, $validated);
+        $input['extra'] = array_map(static fn ($v) => is_string($v) ? (string) gp247_text_plain(data: $v, stripTags: true) : $v, (array) ($validated['extra'] ?? []));
 
         try {
             $shipment = ShipmentService::instance()->create($order, $input, $this->adminId());
