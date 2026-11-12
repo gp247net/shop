@@ -49,7 +49,7 @@
                         <p class="text-xs text-ink-400 mt-0.5 mb-2">{{ gp247_language_render('product.sku') }}: {{ $product->sku }}</p>
                         {!! $product->showPrice() !!}
                         <div class="divider my-3"></div>
-                        <p class="text-xs text-ink-500 line-clamp-6">{!! $product->description !!}</p>
+                        <p class="text-xs text-ink-500 line-clamp-6">{{ $product->description }}</p>
                     </div>
                     @endif
                 @endforeach

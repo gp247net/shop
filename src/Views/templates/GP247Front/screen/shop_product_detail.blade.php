@@ -140,16 +140,11 @@
 
             {{-- Category info --}}
             <p class="text-sm text-ink-600 mt-4">
-                @php
-                    $categories = [];
-                @endphp
                 {{ gp247_language_render('product.category') }}:
+                {{-- WHY: category names are text a user typed — print them with {{ }}, never glued into raw HTML (US-CMP-raw-output-guard). --}}
                 @foreach ($product->categories as $category)
-                    @php
-                        $categories[] = '<a class="hover:text-brand-600" href="'.$category->getUrl().'">'.$category->getTitle().'</a>';
-                    @endphp
+                    <a class="hover:text-brand-600" href="{{ $category->getUrl() }}">{{ $category->getTitle() }}</a>@if (!$loop->last), @endif
                 @endforeach
-                {!! implode(', ', $categories) !!}
             </p>
             {{--// Category info --}}
 
@@ -158,7 +153,7 @@
             <p class="text-sm text-ink-600 mt-1">
                 {{ gp247_language_render('product.brand') }}:
                 <span id="product-detail-brand">
-                    {!! empty($product->brand->name) ? 'None' : '<a class="hover:text-brand-600" href="'.$product->brand->getUrl().'">'.$product->brand->name.'</a>' !!}
+                    <a class="hover:text-brand-600" href="{{ $product->brand->getUrl() }}">{{ $product->brand->name }}</a>
                 </span>
             </p>
             @endif

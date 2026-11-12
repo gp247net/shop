@@ -490,10 +490,52 @@ class ShopProduct extends Model
 
 
     
+    /**
+     * Order by a column of this model; an unknown column is ignored and the direction is
+     * asc unless 'desc', so request input handed in by a plugin/template cannot reach
+     * ORDER BY (US-CMP-dynamic-sql-guard).
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string|null $sortBy
+     * @param string $sortOrder
+     * @return \Illuminate\Database\Eloquent\Builder
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-dynamic-sql-guard
+     */
     public function scopeSort($query, $sortBy = null, $sortOrder = 'asc')
     {
-        $sortBy = $sortBy ?? 'id';
-        return $query->orderBy($sortBy, $sortOrder);
+        $column = $this->gp247SortColumn($sortBy ?? 'id');
+        if ($column === null || in_array($column, $this->gp247SortAliases(), true)) {
+            return $query;
+        }
+        return $query->orderBy($column, self::gp247SortDirection($sortOrder));
+    }
+
+    /**
+     * Sortable tables: the product and its description (joined by buildQuery()).
+     *
+     * @return array<int, string>
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-dynamic-sql-guard
+     */
+    public function gp247SortTables(): array
+    {
+        return [$this->getTable(), (new ShopProductDescription)->getTable()];
+    }
+
+    /**
+     * 'new' is mapped by buildQuery() to created_at.
+     *
+     * @return array<int, string>
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-dynamic-sql-guard
+     */
+    public function gp247SortAliases(): array
+    {
+        return ['new'];
     }
 
     /*

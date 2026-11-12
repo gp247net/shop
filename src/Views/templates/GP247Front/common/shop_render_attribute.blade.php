@@ -12,7 +12,7 @@
 <div class="mt-4 space-y-3">
     @foreach ($details as $groupId => $detailsGroup)
     <div>
-        <p class="label mb-2">{!! $groups[$groupId] ?? 'Not found' !!}</p>
+        <p class="label mb-2">{{ $groups[$groupId] ?? 'Not found' }}</p>
         <div class="flex flex-wrap gap-2" role="radiogroup">
             @foreach ($detailsGroup as $k => $detail)
             @php

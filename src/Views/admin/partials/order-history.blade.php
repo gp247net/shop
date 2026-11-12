@@ -8,8 +8,10 @@
     id was always recorded, it was simply never resolved to a name. The moment is
     still there, in a form a person reads at a glance.
 
-    Content is backend-authored markup from the change log; rendered with {!! !!}
-    as the legacy screen does (the source is the backend, not user input).
+    Content is change-log text that the backend decorates with <b>/<br>, but it can
+    also carry what a person typed (an order note, an imported archive's history),
+    so it goes through gp247_render_basic_markup(): escaped, with only those simple
+    tags given back (mod 20261112T061240, US-CMP-raw-output-guard).
     Variables: $history (each row carries an `actor` label from OrderManager).
 
     @aidlc-unit shop-admin
@@ -31,7 +33,7 @@
                             {{ gp247_datetime_to_date($h['add_date'] ?? '', 'd/m/Y H:i') }}
                         </span>
                     </div>
-                    <div class="text-sm text-gray-700 dark:text-gray-200">{!! $h['content'] ?? '' !!}</div>
+                    <div class="text-sm text-gray-700 dark:text-gray-200">{!! gp247_render_basic_markup($h['content'] ?? '') !!}</div>
                 </li>
             @endforeach
         </ol>

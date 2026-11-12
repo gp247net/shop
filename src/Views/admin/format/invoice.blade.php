@@ -53,7 +53,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 mt-4">
             <div class="sm:col-span-7 text-sm text-gray-600 order-2 sm:order-1">
-                <i>{!! $comment !!}</i>
+                <i>{{ $comment }}</i>
             </div>
 
             <div class="sm:col-span-5 text-sm text-gray-600 order-1 sm:order-2 space-y-2">

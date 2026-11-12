@@ -51,7 +51,7 @@
                         @if ($item->options)
                             <p class="text-xs text-ink-400">
                                 @foreach ($item->options as $keyAtt => $att)
-                                    <span>{{ $attributesGroup[$keyAtt] }}: {!! $att !!}</span>@if(!$loop->last) &middot; @endif
+                                    <span>{{ $attributesGroup[$keyAtt] }}: {!! gp247_render_option_price($att) !!}</span>@if(!$loop->last) &middot; @endif
                                 @endforeach
                             </p>
                         @endif

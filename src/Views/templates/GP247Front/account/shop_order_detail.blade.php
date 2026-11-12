@@ -25,38 +25,38 @@
     <div class="grid sm:grid-cols-2 gap-4 mb-6">
         <div class="card p-4">
             <table class="w-full text-sm">
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.first_name') }}</td><td class="py-1 font-medium">{!! $order->first_name !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.first_name') }}</td><td class="py-1 font-medium">{{ $order->first_name }}</td></tr>
                 @if (gp247_config('customer_lastname'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.last_name') }}</td><td class="py-1 font-medium">{!! $order->last_name !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.last_name') }}</td><td class="py-1 font-medium">{{ $order->last_name }}</td></tr>
                 @endif
                 @if (gp247_config('customer_phone'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.phone') }}</td><td class="py-1 font-medium">{!! $order->phone !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.phone') }}</td><td class="py-1 font-medium">{{ $order->phone }}</td></tr>
                 @endif
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.email') }}</td><td class="py-1 font-medium">{!! empty($order->email) ? 'N/A' : $order->email !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.email') }}</td><td class="py-1 font-medium">{{ empty($order->email) ? 'N/A' : $order->email }}</td></tr>
                 @if (gp247_config('customer_company'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.company') }}</td><td class="py-1 font-medium">{!! $order->company !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.company') }}</td><td class="py-1 font-medium">{{ $order->company }}</td></tr>
                 @endif
                 @if (gp247_config('customer_postcode'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.postcode') }}</td><td class="py-1 font-medium">{!! $order->postcode !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.postcode') }}</td><td class="py-1 font-medium">{{ $order->postcode }}</td></tr>
                 @endif
                 @if (gp247_config('customer_city'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.city') }}</td><td class="py-1 font-medium">{!! $order->city !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.city') }}</td><td class="py-1 font-medium">{{ $order->city }}</td></tr>
                 @endif
                 @if (gp247_config('customer_district'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.district') }}</td><td class="py-1 font-medium">{!! $order->district !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.district') }}</td><td class="py-1 font-medium">{{ $order->district }}</td></tr>
                 @endif
                 @if (gp247_config('customer_ward'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.ward') }}</td><td class="py-1 font-medium">{!! $order->ward !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.ward') }}</td><td class="py-1 font-medium">{{ $order->ward }}</td></tr>
                 @endif
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.address1') }}</td><td class="py-1 font-medium">{!! $order->address1 !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.address1') }}</td><td class="py-1 font-medium">{{ $order->address1 }}</td></tr>
                 @if (gp247_config('customer_address2'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.address2') }}</td><td class="py-1 font-medium">{!! $order->address2 !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.address2') }}</td><td class="py-1 font-medium">{{ $order->address2 }}</td></tr>
                 @endif
                 @if (gp247_config('customer_address3'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.address3') }}</td><td class="py-1 font-medium">{!! $order->address3 !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.address3') }}</td><td class="py-1 font-medium">{{ $order->address3 }}</td></tr>
                 @endif
                 @if (gp247_config('customer_country'))
-                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.country') }}</td><td class="py-1 font-medium">{!! $countries[$order->country] ?? $order->country !!}</td></tr>
+                <tr><td class="py-1 text-ink-500">{{ gp247_language_render('order.country') }}</td><td class="py-1 font-medium">{{ $countries[$order->country] ?? $order->country }}</td></tr>
                 @endif
             </table>
         </div>
@@ -125,18 +125,18 @@
         <table class="w-full text-sm">
             @foreach ($dataTotal as $element)
                 @if (in_array($element['code'], ['subtotal', 'tax']))
-                    <tr><td class="py-1 text-ink-500">{!! $element['title'] !!}</td><td class="py-1 text-end">{{ gp247_currency_format($element['value']) }}</td></tr>
+                    <tr><td class="py-1 text-ink-500">{{ $element['title'] }}</td><td class="py-1 text-end">{{ gp247_currency_format($element['value']) }}</td></tr>
                 @endif
                 @if ($element['code'] == 'shipping')
-                    <tr><td class="py-1 text-ink-500">{!! $element['title'] !!}</td><td class="py-1 text-end">{{ gp247_currency_format($element['value']) }}</td></tr>
+                    <tr><td class="py-1 text-ink-500">{{ $element['title'] }}</td><td class="py-1 text-end">{{ gp247_currency_format($element['value']) }}</td></tr>
                 @endif
                 {{-- Stored as a magnitude; the minus is rendered from the code, not read
                      off the value (ADR shop-admin_money-sign-convention D4). --}}
                 @if ($element['code'] == 'discount')
-                    <tr><td class="py-1 text-ink-500">{!! $element['title'] !!}</td><td class="py-1 text-end">{{ ((float) $element['value'] != 0 ? '-' : '') }}{{ gp247_currency_format($element['value']) }}</td></tr>
+                    <tr><td class="py-1 text-ink-500">{{ $element['title'] }}</td><td class="py-1 text-end">{{ ((float) $element['value'] != 0 ? '-' : '') }}{{ gp247_currency_format($element['value']) }}</td></tr>
                 @endif
                 @if ($element['code'] == 'total')
-                    <tr class="font-bold"><td class="py-2 border-t border-ink-100">{!! $element['title'] !!}</td><td class="py-2 text-end border-t border-ink-100">{{ gp247_currency_format($element['value']) }}</td></tr>
+                    <tr class="font-bold"><td class="py-2 border-t border-ink-100">{{ $element['title'] }}</td><td class="py-2 text-end border-t border-ink-100">{{ gp247_currency_format($element['value']) }}</td></tr>
                 @endif
             @endforeach
             {{-- Received is a payment held on the order itself, no longer a totals row (D3);

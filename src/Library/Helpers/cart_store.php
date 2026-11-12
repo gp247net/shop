@@ -314,12 +314,16 @@ if (!function_exists('gp247_render_option_price') && !in_array('gp247_render_opt
     function gp247_render_option_price($arrtribute, $currency = null, $rate = null, $format = '%s<span class="option_price">%s</span>')
     {
         $html = '';
-        $tmpAtt = explode('__', $arrtribute);
+        $tmpAtt = explode('__', (string) $arrtribute);
         $add_price = $tmpAtt[1] ?? 0;
+        // WHY: the option name is text a user typed (catalog, imported order); escape it so
+        // callers can keep printing the price markup with {!! !!} (US-CMP-raw-output-guard).
+        // double_encode=false keeps names already stored encoded by gp247_clean() readable.
+        $name = e($tmpAtt[0], false);
         if ($add_price) {
-            $html = sprintf($format, $tmpAtt[0], "(+".gp247_currency_render($add_price, $currency, $rate).")");
+            $html = sprintf($format, $name, "(+".gp247_currency_render($add_price, $currency, $rate).")");
         } else {
-            $html = sprintf($format, $tmpAtt[0], "");
+            $html = sprintf($format, $name, "");
         }
         return $html;
     }

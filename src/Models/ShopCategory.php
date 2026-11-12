@@ -117,16 +117,44 @@ class ShopCategory extends Model
     }
 
     
+    /**
+     * Order by a column of the category (or its description); an unknown column is ignored
+     * and the direction is asc unless 'desc' (US-CMP-dynamic-sql-guard).
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string|null $sortBy
+     * @param string $sortOrder
+     * @return \Illuminate\Database\Eloquent\Builder
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-dynamic-sql-guard
+     */
     public function scopeSort($query, $sortBy = null, $sortOrder = 'asc')
     {
-        $sortBy = $sortBy ?? 'sort';
+        $sortBy = $this->gp247SortColumn($sortBy ?? 'sort');
+        if ($sortBy === null) {
+            return $query;
+        }
         // WHY: buildQuery joins admin_store (multi-store) alongside the description
         // left-join, so an unqualified sort column such as 'id'/'created_at'/'status'
-        // would be ambiguous (SQL 1052). Qualify bare column names with the base table.
-        if (strpos($sortBy, '.') === false) {
+        // would be ambiguous (SQL 1052). Qualify bare column names of the base table.
+        if (strpos($sortBy, '.') === false && in_array($sortBy, $this->gp247TableColumns($this->getTable()), true)) {
             $sortBy = $this->getTable() . '.' . $sortBy;
         }
-        return $query->orderBy($sortBy, $sortOrder);
+        return $query->orderBy($sortBy, self::gp247SortDirection($sortOrder));
+    }
+
+    /**
+     * Sortable tables: the category and its description (joined by buildQuery()).
+     *
+     * @return array<int, string>
+     *
+     * @aidlc-unit compat-foundation
+     * @aidlc-story US-CMP-dynamic-sql-guard
+     */
+    public function gp247SortTables(): array
+    {
+        return [$this->getTable(), (new ShopCategoryDescription)->getTable()];
     }
 
     /**
