@@ -74,6 +74,10 @@ class ShopInstall extends GP247Command
         \DB::connection(GP247_DB_CONNECTION)->table('migrations')->where('migration', '2026_10_30_120000_install_api_commerce')->delete();
         $this->runArtisan('migrate', ['--path' => '/vendor/gp247/shop/src/Admin/Database/Migrations/upgrade/2026_10_30_120000_install_api_commerce.php']);
 
+        // WHY: shop tables are new here, so their text is already stored as typed; without the
+        // flag the first gp247:update would decode "&amp;" a user typed on purpose.
+        \GP247\Core\Support\StoredTextDecoder::markStoredAsTyped('text_storage_decoded_shop');
+
         // WHY no vendor:publish here any more (modification 20260913T200309):
         // shop's storefront views are served from this package through the
         // GP247TemplatePath hint paths, so an install no longer copies them into
