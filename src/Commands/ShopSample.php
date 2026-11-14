@@ -44,7 +44,7 @@ class ShopSample extends GP247Command
     /**
      * Base URL of the hosted sample product photos (product-1.png … product-N.png).
      */
-    private const PRODUCT_IMAGE_BASE = 'https://static.gp247.net/file/s-cart/what/product-';
+    private const PRODUCT_IMAGE_BASE = 'https://static.gp247.net/file/s-cart/product/product-';
 
     /**
      * Number of hosted sample product photos.
@@ -59,21 +59,22 @@ class ShopSample extends GP247Command
     private int $productImageCursor = 0;
 
     /**
-     * Base URL of the hosted sample photos for categories, brands and suppliers (blog-1.jpg … blog-N.jpg).
+     * Base URL of the hosted sample photos for categories, brands and suppliers:
+     * each kind has its own set, <base><kind>/<kind>-1.png … <kind>-N.png.
      */
-    private const CATALOG_IMAGE_BASE = 'https://static.gp247.net/file/s-cart/where/blog-';
+    private const CATALOG_IMAGE_BASE = 'https://static.gp247.net/file/s-cart/';
 
     /**
-     * Number of hosted sample photos for categories, brands and suppliers.
+     * Number of hosted sample photos in each catalog set (cate, brand, supplier).
      */
     private const CATALOG_IMAGE_COUNT = 10;
 
     /**
-     * Position of the next photo handed out by nextCatalogImage().
+     * Position of the next photo handed out by nextCatalogImage(), per kind.
      *
-     * @var int
+     * @var array<string, int>
      */
-    private int $catalogImageCursor = 0;
+    private array $catalogImageCursor = [];
 
     /**
      * Execute the console command.
@@ -128,7 +129,7 @@ class ShopSample extends GP247Command
     private function seed(): void
     {
             $this->productImageCursor = 0;
-            $this->catalogImageCursor = 0;
+            $this->catalogImageCursor = [];
 
             // Create sample categories
             $this->info('Creating sample categories...');
@@ -140,7 +141,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => $cateRoot1,
                     'alias' => 'am-thuc',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => '',
                     'top' => 1,
                     'sort' => 0,
@@ -167,7 +168,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'pho-nam-dinh',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot1,
                     'top' => 0,
                     'sort' => 1,
@@ -193,7 +194,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'nem-chua-thanh-hoa',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot1,
                     'top' => 0,
                     'sort' => 2,
@@ -219,7 +220,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'bun-cha-ha-noi',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot1,
                     'top' => 0,
                     'sort' => 3,
@@ -245,7 +246,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => $cateRoot2,
                     'alias' => 'du-lich',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => '',
                     'top' => 1,
                     'sort' => 0,
@@ -271,7 +272,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'vinh-ha-long',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot2,
                     'top' => 0,
                     'sort' => 1,
@@ -297,7 +298,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'dong-phong-nha',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot2,
                     'top' => 0,
                     'sort' => 2,
@@ -323,7 +324,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'trang-an',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot2,
                     'top' => 0,
                     'sort' => 3,
@@ -349,7 +350,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => $cateRoot3,
                     'alias' => 'van-hoa',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => '',
                     'top' => 1,
                     'sort' => 0,
@@ -375,7 +376,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'gom-bat-trang',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot3,
                     'top' => 0,
                     'sort' => 1,
@@ -401,7 +402,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'tranh-dong-ho',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot3,
                     'top' => 0,
                     'sort' => 2,
@@ -427,7 +428,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'chieu-coi-nga-son',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot3,
                     'top' => 0,
                     'sort' => 3,
@@ -453,7 +454,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => $cateRoot4,
                     'alias' => 'trai-cay',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => '', 
                     'top' => 1,
                     'sort' => 0,
@@ -479,7 +480,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'trai-cay-nam-bo',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot4,
                     'top' => 0,
                     'sort' => 1,
@@ -505,7 +506,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'vai-thieu',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot4,
                     'top' => 0,
                     'sort' => 2,
@@ -531,7 +532,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'nhan-long',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('cate'),
                     'parent' => $cateRoot4,
                     'top' => 0,
                     'sort' => 3,
@@ -588,7 +589,7 @@ class ShopSample extends GP247Command
                     'id' => gp247_generate_id(),
                     'name' => 'Nike',
                     'alias' => 'nike',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('brand'),
                     'url' => 'https://nike.com',
                     'status' => 1,
                     'sort' => 0
@@ -597,7 +598,7 @@ class ShopSample extends GP247Command
                     'id' => gp247_generate_id(),
                     'name' => 'Adidas',
                     'alias' => 'adidas',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('brand'),
                     'url' => 'https://adidas.com',
                     'status' => 1,
                     'sort' => 0
@@ -606,7 +607,7 @@ class ShopSample extends GP247Command
                     'id' => gp247_generate_id(),
                     'name' => 'Puma',
                     'alias' => 'puma',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('brand'),
                     'url' => 'https://puma.com',
                     'status' => 1,
                     'sort' => 0
@@ -627,7 +628,7 @@ class ShopSample extends GP247Command
                     'alias' => 'abc-corp',
                     'email' => 'contact@abc.com',
                     'phone' => '0123456789',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('supplier'),
                     'address' => '123 ABC Street',
                     'url' => 'https://abc.com',
                     'status' => 1,
@@ -640,7 +641,7 @@ class ShopSample extends GP247Command
                     'alias' => 'xyz-inc',
                     'email' => 'contact@xyz.com',
                     'phone' => '0987654321',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('supplier'),
                     'address' => '456 XYZ Street',
                     'url' => 'https://xyz.com',
                     'status' => 1,
@@ -653,7 +654,7 @@ class ShopSample extends GP247Command
                     'alias' => 'def-ltd',
                     'email' => 'contact@def.com',
                     'phone' => '0369852147',
-                    'image' => $this->nextCatalogImage(),
+                    'image' => $this->nextCatalogImage('supplier'),
                     'address' => '789 DEF Street',
                     'url' => 'https://def.com',
                     'status' => 1,
@@ -811,22 +812,24 @@ class ShopSample extends GP247Command
     }
 
     /**
-     * Hand out the hosted photos for categories, brands and suppliers in rotation.
+     * Hand out the hosted photos of one catalog kind (category, brand or supplier) in rotation.
      *
-     * WHY a rotation: same reason as nextProductImage() — every photo is used once
-     * before any is reused, so repeats stay at the minimum.
+     * WHY a rotation per kind: same reason as nextProductImage() — every photo of the set is
+     * used once before any is reused, so repeats stay at the minimum; each kind has its own set.
      *
-     * @return string Absolute URL of the photo for the next category, brand or supplier.
+     * @param string $kind Photo set: 'cate', 'brand' or 'supplier'.
+     * @return string Absolute URL of the photo for the next row of that kind.
      *
      * @aidlc-unit system-cli
      * @aidlc-story US-CLI-005
      */
-    private function nextCatalogImage(): string
+    private function nextCatalogImage(string $kind): string
     {
-        $number = $this->catalogImageCursor % self::CATALOG_IMAGE_COUNT + 1;
-        $this->catalogImageCursor++;
+        $cursor = $this->catalogImageCursor[$kind] ?? 0;
+        $this->catalogImageCursor[$kind] = $cursor + 1;
+        $number = $cursor % self::CATALOG_IMAGE_COUNT + 1;
 
-        return self::CATALOG_IMAGE_BASE . $number . '.jpg';
+        return self::CATALOG_IMAGE_BASE . $kind . '/' . $kind . '-' . $number . '.png';
     }
 
     /**
