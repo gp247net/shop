@@ -1596,6 +1596,10 @@ class DataShopLanguageSeeder extends Seeder
                 ['code' => 'filter_sort.apply','text' => 'Apply','position' => 'filter_sort','location' => 'en'],
                 ['code' => 'filter_sort.clear','text' => 'Xóa bộ lọc','position' => 'filter_sort','location' => 'vi'],
                 ['code' => 'filter_sort.clear','text' => 'Clear filters','position' => 'filter_sort','location' => 'en'],
+                ['code' => 'filter_sort.featured','text' => 'Nổi bật','position' => 'filter_sort','location' => 'vi'],
+                ['code' => 'filter_sort.featured','text' => 'Featured','position' => 'filter_sort','location' => 'en'],
+                ['code' => 'filter_sort.best_selling','text' => 'Bán chạy','position' => 'filter_sort','location' => 'vi'],
+                ['code' => 'filter_sort.best_selling','text' => 'Best selling','position' => 'filter_sort','location' => 'en'],
 
                 ['code' => 'action.add_to_cart','text' => 'Add to cart','position' => 'action','location' => 'en'],
                 ['code' => 'action.add_to_cart','text' => 'Chọn mua','position' => 'action','location' => 'vi'],

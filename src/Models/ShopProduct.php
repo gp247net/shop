@@ -535,7 +535,76 @@ class ShopProduct extends Model
      */
     public function gp247SortAliases(): array
     {
-        return ['new'];
+        return ['new', 'price_final'];
+    }
+
+    /**
+     * Sort keys a shopper may put in `filter_sort` on a storefront listing, mapped to the
+     * setSort() pair they stand for. The one allowlist for the Livewire grid and the
+     * controller-rendered listings, so both accept exactly the same values.
+     *
+     * The admin-managed `sort` column is deliberately absent: it is not something a shopper
+     * can reason about, so it only drives the default order (no `filter_sort` at all).
+     * `id_asc` (oldest first) is no longer offered in the dropdown but stays accepted so
+     * existing links and template overrides that still render it keep working.
+     *
+     * @param string|null $key Raw `filter_sort` value.
+     * @return array{0: string, 1: string}|null Null for an empty or unknown key (= default order).
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-005
+     */
+    public static function storefrontSort(?string $key): ?array
+    {
+        $map = [
+            'id_desc'    => ['id', 'desc'],
+            'sold_desc'  => ['sold', 'desc'],
+            'price_asc'  => ['price_final', 'asc'],
+            'price_desc' => ['price_final', 'desc'],
+            'name_asc'   => [(new ShopProductDescription)->getTable() . '.name', 'asc'],
+            'id_asc'     => ['id', 'asc'],
+        ];
+
+        return $map[(string) $key] ?? null;
+    }
+
+    /**
+     * Order a listing query by the price the shopper actually pays.
+     *
+     * The card shows the running promotion price, so sorting on the list price alone
+     * puts discounted items out of place. Group products carry no price of their own
+     * (the card shows "view product" instead), so they always go last, whichever way.
+     * The promotion window mirrors processPromotionPrice() and the setPromotion() filter.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $direction 'asc' or 'desc' (anything else is treated as 'asc').
+     * @return \Illuminate\Database\Eloquent\Builder
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-005
+     */
+    protected function orderByFinalPrice($query, string $direction)
+    {
+        $promotion = (new ShopProductPromotion)->getTable();
+
+        // WHY an aggregate: it always yields one row, so a product without a running
+        // promotion still gets its list price through COALESCE.
+        $finalPrice = ShopProductPromotion::query()
+            ->selectRaw('COALESCE(MAX(price_promotion), ' . $this->getTable() . '.price)')
+            ->whereColumn($promotion . '.product_id', $this->getTable() . '.id')
+            ->where($promotion . '.status_promotion', 1)
+            ->where(function ($sql) use ($promotion) {
+                $sql->where($promotion . '.date_end', '>=', date('Y-m-d'))
+                    ->orWhereNull($promotion . '.date_end');
+            })
+            ->where(function ($sql) use ($promotion) {
+                $sql->where($promotion . '.date_start', '<=', date('Y-m-d H:i:s'))
+                    ->orWhereNull($promotion . '.date_start');
+            });
+
+        return $query
+            ->orderByRaw('CASE WHEN ' . $this->getTable() . '.kind = ? THEN 1 ELSE 0 END', [GP247_PRODUCT_GROUP])
+            ->orderBy($finalPrice, self::gp247SortDirection($direction));
     }
 
     /*
@@ -1274,6 +1343,8 @@ class ShopProduct extends Model
                             //Process sort with product id
                             $query = $query->orderBy($this->getTable().'.created_at', $rowSort[1]);
                             $ckeckId = true;
+                        } elseif ($rowSort[0] == 'price_final') {
+                            $query = $this->orderByFinalPrice($query, $rowSort[1]);
                         } else {
                             $query = $query->orderBy($rowSort[0], $rowSort[1]);
                         }

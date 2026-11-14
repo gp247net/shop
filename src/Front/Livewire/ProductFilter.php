@@ -58,11 +58,12 @@ class ProductFilter extends BaseFrontComponent
 
     /**
      * Sort key reflected in the URL as `filter_sort`.
-     * Whitelisted against ALLOWED_SORTS before use.
+     * Whitelisted by ShopProduct::storefrontSort(); empty means the default order and,
+     * through `except`, leaves no `filter_sort=` behind in the URL.
      *
      * @var string
      */
-    #[Url(as: 'filter_sort', keep: false)]
+    #[Url(as: 'filter_sort', keep: false, except: '')]
     public string $sort = '';
 
     /**
@@ -106,16 +107,6 @@ class ProductFilter extends BaseFrontComponent
      */
     public string $priceMax = '';
 
-    /** @var array<string, array{string, string}> Whitelisted sort values. */
-    private const ALLOWED_SORTS = [
-        'price_asc'  => ['price', 'asc'],
-        'price_desc' => ['price', 'desc'],
-        'sort_asc'   => ['sort', 'asc'],
-        'sort_desc'  => ['sort', 'desc'],
-        'id_asc'     => ['id', 'asc'],
-        'id_desc'    => ['id', 'desc'],
-    ];
-
     /**
      * Mount the component with optional page-context overrides.
      *
@@ -141,6 +132,7 @@ class ProductFilter extends BaseFrontComponent
     ): void {
         $this->initialCategory = $initialCategory;
         $this->initialTag      = $initialTag;
+        $this->sort            = $this->normalizedSort($this->sort);
 
         // Pre-fill keyword only when URL carries no existing value
         if ($this->keyword === '' && $initialKeyword !== '') {
@@ -176,7 +168,26 @@ class ProductFilter extends BaseFrontComponent
      */
     public function updatedSort(): void
     {
+        $this->sort = $this->normalizedSort($this->sort);
         $this->resetPage();
+    }
+
+    /**
+     * Reduce a sort key to one the storefront accepts, or '' (the default order).
+     *
+     * WHY: an unknown `filter_sort` from the URL is ignored by the query anyway, but left
+     * in place it keeps the "clear filters" button showing for a filter that does nothing
+     * and the dropdown shows no matching option.
+     *
+     * @param string $sort Raw sort key.
+     * @return string
+     *
+     * @aidlc-unit storefront
+     * @aidlc-story US-LW-005
+     */
+    private function normalizedSort(string $sort): string
+    {
+        return ShopProduct::storefrontSort($sort) !== null ? $sort : '';
     }
 
     /**
@@ -286,10 +297,10 @@ class ProductFilter extends BaseFrontComponent
             ->setLimit((int) gp247_config('product_list'))
             ->setPaginate();
 
-        // Sort — whitelist enforced
-        $cleanSort = gp247_text_plain(data: $this->sort, stripTags: true);
-        if (isset(self::ALLOWED_SORTS[$cleanSort])) {
-            $builder->setSort(self::ALLOWED_SORTS[$cleanSort]);
+        // Sort — whitelist enforced; no key keeps the default order (admin `sort`, then newest)
+        $sortPair = ShopProduct::storefrontSort($this->sort);
+        if ($sortPair !== null) {
+            $builder->setSort($sortPair);
         }
 
         // Price range ("min__max")

@@ -189,22 +189,11 @@ class ShopProductController extends RootFrontController
         }
 
         if (in_array('sort', $arrFilter)) {
-            $sortBy = 'sort';
-            $sortOrder = 'desc';
-            $filter_sort = request('filter_sort');
-            $filter_sort = gp247_text_plain(data: $filter_sort, stripTags: true);
-            $filterArr = [
-                'price_desc' => ['price', 'desc'],
-                'price_asc' => ['price', 'asc'],
-                'sort_desc' => ['sort', 'desc'],
-                'sort_asc' => ['sort', 'asc'],
-                'id_desc' => ['id', 'desc'],
-                'id_asc' => ['id', 'asc'],
-            ];
-            if (array_key_exists($filter_sort, $filterArr)) {
-                $sortBy = $filterArr[$filter_sort][0];
-                $sortOrder = $filterArr[$filter_sort][1];
-                $dataSearch['sort'] = [$sortBy, $sortOrder];
+            // Same allowlist as the Livewire grid; no/unknown key keeps the default order.
+            $filter_sort = gp247_text_plain(data: (string) request('filter_sort'), stripTags: true);
+            $sortPair = ShopProduct::storefrontSort($filter_sort);
+            if ($sortPair !== null) {
+                $dataSearch['sort'] = $sortPair;
             }
         }
 

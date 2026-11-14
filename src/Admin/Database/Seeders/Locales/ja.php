@@ -721,6 +721,8 @@ return [
     'filter_sort.price_max' => '最高価格',
     'filter_sort.apply' => '適用',
     'filter_sort.clear' => '絞り込みをクリア',
+    'filter_sort.featured' => 'おすすめ順',
+    'filter_sort.best_selling' => '売れ筋順',
     'action.add_to_cart' => 'カートに入れる',
     'action.add_to_wishlist' => 'お気に入りに追加',
     'action.add_to_compare' => '比較リストに追加',

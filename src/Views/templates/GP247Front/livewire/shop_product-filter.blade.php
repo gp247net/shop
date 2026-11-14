@@ -28,15 +28,20 @@
                 <input type="search" wire:model.live.debounce.500ms="keyword" placeholder="{{ gp247_language_render('front.search') }}" class="input ps-9" data-testid="shop-product-filter-keyword">
             </div>
 
-            <select wire:model.live="sort" aria-label="{{ gp247_language_render('filter_sort.sort') }}" class="input w-auto" data-testid="shop-product-filter-sort">
-                <option value="">{{ gp247_language_render('filter_sort.sort') }}</option>
-                <option value="price_asc">{{ gp247_language_render('filter_sort.price_asc') }}</option>
-                <option value="price_desc">{{ gp247_language_render('filter_sort.price_desc') }}</option>
-                <option value="sort_asc">{{ gp247_language_render('filter_sort.sort_asc') }}</option>
-                <option value="sort_desc">{{ gp247_language_render('filter_sort.sort_desc') }}</option>
-                <option value="id_asc">{{ gp247_language_render('filter_sort.id_asc') }}</option>
-                <option value="id_desc">{{ gp247_language_render('filter_sort.id_desc') }}</option>
-            </select>
+            {{-- Shopper-facing orders only (ShopProduct::storefrontSort()). The empty value is the
+                 default order: the admin's own arrangement, then newest — labelled "Featured"
+                 so the dropdown always says what is applied. --}}
+            <label class="flex items-center gap-2 shrink-0">
+                <span class="text-sm font-medium text-ink-700">{{ gp247_language_render('filter_sort.sort') }}</span>
+                <select wire:model.live="sort" class="input w-auto" data-testid="shop-product-filter-sort">
+                    <option value="">{{ gp247_language_render('filter_sort.featured') }}</option>
+                    <option value="id_desc">{{ gp247_language_render('filter_sort.id_desc') }}</option>
+                    <option value="sold_desc">{{ gp247_language_render('filter_sort.best_selling') }}</option>
+                    <option value="price_asc">{{ gp247_language_render('filter_sort.price_asc') }}</option>
+                    <option value="price_desc">{{ gp247_language_render('filter_sort.price_desc') }}</option>
+                    <option value="name_asc">{{ gp247_language_render('filter_sort.name_asc') }}</option>
+                </select>
+            </label>
         </div>
 
         <div class="flex flex-wrap items-center gap-x-8 gap-y-4 px-4 py-3 border-t border-ink-100">
