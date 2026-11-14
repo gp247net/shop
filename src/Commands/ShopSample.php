@@ -42,6 +42,40 @@ class ShopSample extends GP247Command
     protected $description = 'GP247 shop sample';
 
     /**
+     * Base URL of the hosted sample product photos (product-1.png … product-N.png).
+     */
+    private const PRODUCT_IMAGE_BASE = 'https://static.gp247.net/file/s-cart/what/product-';
+
+    /**
+     * Number of hosted sample product photos.
+     */
+    private const PRODUCT_IMAGE_COUNT = 36;
+
+    /**
+     * Position of the next photo handed out by nextProductImage().
+     *
+     * @var int
+     */
+    private int $productImageCursor = 0;
+
+    /**
+     * Base URL of the hosted sample photos for categories, brands and suppliers (blog-1.jpg … blog-N.jpg).
+     */
+    private const CATALOG_IMAGE_BASE = 'https://static.gp247.net/file/s-cart/where/blog-';
+
+    /**
+     * Number of hosted sample photos for categories, brands and suppliers.
+     */
+    private const CATALOG_IMAGE_COUNT = 10;
+
+    /**
+     * Position of the next photo handed out by nextCatalogImage().
+     *
+     * @var int
+     */
+    private int $catalogImageCursor = 0;
+
+    /**
      * Execute the console command.
      *
      * @return mixed
@@ -93,7 +127,9 @@ class ShopSample extends GP247Command
      */
     private function seed(): void
     {
-            
+            $this->productImageCursor = 0;
+            $this->catalogImageCursor = 0;
+
             // Create sample categories
             $this->info('Creating sample categories...');
             $cateRoot1 = gp247_generate_id();
@@ -104,7 +140,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => $cateRoot1,
                     'alias' => 'am-thuc',
-                    'image' => 'https://picsum.photos/400/300?random=1',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => '',
                     'top' => 1,
                     'sort' => 0,
@@ -131,7 +167,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'pho-nam-dinh',
-                    'image' => 'https://picsum.photos/400/300?random=11',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot1,
                     'top' => 0,
                     'sort' => 1,
@@ -157,7 +193,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'nem-chua-thanh-hoa',
-                    'image' => 'https://picsum.photos/400/300?random=12',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot1,
                     'top' => 0,
                     'sort' => 2,
@@ -183,7 +219,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'bun-cha-ha-noi',
-                    'image' => 'https://picsum.photos/400/300?random=13',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot1,
                     'top' => 0,
                     'sort' => 3,
@@ -209,7 +245,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => $cateRoot2,
                     'alias' => 'du-lich',
-                    'image' => 'https://picsum.photos/400/300?random=2', 
+                    'image' => $this->nextCatalogImage(),
                     'parent' => '',
                     'top' => 1,
                     'sort' => 0,
@@ -235,7 +271,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'vinh-ha-long',
-                    'image' => 'https://picsum.photos/400/300?random=21',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot2,
                     'top' => 0,
                     'sort' => 1,
@@ -261,7 +297,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'dong-phong-nha',
-                    'image' => 'https://picsum.photos/400/300?random=22',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot2,
                     'top' => 0,
                     'sort' => 2,
@@ -287,7 +323,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'trang-an',
-                    'image' => 'https://picsum.photos/400/300?random=23',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot2,
                     'top' => 0,
                     'sort' => 3,
@@ -313,7 +349,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => $cateRoot3,
                     'alias' => 'van-hoa',
-                    'image' => 'https://picsum.photos/400/300?random=3', 
+                    'image' => $this->nextCatalogImage(),
                     'parent' => '',
                     'top' => 1,
                     'sort' => 0,
@@ -339,7 +375,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'gom-bat-trang',
-                    'image' => 'https://picsum.photos/400/300?random=31',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot3,
                     'top' => 0,
                     'sort' => 1,
@@ -365,7 +401,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'tranh-dong-ho',
-                    'image' => 'https://picsum.photos/400/300?random=32',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot3,
                     'top' => 0,
                     'sort' => 2,
@@ -391,7 +427,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'chieu-coi-nga-son',
-                    'image' => 'https://picsum.photos/400/300?random=33',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot3,
                     'top' => 0,
                     'sort' => 3,
@@ -417,7 +453,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => $cateRoot4,
                     'alias' => 'trai-cay',
-                    'image' => 'https://picsum.photos/400/300?random=4',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => '', 
                     'top' => 1,
                     'sort' => 0,
@@ -443,7 +479,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'trai-cay-nam-bo',
-                    'image' => 'https://picsum.photos/400/300?random=41',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot4,
                     'top' => 0,
                     'sort' => 1,
@@ -469,7 +505,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'vai-thieu',
-                    'image' => 'https://picsum.photos/400/300?random=42',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot4,
                     'top' => 0,
                     'sort' => 2,
@@ -495,7 +531,7 @@ class ShopSample extends GP247Command
                 [
                     'id' => gp247_generate_id(),
                     'alias' => 'nhan-long',
-                    'image' => 'https://picsum.photos/400/300?random=43',
+                    'image' => $this->nextCatalogImage(),
                     'parent' => $cateRoot4,
                     'top' => 0,
                     'sort' => 3,
@@ -552,7 +588,7 @@ class ShopSample extends GP247Command
                     'id' => gp247_generate_id(),
                     'name' => 'Nike',
                     'alias' => 'nike',
-                    'image' => 'https://picsum.photos/200/100?random=1',
+                    'image' => $this->nextCatalogImage(),
                     'url' => 'https://nike.com',
                     'status' => 1,
                     'sort' => 0
@@ -561,7 +597,7 @@ class ShopSample extends GP247Command
                     'id' => gp247_generate_id(),
                     'name' => 'Adidas',
                     'alias' => 'adidas',
-                    'image' => 'https://picsum.photos/200/100?random=2',
+                    'image' => $this->nextCatalogImage(),
                     'url' => 'https://adidas.com',
                     'status' => 1,
                     'sort' => 0
@@ -570,7 +606,7 @@ class ShopSample extends GP247Command
                     'id' => gp247_generate_id(),
                     'name' => 'Puma',
                     'alias' => 'puma',
-                    'image' => 'https://picsum.photos/200/100?random=3',
+                    'image' => $this->nextCatalogImage(),
                     'url' => 'https://puma.com',
                     'status' => 1,
                     'sort' => 0
@@ -591,7 +627,7 @@ class ShopSample extends GP247Command
                     'alias' => 'abc-corp',
                     'email' => 'contact@abc.com',
                     'phone' => '0123456789',
-                    'image' => 'https://picsum.photos/200/100?random=4',
+                    'image' => $this->nextCatalogImage(),
                     'address' => '123 ABC Street',
                     'url' => 'https://abc.com',
                     'status' => 1,
@@ -604,7 +640,7 @@ class ShopSample extends GP247Command
                     'alias' => 'xyz-inc',
                     'email' => 'contact@xyz.com',
                     'phone' => '0987654321',
-                    'image' => 'https://picsum.photos/200/100?random=5',
+                    'image' => $this->nextCatalogImage(),
                     'address' => '456 XYZ Street',
                     'url' => 'https://xyz.com',
                     'status' => 1,
@@ -617,7 +653,7 @@ class ShopSample extends GP247Command
                     'alias' => 'def-ltd',
                     'email' => 'contact@def.com',
                     'phone' => '0369852147',
-                    'image' => 'https://picsum.photos/200/100?random=6',
+                    'image' => $this->nextCatalogImage(),
                     'address' => '789 DEF Street',
                     'url' => 'https://def.com',
                     'status' => 1,
@@ -665,7 +701,7 @@ class ShopSample extends GP247Command
                         'store_id' => GP247_STORE_ID_ROOT,
                         'sku' => 'SAMPLE-' . $categoryKey . '-' . $i,
                         'alias' => 'sample-product-' . $productNumber,
-                        'image' => 'https://picsum.photos/500/500?random=' . $productNumber,
+                        'image' => $this->nextProductImage(),
                         'brand_id' => $brandId,
                         'supplier_id' => null,
                         'price' => rand(100, 500), // Random price between 100 and 500
@@ -754,6 +790,44 @@ class ShopSample extends GP247Command
             $this->info('Created sample data successfully!');
     }
 
+    /**
+     * Hand out the hosted sample photos in rotation, one per product.
+     *
+     * WHY a rotation instead of a random pick: the sample creates more products than
+     * there are photos, and walking the whole set before reusing any keeps every photo
+     * at most ceil(products / photos) times — the fewest repeats possible.
+     *
+     * @return string Absolute URL of the photo for the next product.
+     *
+     * @aidlc-unit system-cli
+     * @aidlc-story US-CLI-005
+     */
+    private function nextProductImage(): string
+    {
+        $number = $this->productImageCursor % self::PRODUCT_IMAGE_COUNT + 1;
+        $this->productImageCursor++;
+
+        return self::PRODUCT_IMAGE_BASE . $number . '.png';
+    }
+
+    /**
+     * Hand out the hosted photos for categories, brands and suppliers in rotation.
+     *
+     * WHY a rotation: same reason as nextProductImage() — every photo is used once
+     * before any is reused, so repeats stay at the minimum.
+     *
+     * @return string Absolute URL of the photo for the next category, brand or supplier.
+     *
+     * @aidlc-unit system-cli
+     * @aidlc-story US-CLI-005
+     */
+    private function nextCatalogImage(): string
+    {
+        $number = $this->catalogImageCursor % self::CATALOG_IMAGE_COUNT + 1;
+        $this->catalogImageCursor++;
+
+        return self::CATALOG_IMAGE_BASE . $number . '.jpg';
+    }
 
     /**
      * Create product bundle
@@ -770,7 +844,7 @@ class ShopSample extends GP247Command
                 'store_id' => GP247_STORE_ID_ROOT,
                 'sku' => 'SAMPLE-BUNDLE-' . $i,
                 'alias' => 'sample-bundle-' . $i,
-                'image' => 'https://picsum.photos/500/500?random=2' . $i,
+                'image' => $this->nextProductImage(),
                 'brand_id' => null,
                 'supplier_id' => null,
                 'price' => rand(500, 1000), // Random price between 100 and 500
@@ -874,7 +948,7 @@ class ShopSample extends GP247Command
                 'store_id' => GP247_STORE_ID_ROOT,
                 'sku' => 'SAMPLE-GROUP-' . $i,
                 'alias' => 'sample-group-' . $i,
-                'image' => 'https://picsum.photos/500/500?random=3' . $i,
+                'image' => $this->nextProductImage(),
                 'brand_id' => null,
                 'supplier_id' => null,
                 'price' => 0,
